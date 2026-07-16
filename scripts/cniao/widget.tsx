@@ -306,7 +306,7 @@ function WidgetHeader({ countText, trailingText }: { countText?: string; trailin
         <Text font={13} fontWeight="bold" foregroundStyle={theme.title} lineLimit={1}>菜鸟取件</Text>
       </HStack>
       <HStack frame={{ minWidth: 0, maxWidth: Infinity }} />
-      {countText ? <Text font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule" } }}>{countText}</Text> : null}
+      {countText ? <Text font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>{countText}</Text> : null}
       {trailingText ? <Text font={10} fontWeight="medium" foregroundStyle={theme.tertiary} lineLimit={1}>{trailingText}</Text> : null}
       <Button intent={RefreshCainiaoIntent({})}>
         <Image systemName="arrow.clockwise" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} /></Button>
@@ -370,7 +370,7 @@ function SmallView({ items }: { items: PickupItem[] }) {
         <Text font={10} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(cur)}</Text>
         <HStack alignment="center" spacing={8}>
           <Text font={24} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.55} frame={{ minWidth: 0, maxWidth: Infinity }}>{getPrimaryCode(cur)}</Text>
-          <Text font={10} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule" } }}>{idx + 1} / {t}</Text>
+          <Text font={10} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>{idx + 1} / {t}</Text>
         </HStack>
       </VStack>
     </VStack>
