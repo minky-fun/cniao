@@ -1,6 +1,6 @@
 // widget2.tsx — 包裹查询 + autologin 自动换 sid
 import {
-  VStack, HStack, ZStack, Image, Text, Button, Widget,
+  VStack, HStack, ZStack, Image, Text, Button, Link, Widget,
   WidgetReloadPolicy, DynamicShapeStyle, Spacer, fetch,
 } from "scripting"
 import { RefreshCainiaoIntent, ShowNextCainiaoItemIntent } from "./app_intents"
@@ -143,7 +143,17 @@ function isSessionExpired(json: any): boolean {
   return Array.isArray(ret) && ret.some((r: string) => r.includes("SESSION_EXPIRED") || r.includes("Session过期"))
 }
 
-// ========== autologin 换 sid（已验证） ==========
+// ========== autologin 换 sid ==========
+
+const AUTOLOGIN_DATA_KEY = "cniao_autologin_data"
+
+async function getAutologinData(): Promise<string | null> {
+  const cached = Storage.get<string>(AUTOLOGIN_DATA_KEY)
+  if (cached) return cached
+  const fromBox = await fetchBoxJs("cainiao_autologin_data")
+  if (fromBox) Storage.set(AUTOLOGIN_DATA_KEY, fromBox)
+  return fromBox
+}
 
 async function refreshSessionId(): Promise<string | null> {
   const raw = await fetchBoxJs("cainiao_autologin_headers_json")
@@ -151,11 +161,12 @@ async function refreshSessionId(): Promise<string | null> {
   const boxJs = parseHeaders(raw)
   if (!boxJs) { console.log("autologin headers 解析失败"); return null }
 
-  const appData = await fetchBoxJs("cainiao_autologin_data")
+  const appData = await getAutologinData()
   if (!appData) { console.log("无 autologin data"); return null }
 
   const h = { ...boxJs }
   delete h["Content-Length"]; delete h["Connection"]
+  setHeaderCI(h, "x-t", String(Math.floor(Date.now() / 1000)))
   setHeaderCI(h, "Host", "cn-acs.m.cainiao.com")
   h["x-cniao-skip-capture"] = "1"
   h["api"] = REFRESH_API; h["v"] = "1.0"
@@ -167,8 +178,21 @@ async function refreshSessionId(): Promise<string | null> {
     const ret = (json as any)?.ret?.[0] || ""
     console.log("autologin:", ret)
     if (resp.ok && ret.includes("SUCCESS")) {
-      const sid = (json as any)?.data?.data?.sessionId
-      if (sid) { console.log("新 sid:", sid.substring(0, 12) + "..."); return sid }
+      const sessionData = (json as any)?.data?.data
+      const sid: string | undefined = sessionData?.sessionId
+      if (!sid) { console.log("autologin 返回无 sessionId"); return null }
+      console.log("新 sid:", sid.substring(0, 12) + "...")
+
+      const newRefreshToken: string | undefined = sessionData?.refreshToken
+      if (newRefreshToken) {
+        try {
+          const dataObj = JSON.parse(appData)
+          dataObj.refreshToken = newRefreshToken
+          if (sessionData?.cnAccountId != null) dataObj.accountId = sessionData.cnAccountId
+          Storage.set(AUTOLOGIN_DATA_KEY, JSON.stringify(dataObj))
+        } catch { console.log("更新 autologin data 失败") }
+      }
+      return sid
     }
     return null
   } catch (e) { console.log("autologin 异常:", e); return null }
@@ -412,6 +436,8 @@ function WidgetView({ items }: { items: PickupItem[] }) {
 }
 
 function ErrorView({ message }: { message: string }) {
+  const isSmall = Widget.family === "systemSmall"
+
   return (
     <ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
       <VStack alignment="center" spacing={10} padding={{ top: 16, leading: 16, bottom: 16, trailing: 16 }} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
@@ -419,6 +445,22 @@ function ErrorView({ message }: { message: string }) {
           <Image systemName="exclamationmark.triangle.fill" font={20} fontWeight="semibold" foregroundStyle={theme.icon} /></ZStack>
         <Text font={13} fontWeight="semibold" foregroundStyle={theme.title}>菜鸟连接异常</Text>
         <Text font={11} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={3}>{message}</Text>
+        <HStack alignment="center" spacing={8}>
+          <Link url="cainiao://">
+            <HStack alignment="center" spacing={6} padding={{ top: 8, leading: 14, bottom: 8, trailing: 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
+              <Image systemName="arrow.up.forward.app.fill" font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} />
+              <Text font={12} fontWeight="semibold" foregroundStyle={theme.badgeText}>{isSmall ? "打开" : "打开菜鸟"}</Text>
+            </HStack>
+          </Link>
+          {!isSmall && (
+            <Button intent={RefreshCainiaoIntent({})} buttonStyle="borderless">
+              <HStack alignment="center" spacing={6} padding={{ top: 8, leading: 14, bottom: 8, trailing: 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
+                <Image systemName="arrow.clockwise" font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} />
+                <Text font={12} fontWeight="semibold" foregroundStyle={theme.badgeText}>刷新</Text>
+              </HStack>
+            </Button>
+          )}
+        </HStack>
       </VStack>
     </ZStack>
   )

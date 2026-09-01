@@ -66,7 +66,7 @@ async function test() {
   const headers = { ...boxJsHeaders }
   delete headers["Content-Length"]
   delete headers["Connection"]
-  // 不改 x-t，保留原始时间戳
+  // setHeaderCI(headers, "x-t", String(Math.floor(Date.now() / 1000)))
   setHeaderCI(headers, "Host", "cn-acs.m.cainiao.com")
   headers["x-cniao-skip-capture"] = "1"
   headers["api"] = REFRESH_API

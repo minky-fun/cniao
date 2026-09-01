@@ -1,43 +1,45 @@
 {
-  "description" : null,
-  "icon" : "ferry.fill",
-  "localizedNames" : {
-    "zh" : "",
-    "ja" : "",
-    "fr" : "",
-    "de" : "",
-    "ru" : "",
-    "pt" : "",
-    "es" : "",
-    "en" : "",
-    "it" : ""
-  },
-  "remoteResource" : null,
-  "color" : "rgba(243, 159, 68,1)",
-  "version" : "1.0.0",
-  "name" : "cniao",
+  "intentInputTypes" : [
+
+  ],
   "localizedDescriptions" : {
-    "zh" : "",
-    "ja" : "",
-    "fr" : "",
-    "de" : "",
-    "ru" : "",
-    "pt" : "",
     "es" : "",
+    "ru" : "",
+    "de" : "",
+    "zh" : "",
     "en" : "",
+    "pt" : "",
+    "fr" : "",
+    "ja" : "",
     "it" : ""
   },
-  "runInApp" : false,
+  "permissions" : null,
+  "iconImage" : null,
+  "entry" : "index.tsx",
+  "contributors" : [
+
+  ],
   "author" : {
     "name" : "Minky",
     "homepage" : null,
     "email" : "minkyfun@qq.com"
   },
-  "contributors" : [
-
-  ],
-  "iconImage" : null,
-  "intentInputTypes" : [
-
-  ]
+  "color" : "rgba(28, 140, 255,1)",
+  "icon" : "sparkles",
+  "version" : "1.0.0",
+  "localizedNames" : {
+    "it" : "",
+    "fr" : "",
+    "es" : "",
+    "de" : "",
+    "en" : "",
+    "ja" : "",
+    "pt" : "",
+    "zh" : "",
+    "ru" : ""
+  },
+  "name" : "cniao",
+  "remoteResource" : null,
+  "runInApp" : false,
+  "description" : null
 }
