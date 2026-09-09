@@ -1,7 +1,8 @@
 import {
   Canvas,
+  GeometryReader,
   HStack,
-  Spacer,
+  Rectangle,
   Text,
   VStack,
   ZStack,
@@ -22,7 +23,6 @@ const PAPER: DynamicShapeStyle = {
   dark: { colors: ["#282117", "#18130F"], startPoint: "topLeading", endPoint: "bottomTrailing" },
 }
 const INK: DynamicShapeStyle = { light: "#111111", dark: "#FFF8EA" }
-const MUTED_INK: DynamicShapeStyle = { light: "#625746", dark: "#CBBEAA" }
 const DOT_COLOR = "rgba(121, 93, 48, 0.20)"
 const CORAL = "#FF5B3D"
 const PINK = "#F28DB8"
@@ -101,42 +101,59 @@ function PaperBackground() {
   )
 }
 
-/** 渲染中号右栏中的单项彩色统计。 */
-function MediumStatLine({ label, value, color }: { label: string; value: string; color: ShapeStyle }) {
+/** Renders a single colored aggregate-statistic tile. */
+function StatTile({ label, value, color, compact }: { label: string; value: string; color: ShapeStyle; compact?: boolean }) {
   return (
-    <HStack spacing={6} frame={{ minWidth: 0, maxWidth: Infinity }}>
-      <Text font={10} fontWeight="semibold" foregroundStyle={MUTED_INK}>{label}</Text>
-      <Spacer />
-      <Text font={13} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle="#111111" lineLimit={1} minScaleFactor={0.72} padding={{ top: 2, leading: 8, bottom: 2, trailing: 8 }} widgetBackground={{ style: color, shape: { type: "capsule", style: "continuous" } }}>
+    <VStack alignment="leading" spacing={compact ? 1 : 3} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
+      <Text font={compact ? 9 : 11} fontWeight="semibold" foregroundStyle={INK}>{label}</Text>
+      <Text font={compact ? 15 : 20} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle="#111111" lineLimit={1} minScaleFactor={0.65} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "center" }} padding={{ top: compact ? 2 : 3, leading: 5, bottom: compact ? 2 : 3, trailing: 5 }} widgetBackground={{ style: color, shape: { type: "rect", cornerRadius: compact ? 7 : 9, style: "continuous" } }}>
         {value}
       </Text>
+    </VStack>
+  )
+}
+
+/** Renders the three statistics with structural dividers. */
+function StatsRow({ dashboard, compact }: { dashboard: ResetDashboard; compact?: boolean }) {
+  return (
+    <HStack alignment="bottom" spacing={compact ? 7 : 9} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
+      <StatTile label="重置" value={`${dashboard.total}次`} color={SKY} compact={compact} />
+      <Rectangle fill={INK} frame={{ width: 1.5, height: compact ? 34 : 50 }} />
+      <StatTile label="平均" value={`${dashboard.averageDays.toFixed(1)}天`} color={PINK} compact={compact} />
+      <Rectangle fill={INK} frame={{ width: 1.5, height: compact ? 34 : 50 }} />
+      <StatTile label="最长" value={`${dashboard.longestDays.toFixed(1)}天`} color={YELLOW} compact={compact} />
     </HStack>
   )
 }
 
-/** 使用 DeepSeek 式左右双栏布局渲染中号内容。 */
+/** Renders the horizontal widget with latest-reset details and statistics. */
 function MediumWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
   return (
-    <HStack alignment="top" spacing={12} padding={12} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetURL={WEBSITE_URL}>
-      <VStack alignment="leading" spacing={3} frame={{ width: 130, minHeight: 0, maxHeight: Infinity }}>
-        <Text font={19} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.74}>CODEX 重置</Text>
-        <Text font={10} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} padding={{ top: 2, leading: 9, bottom: 2, trailing: 9 }} widgetBackground={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
-        <Text font={35} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.58}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
-        <Text font={10} fontWeight="semibold" foregroundStyle={MUTED_INK} lineLimit={1} minScaleFactor={0.72}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
-      </VStack>
-
-      <VStack alignment="leading" spacing={3} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
-        <HStack frame={{ minWidth: 0, maxWidth: Infinity }}>
-          <Spacer />
-          <Canvas draw={drawResetIcon} opaque={false} frame={{ width: 66, height: 66 }} />
-          <Spacer />
-        </HStack>
-        <Spacer />
-        <MediumStatLine label="累计重置" value={`${dashboard.total}次`} color={SKY} />
-        <MediumStatLine label="平均间隔" value={`${dashboard.averageDays.toFixed(1)}天`} color={PINK} />
-        <MediumStatLine label="最长间隔" value={`${dashboard.longestDays.toFixed(1)}天`} color={YELLOW} />
-      </VStack>
-    </HStack>
+    <GeometryReader widgetURL={WEBSITE_URL}>
+      {/** 按实际容器高度分配中号各行，避免弹性布局累积空白或挤压内容。 */}
+      {(proxy) => {
+        const scale = proxy.size.height / 169
+        const inset = 14 * scale
+        const width = proxy.size.width - inset * 2
+        const iconSize = 82 * scale
+        const textWidth = width - iconSize - 8 * scale
+        return (
+          <ZStack frame={{ width: proxy.size.width, height: proxy.size.height }}>
+            <VStack alignment="leading" spacing={0} frame={{ width: textWidth, height: 96 * scale, alignment: "topLeading" }} position={{ x: inset + textWidth / 2, y: 60 * scale }}>
+              <Text font={19 * scale} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 23 * scale, alignment: "leading" }}>CODEX 重置</Text>
+              <Text font={11 * scale} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} frame={{ width: 76 * scale, height: 19 * scale }} background={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
+              <Text font={36 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 39 * scale, alignment: "leading" }}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+              <Text font={11 * scale} fontWeight="semibold" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 15 * scale, alignment: "leading" }}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
+            </VStack>
+            <Canvas draw={drawResetIcon} opaque={false} frame={{ width: iconSize, height: iconSize }} position={{ x: proxy.size.width - inset - iconSize / 2, y: 58 * scale }} />
+            <Rectangle fill={INK} frame={{ width, height: 1.5 * scale }} position={{ x: proxy.size.width / 2, y: 113 * scale }} />
+            <VStack spacing={0} frame={{ width, height: 38 * scale }} position={{ x: proxy.size.width / 2, y: 139 * scale }}>
+              <StatsRow dashboard={dashboard} compact />
+            </VStack>
+          </ZStack>
+        )
+      }}
+    </GeometryReader>
   )
 }
 

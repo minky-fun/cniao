@@ -1,7 +1,5 @@
 import {
   Canvas,
-  HStack,
-  Spacer,
   Text,
   VStack,
   ZStack,
@@ -12,7 +10,7 @@ import type {
   DynamicShapeStyle,
 } from "scripting"
 
-import { formatLocalDate, formatRelativeDays } from "./data"
+import { formatRelativeDays } from "./data"
 import type { ResetDashboard } from "./data"
 
 const WEBSITE_URL = "https://codex-resets.com/"
@@ -21,7 +19,6 @@ const PAPER: DynamicShapeStyle = {
   dark: { colors: ["#282117", "#18130F"], startPoint: "topLeading", endPoint: "bottomTrailing" },
 }
 const INK: DynamicShapeStyle = { light: "#111111", dark: "#FFF8EA" }
-const MUTED_INK: DynamicShapeStyle = { light: "#625746", dark: "#CBBEAA" }
 const DOT_COLOR = "rgba(121, 93, 48, 0.20)"
 const CORAL = "#FF5B3D"
 const YELLOW = "#FFD447"
@@ -112,25 +109,22 @@ function LatestBadge({ compact }: { compact?: boolean }) {
   )
 }
 
-/** 使用 DeepSeek 式流动布局渲染小号内容。 */
+/** Renders the compact square widget. */
 function SmallWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
   return (
-    <VStack alignment="leading" spacing={0} padding={12} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetURL={WEBSITE_URL}>
-      <HStack frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <Text font={17} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.82}>CODEX 重置</Text>
-        <Spacer />
-      </HStack>
-      <Spacer />
-      <HStack alignment="center" spacing={5} frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <VStack alignment="leading" spacing={2}>
+    <VStack alignment="leading" spacing={5} padding={{ top: 11, leading: 11, bottom: 10, trailing: 11 }} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity, alignment: "topLeading" }} widgetURL={WEBSITE_URL}>
+      <Text font={17} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.85}>CODEX 重置</Text>
+      <ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
+        <VStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity, alignment: "topLeading" }}>
           <LatestBadge compact />
-          <Text font={34} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.65}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
-          <Text font={9} fontWeight="semibold" foregroundStyle={MUTED_INK} lineLimit={1} minScaleFactor={0.72}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
         </VStack>
-        <Spacer />
-        <ResetIcon size={58} />
-      </HStack>
-      <Spacer />
+        <VStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity, alignment: "topTrailing" }}>
+          <ResetIcon size={54} />
+        </VStack>
+        <VStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity, alignment: "bottomLeading" }}>
+          <Text font={38} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.68}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+        </VStack>
+      </ZStack>
     </VStack>
   )
 }

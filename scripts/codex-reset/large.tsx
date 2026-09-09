@@ -1,5 +1,6 @@
 import {
   Canvas,
+  GeometryReader,
   HStack,
   Rectangle,
   Spacer,
@@ -18,6 +19,7 @@ import { formatRelativeDays, formatLocalDate, formatUpdatedAt } from "./data"
 import type { ResetDashboard, ResetRecord, ResetType } from "./data"
 
 type HeatmapDay = {
+  dateKey: string
   resetType: ResetType | null
   isFuture: boolean
 }
@@ -109,27 +111,27 @@ function PaperBackground() {
   )
 }
 
-/** 渲染大号组件底部的单项彩色统计。 */
-function LargeStatTile({ label, value, color }: { label: string; value: string; color: ShapeStyle }) {
+/** Renders a single colored aggregate-statistic tile. */
+function StatTile({ label, value, color, compact }: { label: string; value: string; color: ShapeStyle; compact?: boolean }) {
   return (
-    <VStack alignment="leading" spacing={3} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
-      <Text font={11} fontWeight="semibold" foregroundStyle={INK}>{label}</Text>
-      <Text font={20} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle="#111111" lineLimit={1} minScaleFactor={0.65} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "center" }} padding={{ top: 3, leading: 5, bottom: 3, trailing: 5 }} widgetBackground={{ style: color, shape: { type: "rect", cornerRadius: 9, style: "continuous" } }}>
+    <VStack alignment="leading" spacing={compact ? 1 : 3} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
+      <Text font={compact ? 9 : 11} fontWeight="semibold" foregroundStyle={INK}>{label}</Text>
+      <Text font={compact ? 15 : 20} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle="#111111" lineLimit={1} minScaleFactor={0.65} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "center" }} padding={{ top: compact ? 2 : 3, leading: 5, bottom: compact ? 2 : 3, trailing: 5 }} widgetBackground={{ style: color, shape: { type: "rect", cornerRadius: compact ? 7 : 9, style: "continuous" } }}>
         {value}
       </Text>
     </VStack>
   )
 }
 
-/** 渲染大号组件底部的三项统计。 */
-function LargeStatsRow({ dashboard }: { dashboard: ResetDashboard }) {
+/** Renders the three statistics with structural dividers. */
+function StatsRow({ dashboard, compact }: { dashboard: ResetDashboard; compact?: boolean }) {
   return (
-    <HStack alignment="bottom" spacing={9} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
-      <LargeStatTile label="重置" value={`${dashboard.total}次`} color={SKY} />
-      <Rectangle fill={INK} frame={{ width: 1.5, height: 50 }} />
-      <LargeStatTile label="平均" value={`${dashboard.averageDays.toFixed(1)}天`} color={PINK} />
-      <Rectangle fill={INK} frame={{ width: 1.5, height: 50 }} />
-      <LargeStatTile label="最长" value={`${dashboard.longestDays.toFixed(1)}天`} color={YELLOW} />
+    <HStack alignment="bottom" spacing={compact ? 7 : 9} frame={{ minWidth: 0, maxWidth: Infinity, alignment: "leading" }}>
+      <StatTile label="重置" value={`${dashboard.total}次`} color={SKY} compact={compact} />
+      <Rectangle fill={INK} frame={{ width: 1.5, height: compact ? 34 : 50 }} />
+      <StatTile label="平均" value={`${dashboard.averageDays.toFixed(1)}天`} color={PINK} compact={compact} />
+      <Rectangle fill={INK} frame={{ width: 1.5, height: compact ? 34 : 50 }} />
+      <StatTile label="最长" value={`${dashboard.longestDays.toFixed(1)}天`} color={YELLOW} compact={compact} />
     </HStack>
   )
 }
@@ -155,7 +157,7 @@ function buildHeatmapDays(records: ResetRecord[]): HeatmapDay[] {
     for (let weekday = 0; weekday < 7; weekday += 1) {
       const date = new Date(firstMonday.getTime() + (week * 7 + weekday) * DAY_IN_MS)
       const dateKey = toUtcDateKey(date)
-      days.push({ resetType: resetsByDate.get(dateKey) ?? null, isFuture: date.getTime() > utcToday.getTime() })
+      days.push({ dateKey, resetType: resetsByDate.get(dateKey) ?? null, isFuture: date.getTime() > utcToday.getTime() })
     }
   }
   return days
@@ -196,41 +198,47 @@ function drawRoundedCell(context: CanvasRenderingContext, x: number, y: number, 
   context.fill()
 }
 
-/** 使用 DeepSeek 式纵向看板布局渲染大号内容。 */
+/** Renders the large widget with the complete 26-week reset heatmap. */
 function LargeWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
   const heatmapDays = buildHeatmapDays(dashboard.history)
   return (
-    <VStack alignment="leading" spacing={7} padding={14} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetURL={WEBSITE_URL}>
-      <HStack frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <Text font={21} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1}>CODEX 重置</Text>
-        <Spacer />
-        <Text font={10} fontWeight="semibold" foregroundStyle={MUTED_INK} lineLimit={1}>{formatUpdatedAt(dashboard.generatedAt)}</Text>
-      </HStack>
-
-      <HStack alignment="center" spacing={16} frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <VStack alignment="leading" spacing={3} frame={{ minWidth: 0, maxWidth: Infinity }}>
-          <Text font={12} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} padding={{ top: 3, leading: 12, bottom: 3, trailing: 12 }} widgetBackground={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
-          <Text font={43} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
-          <Text font={13} fontWeight="semibold" foregroundStyle={MUTED_INK} lineLimit={1}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
-        </VStack>
-        <Canvas draw={drawResetIcon} opaque={false} frame={{ width: 104, height: 104 }} />
-      </HStack>
-
-      <Rectangle fill={INK} frame={{ minWidth: 0, maxWidth: Infinity, height: 1.5 }} />
-      <HStack frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <Text font={16} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK}>26 周记录</Text>
-        <Spacer />
-        <HStack spacing={5}>
-          <Rectangle fill={CORAL} frame={{ width: 8, height: 8 }} />
-          <Text font={9} fontWeight="semibold" foregroundStyle={MUTED_INK}>常规</Text>
-          <Rectangle fill={PINK} frame={{ width: 8, height: 8 }} />
-          <Text font={9} fontWeight="semibold" foregroundStyle={MUTED_INK}>Banked</Text>
-        </HStack>
-      </HStack>
-      <Canvas draw={createHeatmapDrawer(heatmapDays)} opaque={false} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 82, maxHeight: Infinity }} />
-      <Rectangle fill={INK} frame={{ minWidth: 0, maxWidth: Infinity, height: 1.5 }} />
-      <LargeStatsRow dashboard={dashboard} />
-    </VStack>
+    <GeometryReader widgetURL={WEBSITE_URL}>
+      {/** 根据实际高度划分大号区域，热力图与统计栏始终留在安全边距内。 */}
+      {(proxy) => {
+        const scale = Math.min(proxy.size.width / 360, proxy.size.height / 360)
+        const inset = 18 * scale
+        const width = proxy.size.width - inset * 2
+        const iconSize = 108 * scale
+        const textWidth = width - iconSize - 8 * scale
+        const statsHeight = 54
+        const statsTop = proxy.size.height - inset - statsHeight
+        const dividerY = statsTop - 10 * scale
+        const gridTop = 198 * scale
+        const gridHeight = dividerY - 10 * scale - gridTop
+        return (
+          <ZStack frame={{ width: proxy.size.width, height: proxy.size.height }}>
+            <VStack alignment="leading" spacing={3 * scale} frame={{ width: textWidth, height: 132 * scale, alignment: "topLeading" }} position={{ x: inset + textWidth / 2, y: inset + 66 * scale }}>
+              <Text font={21 * scale} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 26 * scale, alignment: "leading" }}>CODEX 重置</Text>
+              <Text font={12 * scale} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} frame={{ width: 82 * scale, height: 23 * scale }} background={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
+              <Text font={43 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 54 * scale, alignment: "leading" }}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+              <Text font={13 * scale} fontWeight="semibold" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 20 * scale, alignment: "leading" }}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
+            </VStack>
+            <Canvas draw={drawResetIcon} opaque={false} frame={{ width: iconSize, height: iconSize }} position={{ x: proxy.size.width - inset - iconSize / 2, y: inset + iconSize / 2 }} />
+            <Rectangle fill={INK} frame={{ width, height: 1.7 * scale }} position={{ x: proxy.size.width / 2, y: 160 * scale }} />
+            <HStack spacing={8} frame={{ width, height: 24 * scale }} position={{ x: proxy.size.width / 2, y: 180 * scale }}>
+              <Text font={16 * scale} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK}>26 周记录</Text>
+              <Spacer />
+              <Text font={10 * scale} fontWeight="semibold" foregroundStyle={MUTED_INK} lineLimit={1}>{formatUpdatedAt(dashboard.generatedAt)}</Text>
+            </HStack>
+            <Canvas draw={createHeatmapDrawer(heatmapDays)} opaque={false} frame={{ width, height: gridHeight }} position={{ x: proxy.size.width / 2, y: gridTop + gridHeight / 2 }} />
+            <Rectangle fill={INK} frame={{ width, height: 1.7 * scale }} position={{ x: proxy.size.width / 2, y: dividerY }} />
+            <VStack spacing={0} frame={{ width, height: statsHeight }} position={{ x: proxy.size.width / 2, y: statsTop + statsHeight / 2 }}>
+              <StatsRow dashboard={dashboard} />
+            </VStack>
+          </ZStack>
+        )
+      }}
+    </GeometryReader>
   )
 }
 
