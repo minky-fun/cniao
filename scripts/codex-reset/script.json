@@ -1,0 +1,28 @@
+{
+  "intentInputTypes": [],
+  "localizedDescriptions": {
+    "zh": "追踪 Codex 用量额度的公开重置公告，支持小号、中号和大号桌面小组件。展示最近重置时间、累计重置次数、平均间隔及最长间隔，大号额外提供最近 26 周的记录热力图，区分普通重置与储备重置额度（Banked Reset）。\n\n数据来自 codex-resets.com 的公开只读 API，无需登录或配置密钥。默认每 15 分钟请求刷新，实际更新时间由系统调度；点击小组件可查看来源网页。\n\n本工具展示公开公告记录，不读取个人账号剩余额度，也不会执行额度重置。数据来源为第三方站点，与 OpenAI 无隶属关系。",
+    "zh-Hans": "追踪 Codex 用量额度的公开重置公告，支持小号、中号和大号桌面小组件。展示最近重置时间、累计重置次数、平均间隔及最长间隔，大号额外提供最近 26 周的记录热力图，区分普通重置与储备重置额度（Banked Reset）。\n\n数据来自 codex-resets.com 的公开只读 API，无需登录或配置密钥。默认每 15 分钟请求刷新，实际更新时间由系统调度；点击小组件可查看来源网页。\n\n本工具展示公开公告记录，不读取个人账号剩余额度，也不会执行额度重置。数据来源为第三方站点，与 OpenAI 无隶属关系。",
+    "en": "Track public Codex usage-limit reset announcements with small, medium, and large Home Screen widgets. View the latest reset time, total reset count, average interval, and longest interval. The large widget includes a 26-week heatmap distinguishing regular resets from banked reset credits.\n\nUses the public read-only API at codex-resets.com. No sign-in or API key is required. Requests refreshes every 15 minutes; actual timing is controlled by the system. Tap the widget to visit the source website.\n\nShows public announcement history, not your account's remaining quota, and does not perform resets. The data source is a third-party site not affiliated with OpenAI."
+  },
+  "permissions": null,
+  "iconImage": "https://unpkg.com/@lobehub/icons-static-png@latest/dark/codex.png",
+  "entry": "index.tsx",
+  "contributors": [],
+  "author": {
+    "name": "Minky",
+    "homepage": null,
+    "email": "minkyfun@qq.com"
+  },
+  "color": "#4D7CFE",
+  "icon": "arrow.clockwise.circle.fill",
+  "version": "1.0.0",
+  "localizedNames": {
+    "zh": "Codex 重置",
+    "en": "Codex Reset"
+  },
+  "name": "CodexReset",
+  "remoteResource": null,
+  "runInApp": false,
+  "description": "追踪 Codex 用量额度的公开重置公告，支持小号、中号和大号桌面小组件。展示最近重置时间、累计重置次数、平均间隔及最长间隔，大号额外提供最近 26 周的记录热力图，区分普通重置与储备重置额度（Banked Reset）。\n\n数据来自 codex-resets.com 的公开只读 API，无需登录或配置密钥。默认每 15 分钟请求刷新，实际更新时间由系统调度；点击小组件可查看来源网页。\n\n本工具展示公开公告记录，不读取个人账号剩余额度，也不会执行额度重置。数据来源为第三方站点，与 OpenAI 无隶属关系。"
+}
