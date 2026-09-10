@@ -10,7 +10,7 @@ import type {
   DynamicShapeStyle,
 } from "scripting"
 
-import { formatRelativeDays } from "./data"
+import { formatRelativeTime } from "./data"
 import type { ResetDashboard } from "./data"
 
 const WEBSITE_URL = "https://codex-resets.com/"
@@ -122,7 +122,7 @@ function SmallWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
           <ResetIcon size={54} />
         </VStack>
         <VStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity, alignment: "bottomLeading" }}>
-          <Text font={38} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.68}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+          <Text font={38} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.68}>{formatRelativeTime(dashboard.latest.announced_at)}</Text>
         </VStack>
       </ZStack>
     </VStack>

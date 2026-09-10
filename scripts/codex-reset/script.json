@@ -16,7 +16,7 @@
   },
   "color": "#4D7CFE",
   "icon": "arrow.clockwise.circle.fill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "localizedNames": {
     "zh": "Codex 重置",
     "en": "Codex Reset"

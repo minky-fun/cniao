@@ -64,6 +64,34 @@ export function formatRelativeDays(days: number): string {
   return `${Math.floor(days)}天前`
 }
 
+/** 按 Codex Resets 网页的时间单位和四舍五入规则生成中文相对时间。 */
+export function formatRelativeTime(value: string, now = Date.now()): string {
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) throw new Error("重置时间格式无效")
+
+  const deltaSeconds = Math.round((timestamp - now) / 1000)
+  const absoluteSeconds = Math.abs(deltaSeconds)
+  if (absoluteSeconds < 45) return "刚刚"
+
+  const units = [
+    { seconds: 31536000, label: "年" },
+    { seconds: 2592000, label: "个月" },
+    { seconds: 604800, label: "周" },
+    { seconds: 86400, label: "天" },
+    { seconds: 3600, label: "小时" },
+  ]
+
+  for (const unit of units) {
+    if (absoluteSeconds >= unit.seconds) {
+      const amount = Math.abs(Math.round(deltaSeconds / unit.seconds))
+      return `${amount}${unit.label}${deltaSeconds < 0 ? "前" : "后"}`
+    }
+  }
+
+  const minutes = Math.abs(Math.round(deltaSeconds / 60))
+  return `${minutes}分钟${deltaSeconds < 0 ? "前" : "后"}`
+}
+
 /** Formats an API timestamp in the device's local date and time. */
 export function formatLocalDate(value: string): string {
   const date = new Date(value)

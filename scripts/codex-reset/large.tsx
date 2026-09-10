@@ -15,7 +15,7 @@ import type {
   ShapeStyle,
 } from "scripting"
 
-import { formatRelativeDays, formatLocalDate, formatUpdatedAt } from "./data"
+import { formatRelativeTime, formatLocalDate, formatUpdatedAt } from "./data"
 import type { ResetDashboard, ResetRecord, ResetType } from "./data"
 
 type HeatmapDay = {
@@ -220,7 +220,7 @@ function LargeWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
             <VStack alignment="leading" spacing={3 * scale} frame={{ width: textWidth, height: 132 * scale, alignment: "topLeading" }} position={{ x: inset + textWidth / 2, y: inset + 66 * scale }}>
               <Text font={21 * scale} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 26 * scale, alignment: "leading" }}>CODEX 重置</Text>
               <Text font={12 * scale} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} frame={{ width: 82 * scale, height: 23 * scale }} background={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
-              <Text font={43 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 54 * scale, alignment: "leading" }}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+              <Text font={43 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 54 * scale, alignment: "leading" }}>{formatRelativeTime(dashboard.latest.announced_at)}</Text>
               <Text font={13 * scale} fontWeight="semibold" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 20 * scale, alignment: "leading" }}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
             </VStack>
             <Canvas draw={drawResetIcon} opaque={false} frame={{ width: iconSize, height: iconSize }} position={{ x: proxy.size.width - inset - iconSize / 2, y: inset + iconSize / 2 }} />

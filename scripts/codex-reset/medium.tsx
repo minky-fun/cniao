@@ -14,7 +14,7 @@ import type {
   ShapeStyle,
 } from "scripting"
 
-import { formatRelativeDays, formatLocalDate } from "./data"
+import { formatRelativeTime, formatLocalDate } from "./data"
 import type { ResetDashboard, ResetRecord, ResetType } from "./data"
 
 type HeatmapDay = {
@@ -163,7 +163,7 @@ function MediumWidgetContent({ dashboard }: { dashboard: ResetDashboard }) {
             <VStack alignment="leading" spacing={0} frame={{ width: textWidth, height: 96 * scale, alignment: "topLeading" }} position={{ x: inset + textWidth / 2, y: 60 * scale }}>
               <Text font={19 * scale} fontWeight="heavy" fontDesign="rounded" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 23 * scale, alignment: "leading" }}>CODEX 重置</Text>
               <Text font={11 * scale} fontWeight="bold" foregroundStyle="#111111" lineLimit={1} frame={{ width: 76 * scale, height: 19 * scale }} background={{ style: YELLOW, shape: { type: "capsule", style: "continuous" } }}>最近重置</Text>
-              <Text font={36 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 39 * scale, alignment: "leading" }}>{formatRelativeDays(dashboard.daysSinceLast)}</Text>
+              <Text font={36 * scale} fontWeight="heavy" fontDesign="rounded" monospacedDigit foregroundStyle={INK} lineLimit={1} minScaleFactor={0.6} frame={{ width: textWidth, height: 39 * scale, alignment: "leading" }}>{formatRelativeTime(dashboard.latest.announced_at)}</Text>
               <Text font={11 * scale} fontWeight="semibold" foregroundStyle={INK} lineLimit={1} minScaleFactor={0.7} frame={{ width: textWidth, height: 15 * scale, alignment: "leading" }}>{formatLocalDate(dashboard.latest.announced_at)}</Text>
             </VStack>
             <VStack alignment="leading" spacing={3 * scale} frame={{ width: heatmapWidth, height: 96 * scale }} position={{ x: proxy.size.width - inset - heatmapWidth / 2, y: 60 * scale }}>
