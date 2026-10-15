@@ -1,5 +1,5 @@
 // moduleSection.tsx - Loon 插件安装组件
-import { Section, Text, Button, useState, useEffect } from "scripting"
+import { Section, Text, Button, useState, useEffect, fetch } from "scripting"
 
 declare const Safari: any
 
@@ -85,15 +85,13 @@ function open(url: string) {
 }
 
 // --- BoxJS 环境检测 ---
-async function isBoxJsAvailable(): Promise<boolean> {
+/** 检查原有 BoxJS 请求头存储接口是否可访问。 */
+export async function isBoxJsAvailable(boxJsUrl: string = "http://boxjs.com"): Promise<boolean> {
   try {
     // 用小组件实际用的 key 做探测，能读到就说明 BoxJS 在工作
-    const resp = await Promise.race([
-      fetch("http://boxjs.com/query/data/cainiao_pcs_headers_json", {
-        headers: { Accept: "application/json" },
-      }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
-    ])
+    const resp = await fetch(`${boxJsUrl.trim().replace(/\/$/, "")}/query/data/cainiao_pcs_headers_json`, {
+      headers: { Accept: "application/json" }, timeout: 3,
+    })
     if (!resp.ok) return false
     const json = await resp.json()
     // val 存在（即使是空字符串）即视为 BoxJS 可用

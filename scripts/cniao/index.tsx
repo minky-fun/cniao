@@ -22,7 +22,7 @@ type CainiaoSettings = {
 }
 
 const SETTINGS_KEY = "cniaoSettings"
-const VERSION = "1.1.0"
+const VERSION = "1.1.1"
 
 const DEFAULT_SETTINGS: CainiaoSettings = {
   boxJsUrl: "http://boxjs.com",
@@ -88,15 +88,17 @@ function GlassBackground() {
 
 // ─── 设置逻辑 ───
 
+/** 读取配置并排除无效刷新间隔。 */
 function getInitialSettings(): CainiaoSettings {
   const saved = Storage.get<Partial<CainiaoSettings>>(SETTINGS_KEY) ?? {}
   return {
     boxJsUrl: saved.boxJsUrl?.trim() || DEFAULT_SETTINGS.boxJsUrl,
-    refreshInterval: typeof saved.refreshInterval === "number" && saved.refreshInterval > 0
+    refreshInterval: typeof saved.refreshInterval === "number" && Number.isFinite(saved.refreshInterval) && saved.refreshInterval > 0
       ? saved.refreshInterval : DEFAULT_SETTINGS.refreshInterval,
   }
 }
 
+/** 展示配置，并使用当前保存的地址检测 BoxJS。 */
 function SettingsView() {
   const init = getInitialSettings()
 
@@ -106,7 +108,7 @@ function SettingsView() {
   // 自动检测 BoxJS 环境是否已安装
   const [boxJsDetected, setBoxJsDetected] = useState<boolean | null>(null)
   useEffect(() => {
-    isBoxJsAvailable().then(setBoxJsDetected)
+    isBoxJsAvailable(init.boxJsUrl).then(setBoxJsDetected)
   }, [])
 
   const handleSave = () => {
@@ -130,7 +132,7 @@ function SettingsView() {
       <ZStack alignment="bottom" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <GlassBackground />
         <List
-          navigationTitle="菜鸟取件配置"
+          navigationTitle="菜鸟随行"
           navigationBarTitleDisplayMode="inline"
           scrollContentBackground="hidden"
           toolbar={{
@@ -157,7 +159,7 @@ function SettingsView() {
             header={<Text>⚠️ 重要说明</Text>}
             footer={
               <Text font="caption2" foregroundStyle="secondaryLabel">
-                菜鸟 App 的会话令牌（sid）经过加密处理，具有时效性，无法永久有效。当小组件显示"连接异常"时，请打开菜鸟 App 刷新登录态，然后点击小组件上的刷新按钮即可恢复。
+                已抓取 autologin 请求头和 data 时，小组件在会话过期后自动续期、保存轮换凭据并重试。若续期凭据失效或服务端拒绝请求，组件会显示具体原因，此时需打开菜鸟更新登录态。
               </Text>
             }
           />
@@ -214,7 +216,7 @@ function SettingsView() {
           frame={{ maxWidth: "infinity", alignment: "center" }}
           padding={{ bottom: 16 }}
         >
-          cniao 菜鸟取件 · Version {VERSION}
+          菜鸟随行 · Version {VERSION}
         </Text>
       </ZStack>
     </NavigationStack>

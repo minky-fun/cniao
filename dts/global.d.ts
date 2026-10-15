@@ -185,7 +185,11 @@ declare global {
     const systemScriptCode: string | undefined
 
     /**
-     * Retrieve the current wakelock status.
+     * Whether **this script** currently holds the wake lock.
+     *
+     * The wake lock is shared by the whole app and each holder is tracked
+     * separately, so this reports only what your own script requested — it
+     * stays `false` when the screen is being kept awake by something else.
      */
     const isWakeLockEnabled: Promise<boolean>
 
@@ -202,6 +206,10 @@ declare global {
 
     /**
      * Enable or disable the wakelock. This method is only available in Scripting app.
+     *
+     * The lock is held per script: disabling it only drops your own script's
+     * hold, and the screen keeps staying awake if another script or an app
+     * screen still needs it.
      * @param enabled Whether to enable or disable the wake lock.
      */
     function setWakeLockEnabled(enabled: boolean): void
@@ -643,6 +651,33 @@ declare global {
   }
 
   /**
+   * A color extracted from an image. Components are 0..1; `hex` is a `"#RRGGBBAA"` string that can
+   * be used directly anywhere a `Color` is expected.
+   */
+  type RGBAColor = {
+    /** Red component, 0..1. */
+    red: number
+    /** Green component, 0..1. */
+    green: number
+    /** Blue component, 0..1. */
+    blue: number
+    /** Alpha component, 0..1. */
+    alpha: number
+    /** `"#RRGGBBAA"` hex string, usable directly as a `Color`. */
+    hex: string
+  }
+
+  /**
+   * A dominant color of an image, together with the fraction of the sampled pixels it covers.
+   */
+  type DominantColor = {
+    /** The representative color. */
+    color: RGBAColor
+    /** Fraction of the sampled pixels this color covers, 0..1. */
+    fraction: number
+  }
+
+  /**
    * UIImage instance for displaying or saving an Image.
    */
   class UIImage {
@@ -795,6 +830,58 @@ declare global {
      * @returns The PNG base64 string, or null if the conversion fails.
      */
     toPNGBase64String(): string | null
+
+    /**
+     * Computes the average color of the entire image.
+     * @returns The average color, or null if the image cannot be read.
+     */
+    averageColor(): RGBAColor | null
+    /**
+     * Extracts the most dominant colors of the image, sorted from most to least dominant.
+     * The image is downsampled before analysis, so this stays fast even for large images.
+     * @param count The maximum number of colors to return. Defaults to 5, clamped to 1–16.
+     * @returns An array of colors, each with the fraction of the image it covers.
+     */
+    dominantColors(count?: number): DominantColor[]
+    /**
+     * Reads the color of a single pixel.
+     * @param x The pixel x coordinate, in pixels (0 = left edge). Note: pixels = points × `scale`.
+     * @param y The pixel y coordinate, in pixels (0 = top edge).
+     * @returns The pixel color, or null if the coordinate is out of bounds.
+     */
+    pixelColor(x: number, y: number): RGBAColor | null
+    /**
+     * Reads the raw RGBA pixel buffer (8 bits per channel, straight alpha, row-major, top-left origin).
+     * `width` and `height` are in pixels (points × `scale`), and `data` is `width × height × 4` bytes.
+     * @returns The pixel buffer with its pixel dimensions, or null if the image cannot be read.
+     */
+    getPixelData(): { width: number; height: number; data: Data } | null
+
+    /**
+     * Returns a cropped copy of the image. The rect is in points (the same space as `width` /
+     * `height`) and is clamped to the image bounds.
+     * @param rect The crop rectangle in points.
+     * @returns A cropped image, or null if the rect does not overlap the image.
+     */
+    croppedTo(rect: { x: number; y: number; width: number; height: number }): UIImage | null
+    /**
+     * Returns a copy of the image rotated clockwise. The canvas is expanded to fit the whole
+     * rotated image.
+     * @param degrees The clockwise rotation angle, in degrees.
+     */
+    rotated(degrees: number): UIImage
+    /**
+     * Returns a Gaussian-blurred copy of the image.
+     * @param radius The blur radius. Larger values produce a stronger blur.
+     * @returns A blurred image, or null if the effect cannot be applied.
+     */
+    blurred(radius: number): UIImage | null
+    /**
+     * Returns a grayscale (desaturated) copy of the image.
+     * @returns A grayscale image, or null if the effect cannot be applied.
+     */
+    grayscale(): UIImage | null
+
     /**
      * Create a new UIImage instance from a Data instance.
      * @param data The Data instance to convert to UIImage.
@@ -856,6 +943,14 @@ declare global {
     gps?: Record<string, any>
     tiff?: Record<string, any>
     iptc?: Record<string, any>
+    /**
+     * Apple MakerNote dictionary. Keys are numeric strings; key `'17'` holds the
+     * Live Photo asset identifier that pairs a still with its `.mov`.
+     *
+     * Only containers that support an EXIF MakerNote (jpeg / heic) can store this.
+     * You rarely need to write it by hand — `LivePhoto.createFromVideo` fills it in for you.
+     */
+    makerApple?: Record<string, any>
   }
 
   /**
@@ -2456,8 +2551,68 @@ declare global {
    * via `data:image/png;base64,${snap.pngBase64}`.
    */
   namespace MapSnapshotter {
+    /**
+     * A geographic overlay drawn on top of the snapshot image. Feed a
+     * `MapDirections` route straight in as a polyline:
+     * `{ type: "polyline", coordinates: route.coordinates }`.
+     */
+    type SnapshotOverlay =
+      | {
+          type: "polyline"
+          /** Ordered points of the line (needs at least 2). */
+          coordinates: MapCoordinate[]
+          /** Line color. Defaults to the system blue. */
+          strokeColor?: Color
+          /** Line width in points. Defaults to `4`. */
+          lineWidth?: number
+        }
+      | {
+          type: "polygon"
+          /** Ordered vertices; automatically closed (needs at least 3). */
+          coordinates: MapCoordinate[]
+          /** Outline color. Defaults to the system blue. */
+          strokeColor?: Color
+          /** Fill color. Defaults to a translucent version of the stroke. */
+          fillColor?: Color
+          /** Outline width in points. Defaults to `2`. */
+          lineWidth?: number
+        }
+      | {
+          type: "circle"
+          /** Center of the circle. */
+          center: MapCoordinate
+          /** Radius in meters. */
+          radius: number
+          /** Outline color. Defaults to the system blue. */
+          strokeColor?: Color
+          /** Fill color. Defaults to a translucent version of the stroke. */
+          fillColor?: Color
+          /** Outline width in points. Defaults to `2`. */
+          lineWidth?: number
+        }
+
+    /** A pin marker drawn on top of the snapshot image. */
+    type SnapshotAnnotation = {
+      /** Where the marker's tip points. */
+      coordinate: MapCoordinate
+      /** Marker color. Defaults to the system red. */
+      tintColor?: Color
+      /**
+       * Optional badge inside the marker head — an SF Symbol name
+       * (e.g. `"star.fill"`) if one exists, otherwise up to two characters
+       * of plain text. Omit for a plain dot.
+       */
+      glyph?: string
+      /** Optional caption drawn above the marker. */
+      title?: string
+    }
+
     type Options = {
-      /** Region to capture. Mutually exclusive with `camera`. */
+      /**
+       * Region to capture. Mutually exclusive with `camera`. When neither is
+       * given but `overlays`/`annotations` are, the region is computed
+       * automatically to fit all of them.
+       */
       region?: MapRegion
       /** Eye-style camera framing. Mutually exclusive with `region`; wins when both are provided. */
       camera?: MapCamera
@@ -2475,6 +2630,13 @@ declare global {
       mapStyle?: MapStyleSpec
       /** `"light"` (default) or `"dark"`. Adjusts the rendered map's color tinting. */
       appearance?: "light" | "dark"
+      /**
+       * Geographic overlays (routes, areas, circles) composited onto the
+       * snapshot. Drawn in array order, beneath the annotations.
+       */
+      overlays?: SnapshotOverlay[]
+      /** Pin markers composited on top of the snapshot and overlays. */
+      annotations?: SnapshotAnnotation[]
     }
 
     function take(options: Options): Promise<MapSnapshot>
@@ -2721,6 +2883,7 @@ declare global {
      * Try to get the path of a bookmarked file or folder by a given name, if the bookmark of the name is not exists, returns `null`.
      * @param name Name of a bookmark.
      */
+    /** Returns null while access is unavailable or startup restoration is pending. */
     function bookmarkedPath(name: string): string | null
     /**
      * Whether path refers to a file.
@@ -3007,6 +3170,88 @@ declare global {
         cancelled: boolean | null
       }) => void
     }): Promise<() => void>
+
+    /**
+     * Turns an ordinary local video into a Live Photo resource pair that
+     * `Photos.saveLivePhoto` accepts.
+     *
+     * A Live Photo is not just "a photo plus a video": the Photo Library only pairs the two
+     * when the still image and the movie share a Live Photo asset identifier, and the movie
+     * carries a still-image-time metadata track. A plain `.mp4` plus a frame grabbed with
+     * `AVAsset` is rejected with `PHPhotosErrorDomain 3302`. This method writes all of that
+     * for you, so you never have to build the metadata by hand.
+     *
+     * The source video is trimmed around `stillTime`, its orientation is preserved, and both
+     * output files are written to the temporary directory unless you pass explicit paths.
+     *
+     * @example
+     * const pair = await LivePhoto.createFromVideo({ videoPath })
+     * await Photos.saveLivePhoto({
+     *   imagePath: pair.imagePath,
+     *   videoPath: pair.videoPath,
+     * })
+     */
+    static createFromVideo(options: {
+      /** Path of the local source video (mov / mp4 / any container AVFoundation can read). */
+      videoPath: string
+      /** Where to write the still image. Defaults to a file in the temporary directory. */
+      imageOutputPath?: string
+      /**
+       * Where to write the paired movie. Defaults to a file in the temporary directory.
+       * Must end with `.mov` — the Photo Library does not accept `.mp4` as a paired video.
+       */
+      videoOutputPath?: string
+      /**
+       * Which moment becomes the still cover, in seconds from the start of the source video.
+       * Defaults to the middle of the source. Values outside the video are clamped.
+       */
+      stillTime?: number
+      /**
+       * Maximum length of the paired movie in seconds. Defaults to 10. The kept window is
+       * centred on `stillTime`.
+       *
+       * There is no upper limit other than the source video itself — pass a larger number,
+       * or `Infinity`, to keep the whole thing. Bear in mind that a very long Live Photo is
+       * still stored as one item in the photo library, and how the library plays it back is
+       * up to iOS.
+       */
+      maxDuration?: number
+      /** Still image format. Defaults to `"jpeg"`. */
+      imageFormat?: "jpeg" | "heic"
+      /** Lossy compression quality 0..1 for the still image. Defaults to 0.9. */
+      quality?: number
+      /** Whether to keep the source audio track. Defaults to `true`. */
+      includeAudio?: boolean
+      /**
+       * Reuse a specific Live Photo asset identifier. Normally you should omit this and let
+       * a fresh one be generated.
+       *
+       * Must be a UUID string — the field that carries it inside the still image is
+       * fixed-length, so any other shape would be padded and would no longer match the
+       * movie. A non-UUID value is rejected.
+       */
+      assetIdentifier?: string
+    }): Promise<{
+      /** Path of the still image; pass this to `Photos.saveLivePhoto`. */
+      imagePath: string
+      /** Path of the paired `.mov`; pass this to `Photos.saveLivePhoto`. */
+      videoPath: string
+      /** The identifier shared by the still image and the movie. */
+      assetIdentifier: string
+      /** Length of the paired movie, in seconds. */
+      duration: number
+      /** The still moment, in seconds from the start of the **output** movie. */
+      stillTime: number
+      /** Pixel width of the still image. */
+      width: number
+      /** Pixel height of the still image. */
+      height: number
+      /**
+       * `true` when the source track could not be copied as-is and had to be re-encoded,
+       * which is slower and slightly lossy. Most videos copy through untouched.
+       */
+      reencoded: boolean
+    }>
   }
 
   /**
@@ -3480,6 +3725,13 @@ declare global {
     }): Promise<boolean>
     /**
      * Save a live photo to the Photos app
+     *
+     * The two files must be a matching pair: the still image and the movie have to share a
+     * Live Photo asset identifier, and the movie needs a still-image-time metadata track.
+     * An arbitrary photo plus an arbitrary video is rejected with `PHPhotosErrorDomain 3302`.
+     * Use `LivePhoto.createFromVideo(...)` to build a valid pair from an ordinary video, or
+     * `AVCapturePhotoOutput.capturePhoto` with `livePhotoMovieFile` to capture one directly.
+     *
      * @param imagePath The path of the image
      * @param videoPath The path of the video
      * @param shouldMoveFile If true, the file will be moved to the Photos app, otherwise it will be copied. Defaults to false.
@@ -5067,7 +5319,9 @@ declare global {
   class CalendarEvent {
     constructor()
     /**
-     * A unique identifier for the event.
+     * The event identifier, or an empty string when EventKit has not assigned one (for example, before saving).
+     * An empty string cannot be used to look up an event. Read this property again after saving.
+     * The identifier may change when the event moves to another calendar or is synced.
      */
     readonly identifier: string
     readonly creationDate: Date | null
@@ -9927,6 +10181,9 @@ If the event’s calendar does not support availability settings, this property�
      * The content changed callback handler.
      * 
      * It is important to note that when editing in the editor, the onContentChanged callback is not called immediately, but about 100 milliseconds later.
+     *
+     * This callback reports edits made in the editor. Content you write yourself — assigning `content`
+     * or calling `appendContent` — does not trigger it.
      */
     onContentChanged?: (content: string) => void
     /**
@@ -9978,6 +10235,15 @@ If the event’s calendar does not support availability settings, this property�
      * @param text The replacement text.
      */
     replaceSelection(text: string): void
+    /**
+     * Append text at the end of the document, leaving the selection and the scroll position untouched.
+     *
+     * Prefer this over `content += text`. Reading `content` returns a mirror that the editor refreshes
+     * roughly once a second, so appending through `content` right after the user typed something can
+     * silently discard those keystrokes; this method never reads the existing content back.
+     * @param text The text to append. Appending an empty string does nothing.
+     */
+    appendContent(text: string): void
     /**
      * Select all the text in the editor.
      */
@@ -10682,6 +10948,22 @@ If the event’s calendar does not support availability settings, this property�
     type Provider = "openai" | "gemini" | "anthropic" | "deepseek" | "openrouter" | {
       custom: string
     }
+
+    type ModelSelection = {
+      provider: Provider
+      modelId: string
+    }
+
+    /**
+     * Presents configured providers and models in the current script's UI context.
+     * Returns the selected provider/model, or null when cancelled. The selection
+     * does not change global defaults. Requires Scripting PRO and a UI context.
+     * Custom providers are returned as {custom: providerId}.
+     */
+    function presentModelPicker(options?: {
+      provider?: Provider
+      modelId?: string
+    }): Promise<ModelSelection | null>
 
     /**
      * A chunk of text output from the assistant.
@@ -16404,6 +16686,8 @@ If the length of the value parameter exceeds the length of the `maximumUpdateVal
      * The uncompressed size of the entry.
      */
     readonly uncompressedSize: number
+    /** Whether the entry payload is encrypted. Present for entries returned by Archive.list7z. */
+    readonly isEncrypted?: boolean
     /**
      * The attributes of the entry.
      */
@@ -16411,6 +16695,111 @@ If the length of the value parameter exceeds the length of the `maximumUpdateVal
       posixPermissions?: number
       modificationDate?: Date
     }
+  }
+
+  type ArchiveErrorCode =
+    | "invalidArguments"
+    | "permissionDenied"
+    | "sourceNotFound"
+    | "destinationExists"
+    | "invalidPasswordOrCorruptArchive"
+    | "unsafeEntryPath"
+    | "unsupportedEntryType"
+    | "archiveLimitExceeded"
+    | "cancelled"
+    | "outOfSpace"
+    | "ioError"
+    | "internalError"
+
+  interface ArchiveError extends Error {
+    readonly name: "ArchiveError"
+    readonly code: ArchiveErrorCode
+  }
+
+  interface SevenZipProgress {
+    readonly operation: "compress" | "extract"
+    readonly path: string
+    readonly fractionCompleted: number
+  }
+
+  interface SevenZipResult {
+    readonly destinationPath: string
+    readonly entryCount: number
+    /** Present for create7z results. */
+    readonly inputBytes?: number
+    readonly outputBytes: number
+  }
+
+  interface SevenZipTask {
+    readonly status: "pending" | "running" | "completed" | "failed" | "cancelled"
+    readonly progress: SevenZipProgress
+    onProgress: ((progress: SevenZipProgress) => void) | null
+    readonly result: Promise<SevenZipResult>
+    cancel(): void
+    dispose(): void
+  }
+
+  interface SevenZipCreateOptions {
+    sources: Array<string | { path: string; archivePath?: string }>
+    destinationPath: string
+    password: string
+    encryptHeader?: boolean
+    /** This version supports compression level 3. */
+    compressionLevel?: 3
+    /** This version creates non-solid archives. */
+    solid?: false
+  }
+
+  interface SevenZipExtractOptions {
+    sourcePath: string
+    destinationPath: string
+    password?: string
+    overwrite?: "error"
+    maxEntries?: number
+    maxEntryUncompressedBytes?: number
+    maxUncompressedBytes?: number
+    maxExpansionRatio?: number
+  }
+
+  interface SevenZipListOptions {
+    sourcePath: string
+    password?: string
+  }
+
+  interface ZipCreateOptions {
+    /** File or directory to add to the archive. */
+    sourcePath: string
+    /** Path of the new ZIP file. The destination must not already exist. */
+    destinationPath: string
+    /** A 1-128 UTF-8 byte password creates a WinZip AES-256 encrypted archive. NUL is not allowed. */
+    password?: string
+    /** Includes the source directory name as the archive root. Defaults to false. */
+    shouldKeepParent?: boolean
+    /** Compression method. Defaults to "deflate". */
+    compressionMethod?: "deflate" | "none"
+  }
+
+  interface ZipExtractOptions {
+    /** Path of the source ZIP file. */
+    sourcePath: string
+    /** Path of a new destination directory. */
+    destinationPath: string
+    /** Password for an encrypted ZIP file. Must be 1-128 UTF-8 bytes without NUL. */
+    password?: string
+    /** Existing destinations are rejected. */
+    overwrite?: "error"
+    maxEntries?: number
+    maxEntryUncompressedBytes?: number
+    maxUncompressedBytes?: number
+    maxExpansionRatio?: number
+  }
+
+  interface ZipArchiveResult {
+    readonly destinationPath: string
+    readonly entryCount: number
+    /** Present for createZip results. */
+    readonly inputBytes?: number
+    readonly outputBytes: number
   }
 
   class Archive {
@@ -16426,11 +16815,29 @@ If the length of the value parameter exceeds the length of the `maximumUpdateVal
      */
     static openForMode(
       path: string,
-      accessMode: "update" | "read",
+      accessMode: "create" | "update" | "read",
       options?: {
         pathEncoding?: Encoding
       }
     ): Archive
+
+    /** Creates an AES-256 encrypted 7z archive. */
+    static create7z(options: SevenZipCreateOptions): SevenZipTask
+
+    /** Extracts a 7z archive into a new destination directory. */
+    static extract7z(options: SevenZipExtractOptions): SevenZipTask
+
+    /** Lists the entries in a 7z archive. */
+    static list7z(options: SevenZipListOptions): Promise<ArchiveEntry[]>
+
+    /**
+     * Creates a ZIP archive. Providing a password uses WinZip AES-256 encryption.
+     * ZIP file names remain visible even when entry contents are encrypted.
+     */
+    static createZip(options: ZipCreateOptions): Promise<ZipArchiveResult>
+
+    /** Extracts a regular or password-protected ZIP archive into a new directory. */
+    static extractZip(options: ZipExtractOptions): Promise<ZipArchiveResult>
 
     /**
      * The path of the archive.
@@ -17160,6 +17567,62 @@ If the length of the value parameter exceeds the length of the `maximumUpdateVal
     function dismissApp(): Promise<void>
   }
 
+  /**
+   * The quality of the video produced by `VideoEditor.present`.
+   */
+  type VideoEditorQuality =
+    | 'high'
+    | 'medium'
+    | 'low'
+    | '640x480'
+    | 'iFrame1280x720'
+    | 'iFrame960x540'
+
+  type VideoEditorPresentOptions = {
+    /**
+     * The file path of the video to trim.
+     */
+    filePath: string
+    /**
+     * The maximum duration, in seconds, that the trimmed video is allowed to have.
+     * Defaults to `600`. Set it to `0` to specify no maximum duration.
+     */
+    maximumDuration?: number
+    /**
+     * The quality of the trimmed video. Defaults to `'medium'`.
+     */
+    quality?: VideoEditorQuality
+  }
+
+  /**
+   * Trim a video using the system video editing interface.
+   *
+   * This API requires Scripting PRO.
+   */
+  namespace VideoEditor {
+    /**
+     * Whether the video at the given file path can be trimmed.
+     * Resolves `false` when the file does not exist or its format is not supported.
+     * @param filePath The file path of the video to check.
+     */
+    function canEditVideo(filePath: string): Promise<boolean>
+    /**
+     * Presents the video editing interface for the given video.
+     *
+     * The trimmed video is written to a new file in the temporary directory, copy or move it
+     * if you need to keep it.
+     * @returns A promise that resolves with the file path of the trimmed video, or `null` if the
+     * user cancelled. It throws an error if the video cannot be edited, or if an editor is
+     * already presented.
+     */
+    function present(options: VideoEditorPresentOptions): Promise<string | null>
+    /**
+     * Dismisses the video editing interface that was opened using `present`.
+     * The pending `present` promise resolves with `null`, as if the user cancelled.
+     */
+    function dismiss(): Promise<void>
+  }
+
   namespace SQLite {
     type Configuration = {
       foreignKeysEnabled: boolean
@@ -17254,7 +17717,7 @@ If the length of the value parameter exceeds the length of the `maximumUpdateVal
 
       execute(sql: string, arguments?: Arguments): Promise<void>
 
-      transaction(steps: TransactionStep, options?: {
+      transaction(steps: TransactionStep[], options?: {
         kind?: "deferred" | "immediate" | "exclusive"
       }): Promise<void>
 

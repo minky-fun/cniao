@@ -6,6 +6,7 @@ const SMALL_PAGE_INDEX_KEY = "cniaoSmallPageIndex"
 export const RefreshCainiaoIntent = AppIntentManager.register({
   name: "RefreshCainiaoIntent",
   protocol: AppIntentProtocol.AppIntent,
+  /** 执行组件按钮操作后重新请求时间线。 */
   perform: async (): Promise<void> => {
     Widget.reloadUserWidgets()
   },
@@ -15,8 +16,10 @@ export const RefreshCainiaoIntent = AppIntentManager.register({
 export const ShowNextCainiaoItemIntent = AppIntentManager.register({
   name: "ShowNextCainiaoItemIntent",
   protocol: AppIntentProtocol.AppIntent,
+  /** 执行组件按钮操作后重新请求时间线。 */
   perform: async (): Promise<void> => {
-    const currentIndex = Storage.get<number>(SMALL_PAGE_INDEX_KEY) ?? 0
+    const savedIndex = Storage.get<number>(SMALL_PAGE_INDEX_KEY) ?? 0
+    const currentIndex = Number.isSafeInteger(savedIndex) && savedIndex >= 0 && savedIndex < Number.MAX_SAFE_INTEGER ? savedIndex : 0
     Storage.set(SMALL_PAGE_INDEX_KEY, currentIndex + 1)
     Widget.reloadUserWidgets()
   },

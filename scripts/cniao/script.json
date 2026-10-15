@@ -6,8 +6,8 @@
     "es" : "",
     "ru" : "",
     "de" : "",
-    "zh" : "",
-    "en" : "",
+    "zh" : "桌面掌握包裹动态，随手查看取件码与取件地点。支持多尺寸小组件、手动刷新与会话过期自动续期，需配合 Loon 和 BoxJS 使用。",
+    "en" : "Track parcels, pickup codes and pickup locations from your Home Screen. Includes multiple widget sizes, manual refresh and automatic session renewal. Requires Loon and BoxJS.",
     "pt" : "",
     "fr" : "",
     "ja" : "",
@@ -25,21 +25,21 @@
     "email" : "minkyfun@qq.com"
   },
   "color" : "rgba(28, 140, 255,1)",
-  "icon" : "sparkles",
-  "version" : "1.0.0",
+  "icon" : "shippingbox.fill",
+  "version" : "1.1.1",
   "localizedNames" : {
     "it" : "",
     "fr" : "",
     "es" : "",
     "de" : "",
-    "en" : "",
+    "en" : "Cainiao Companion",
     "ja" : "",
     "pt" : "",
-    "zh" : "",
+    "zh" : "菜鸟随行",
     "ru" : ""
   },
   "name" : "cniao",
   "remoteResource" : null,
   "runInApp" : false,
-  "description" : null
+  "description" : "Track parcels and pickup codes from your Home Screen with automatic session renewal. Requires Loon and BoxJS."
 }
