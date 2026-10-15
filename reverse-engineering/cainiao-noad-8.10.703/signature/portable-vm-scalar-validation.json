@@ -1,0 +1,14 @@
+{
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "source_sha256": "915f8c03e4d88528a531cdf364365343b8cd050f7a187adef2492ed2beeec33a",
+  "native_arm64_public_vector_cases": 882,
+  "fixed_boundary_cases": 6,
+  "invalid_input_cases": 10,
+  "python_regression_tests": 20,
+  "scalar_only_pipeline_passed": true,
+  "combined_scalar_and_aes_pipeline_passed": true,
+  "scripting_device_execution_verified": false,
+  "server_verified": false
+}

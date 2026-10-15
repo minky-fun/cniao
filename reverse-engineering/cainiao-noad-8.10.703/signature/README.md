@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES 已替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES 和六种高频 VM 标量运算已分别替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -360,3 +360,38 @@ xcrun --sdk macosx clang -Werror -c \
 已按 Scripting 技能读取当前官方 `llms.txt`、完整 `Crypto` / `Data` 页面及本地 `dts/global.d.ts` 声明。`Crypto.md5`、`Crypto.hmacSHA1` 和 Data 字节/Base64 转换有明确接口；文档中的原生 AES 是 **GCM**，不能拿来代替本路径的 CBC/ECB。此次纯 TS AES 不调用这些 API。`Data.decompressed(CompressionAlgorithm.zlib)` 的存在不等于已验证它接受样本的具体流格式，尚未在 iPhone 上执行。
 
 **仍未完成完整 TypeScript 签名器。** 原生 VM、SDS 资源选择与配置处理、非 AES 处理器及既有合成运行环境仍然存在，候选结果也未获服务端验证。下一步需要继续拆解 VM/SDS 计算和结果封装；不能把通用 AES 实现或这次替换对照当成已接入小组件。本轮不修改组件、安装包、线上请求或版本。
+
+
+## VM 标量迁移：六种操作码
+
+`profile_vm_dispatch.py` 在样本解释器的 `str x27,[x28,#8]` 下一指令派发点，记录到 72 种操作码。该统计只覆盖这一种派发形式，不包含初始派发，不能解读为整个解释器只有 72 种指令；证据见 `vm-dispatch-profile.json`。不输出扩展指令操作数、槽位或资源内容。
+
+第一批 `portable_vm_scalar.ts` 实现以下确切语义，均用 `bigint` 保存 uint64，避免 Number 精度损失：
+
+| 操作码 | 原生入口 | 运算 |
+|---|---|---|
+| 34 | `0x102a2b1e8` | 槽位 + 扩展指令立即数，64 位回绕 |
+| 38 | `0x102a2b3b8` | 两槽位按位 OR，64 位 |
+| 39 | `0x102a2b3e4` | 两槽位按位 OR，64 位；按汇编保留与 38 相同的行为 |
+| 40 | `0x102a2b410` | 两槽位 XOR 后只保留低 32 位 |
+| 42 | `0x102a2b580` | 槽位 AND 立即数后只保留低 32 位 |
+| 43 | `0x102a2b5ac` | 槽位 AND 立即数，64 位 |
+
+汇编见 `vm-scalar-contract.asm`。`verify_portable_vm_scalar.py` 用 7 个公开边界数值的全组合，分别核对目标槽位独立、覆盖左输入、覆盖右输入，共 **882 次实际 ARM64 处理器执行**。另外 6 个固定边界案例、10 个无效输入案例通过；未实现的操作码必须失败。
+
+真实离线流程中，原始合成 INPUT 替换 **109,279** 次，改变后的 INPUT 替换 **109,280** 次。两组输入都与各自原生运行的 50 字节候选完全相等，改变输入仍改变结果，熵消耗均为 816 次。标量实现真实由 TS 子进程通过内存管道计算，不以 Python 复刻运算冒充 TS。已核对的 x0/x1/x2 副作用保留，计算完成后跳到原生下一指令派发；原生 VM 派发、其他操作码、SDS 和加密仍在执行。证据见 `portable-vm-scalar-evidence.json`。
+
+复现：
+
+```sh
+npx --package typescript tsc --strict --noUnusedLocals --noUnusedParameters \
+  --target ES2020 --module commonjs --outDir work/signature-analysis/portable-build \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_vm_scalar.ts
+node reverse-engineering/cainiao-noad-8.10.703/signature/test_portable_vm_scalar.cjs \
+  work/signature-analysis/portable-build/portable_vm_scalar.js
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_vm_scalar.py \
+  --portable-scalar work/signature-analysis/portable-build/portable_vm_scalar.js \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+联合替换也已通过：增加 `--portable-aes work/signature-analysis/portable-build/portable_aes.js` 后，每次同时替换 17 次 AES 和上述 VM 标量运算；两组候选仍与原生完全一致，原生 AES 包装器执行数为 0。证据见 `portable-vm-aes-combined-evidence.json`。以上过程不读取账号、不请求服务端、不修改小组件，仍不能证明签名服务端有效或 token 能持续自动续期。

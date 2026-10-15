@@ -1,0 +1,58 @@
+{
+  "scope": "six scalar opcodes, optionally AES; native VM dispatch, remaining opcodes, SDS and remaining crypto retained",
+  "public_native_vector_cases": 882,
+  "runs": [
+    {
+      "changed_input": false,
+      "mode": "native",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816
+    },
+    {
+      "changed_input": false,
+      "mode": "TS-scalar-and-AES-replacement",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "replaced_handlers": {
+        "34": 41417,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343
+      },
+      "replaced_instructions": 109279,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    },
+    {
+      "changed_input": true,
+      "mode": "native",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816
+    },
+    {
+      "changed_input": true,
+      "mode": "TS-scalar-and-AES-replacement",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "replaced_handlers": {
+        "34": 41418,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343
+      },
+      "replaced_instructions": 109280,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    }
+  ],
+  "same_input_native_equals_ts": true,
+  "changed_input_native_equals_ts": true,
+  "changed_input_changes_candidate": true,
+  "raw_operands_entropy_candidates_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}
