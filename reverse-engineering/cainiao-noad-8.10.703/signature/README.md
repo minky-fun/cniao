@@ -2,7 +2,9 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及已观察到的 73 种操作码中的 70 种已联合替换成纯 TypeScript；两组输入的外层候选结果与逐操作码执行次数均与原生一致；进一步迁移了简单宿主 ABI、待调用描述符设置、公共函数表查询和命令桥接，以及当前路径的全部 8 次复杂整数/指针参数封送。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并让真实 `lvm_sig` 类型 19 路径在离线环境返回 **50 字节签名候选字符串**。现在解释循环、全部 **73 类已观察操作码**、调用控制、简单/复杂整数 ABI、公共函数/命令桥接以及 17 次 AES 已迁移至 TypeScript。两组输入分别执行 321,675 / 321,855 条 TS VM 指令，逐操作码次数与原生一致；TS 对照中原生 VM 入口以下的处理器与派发循环执行次数为 **0**，候选结果与相同输入/熵下的原生结果一致。
+
+**仍未完成可脱离原生运行时的完整签名器和服务端验证**：实际宿主计算与对象操作、模块装载/初始化/展开、SDS/SDK 状态及平台依赖尚未全部迁移。候选不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录离线探针未接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -493,3 +495,42 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 首次按 20 秒时限执行的联合替换未完成。验证探针改用显式 40 秒时限以容纳进程间逐字段核对；原生对照仍为 20 秒，双方均保留原有每次 1,000 万条原生指令上限。该改动通过 `ModuleProbe.execution_timeout_us` 类属性声明，默认仍为 20 秒，不影响其他探针默认行为。
 
 当前没有把“8 次原生复杂封送清零”当作完整签名器完成：调用/退出操作码入口、真正宿主目标、内存与随机数、模块初始化/展开及 SDS 仍有原生依赖。尚无服务端验签、iPhone 验证或小组件接入，现有查询/续期和安装包未改。下一步继续移除操作码 3/4/18 对原生调用入口与运行时状态的依赖。
+
+
+## 独立 TypeScript VM 循环与调用控制（2026-10-15，后续）
+
+新增 `portable_vm_call.ts` 和 `portable_vm_runtime.ts`。剩余操作码 3/4/18 已实现，当前观察到的操作码从 70 类增至全部 73 类。`vmRun` 自行读取 16 字节记录、更新 context 的当前指令、选择处理器、维护槽位/比较值/栈帧并退出；它不读取原生 handler 跳转表，也不依赖原生解释器的入口保存、派发和退出还原。遇到未支持操作码或超出指令上限立即失败。
+
+调用控制还迁移了以下实际原生逻辑：
+
+- `0x102a4d454/0x102a4d750`：根模块及两组子模块范围查找，保留符号/代码模式的位判断、32 位长度运算、子模块顺序与带符号计数。
+- `0x102a4dc60`：符号地址到 VM 记录的转换；仅对尚未展开的模块显式提出展开请求，不伪造展开字节。
+- `0x102a4da04/0x102a4ea64`：四种描述符分派、暂存类型覆盖、间接 VM/宿主目标选择，以及 23/50 等错误状态与错误目标写回。特定导出宿主在 context+0x2c 写入的原生值是 1，已经由独立原生对照核实。
+- 调用前先写返回槽，再读间接参数；宿主返回 0 时重新读取返回槽而非使用旧副本。宿主可改写返回位置，源参数也可能与返回槽重叠，均保持原生顺序。
+
+宿主调用通过可重入 generator continuation 提出，真实目标仍由原生验证适配器执行。`vm_call_worker.cjs` 的 4 KiB 页缓存只存在于进程内；每次宿主让出和完成前写回精确修改字节并清空缓存，返回后重新读取，避免宿主写入或嵌套 VM 调用被旧缓存遮盖。父进程验证每次写入位于可写映射内。每段最多缓存 4,096 页、最多 128 层待恢复续点；每次 VM 调用有 100 万条 TS 指令上限。
+
+验证结果：
+
+- 432 组独立原生调用控制对照（模块范围 168、模块搜索 168、符号解析 22、调用 handler 24、描述符/间接 helper 50），核对实际目标、消费的描述字段与最终内存。50 组 helper 覆盖宿主错误、暂存覆盖、展开续点及间接回退。
+- 5 组完整原生解释器程序对照，核对槽位、分支、返回整数和 context 指令位置。Node 10 组完整程序/宿主行为与 9 组异常、严格 TypeScript 及 20 项 Python 回归通过。
+- 两组真实离线路径分别完成 76 次 TS VM 调用、执行 321,675 / 321,855 条 VM 指令，各覆盖 73 类操作码。TS 运行禁止执行原生解释器入口以下的指令；原生处理器入口次数为 0，候选与逐操作码次数均与原生一致。
+- 每组 2,434 次宿主让出仍保留真实目标。此前已移植的 2,426 次简单 ABI、8 次复杂 ABI、17 次 AES、335 次待调用描述符设置、949 次公共函数查询及 93 次命令桥接继续同时生效。这些计数存在调用层级，不可相加当作剩余原生次数。
+
+证据见 `portable-vm-runtime-evidence.json`、`portable-vm-call-vector-evidence.json`、`portable-vm-runtime-validation.json`；关键原生指令见 `vm-call-runtime-contract.asm`。原生对照仍为 20 秒、TS 验证适配器为 40 秒；每次外层 ARM64 运行上限仍为 1,000 万条指令。原始候选、熵、SDS 内容与运行内存不写入报告或证据。
+
+### 复现独立解释循环对照
+
+先用 TypeScript 5.9.3 编译 `portable_vm_runtime.ts`、`portable_vm_abi.ts`、`portable_vm_host.ts` 和 `portable_aes.ts`（共同依赖一并生成），目标 ES2020、CommonJS，并开启 strict、noUnusedLocals、noUnusedParameters。然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_vm_runtime.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+当前目标边界已经从“VM 操作码未移植”转到“实际宿主计算与模块运行时未全部移植”。未进行认证接口请求、服务端验签或 iPhone 桌面测试；小组件的查询、自动续期及 1.1.5 安装包未改动。

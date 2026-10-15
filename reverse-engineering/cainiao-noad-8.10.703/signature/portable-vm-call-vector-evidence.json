@@ -1,0 +1,7 @@
+{
+  "native_module_membership_cases": 168,
+  "native_module_search_cases": 168,
+  "native_symbol_resolution_cases": 22,
+  "native_call_handler_cases": 24,
+  "native_call_helper_cases": 50
+}

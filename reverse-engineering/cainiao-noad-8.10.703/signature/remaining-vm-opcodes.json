@@ -1,25 +1,12 @@
 {
-  "scope": "only the previously observed next-instruction dispatch forms; not all possible modules or inputs",
+  "scope": "all 73 opcode kinds observed on the two controlled signing paths; not all possible modules or inputs",
   "observed_unique_opcodes": 73,
-  "implemented_unique_opcodes": 70,
-  "remaining_observed_unique_opcodes": 3,
-  "remaining_native_dispatches_in_profile": 2511,
-  "remaining": [
-    {
-      "opcode": 3,
-      "handler": "0x102a2af98",
-      "count": 2191
-    },
-    {
-      "opcode": 4,
-      "handler": "0x102a2af00",
-      "count": 244
-    },
-    {
-      "opcode": 18,
-      "handler": "0x102a2ada0",
-      "count": 76
-    }
-  ],
-  "full_portable_signer_implemented": false
+  "implemented_unique_opcodes": 73,
+  "remaining_observed_unique_opcodes": 0,
+  "remaining_native_dispatches_in_profile": 0,
+  "remaining": [],
+  "full_portable_signer_implemented": false,
+  "native_interpreter_handlers_required_on_verified_paths": false,
+  "native_host_runtime_required": true,
+  "evidence": "portable-vm-runtime-evidence.json"
 }

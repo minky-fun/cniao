@@ -1,0 +1,46 @@
+{
+  "source_sha256": {
+    "portable_vm_call.ts": "31c996b96cc30d685f7a02d2e619cad7c524b8ea1106b0cfa4886b3a1d2aa4c7",
+    "portable_vm_runtime.ts": "76a95b95cc71bdaadc24a710f78baadd088b82b7a5e37ec2b016615e873446cf",
+    "vm_call_worker.cjs": "4c5e9e064ffb9be080deac37d2aab02dc103a12189f4173b2bc6b365f741b37e",
+    "verify_portable_vm_call.py": "a72c98091e6ee212fcd8cc9c7755184140a5dc3d12df8a0d4918fe16c153dc3a",
+    "verify_portable_vm_runtime.py": "133cc31a842175e9f9a01caabfa0b05d1db0450a1f0d48e5d82d6ff28ae8b0b8",
+    "test_portable_vm_runtime.cjs": "4217fccae8a0594a43f14e9df3320af49ce59d6ebfe6dd7e5555dcd060870831"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_call_control_vector_cases": {
+    "native_module_membership_cases": 168,
+    "native_module_search_cases": 168,
+    "native_symbol_resolution_cases": 22,
+    "native_call_handler_cases": 24,
+    "native_call_helper_cases": 50
+  },
+  "native_runtime_program_cases": 5,
+  "node_runtime_behavior_cases": 10,
+  "node_runtime_invalid_cases": 9,
+  "python_regression_tests": 20,
+  "observed_unique_opcodes_implemented": 73,
+  "native_vm_handler_entries_in_ts_runs": 0,
+  "native_run_timeout_seconds": 20,
+  "portable_run_timeout_seconds": 40,
+  "native_instructions_per_outer_run_limit": 10000000,
+  "ts_instructions_per_vm_invocation_limit": 1000000,
+  "cache_page_bytes": 4096,
+  "cache_max_pages_per_segment": 4096,
+  "max_suspended_continuations": 128,
+  "cache_coherence": "flush exact dirty ranges and invalidate all pages at every host yield and completion; parent enforces guest writable mappings",
+  "candidate_values_exported": false,
+  "raw_security_resources_exported": false,
+  "remaining_dependencies": [
+    "actual native host computations and object helpers",
+    "module loading, initial state and expansion",
+    "native SDS and SDK/platform environment",
+    "native memory allocation, random and file adapters"
+  ],
+  "scope": "fixed 8.10.703 sample and observed integer/pointer paths; unknown opcodes and unsupported primitive ABI fail explicitly",
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false
+}

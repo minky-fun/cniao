@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 59203,
-    "sha256": "ad6f7a1c2ae113b8afe5ea143348b8faa23600de4068555c9ff112a47ac0738c"
+    "bytes": 63772,
+    "sha256": "76592cbaa01c5a37b6631d3b0415d2e32d8f9b4b619ff2dea0067a0913708ccc"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -275,6 +275,11 @@
     "sha256": "42f4781f43490dd780cd16d13e342dc3c8ee49ba1889597521071877f1e12d7f"
   },
   {
+    "file": "signature/portable-vm-call-vector-evidence.json",
+    "bytes": 190,
+    "sha256": "6062bdeeef6a75c5307e28925ad2b85c956c32f80b2a38ca8854c35ccb94668b"
+  },
+  {
     "file": "signature/portable-vm-frame-evidence.json",
     "bytes": 3968,
     "sha256": "b2d71b3d5576d5fb15bf84a247968dc9c55404565223f00ab0534302cab25b62"
@@ -320,6 +325,16 @@
     "sha256": "9f7ba1593da67345d2e56510d7aa7c06f1e28e36563305408c6b6d8bed82cf07"
   },
   {
+    "file": "signature/portable-vm-runtime-evidence.json",
+    "bytes": 7864,
+    "sha256": "51b277e77b3ea5f309ae22d88f9ff2d72d38a6e8d21eb48331f0937f31e18622"
+  },
+  {
+    "file": "signature/portable-vm-runtime-validation.json",
+    "bytes": 2219,
+    "sha256": "d8418a3bcb7938b996eed26a7bb991ae6c63ca3fe9d9cde725f47adb8f89926f"
+  },
+  {
     "file": "signature/portable-vm-scalar-evidence.json",
     "bytes": 1340,
     "sha256": "00601840fa1520a16d086f17b1fe0a944b7f9878ffa59e68ca6eae9c353db01a"
@@ -345,6 +360,11 @@
     "sha256": "cf84d01611ed7e8fd8737376d33b0c667ad13fb1e2af26a83179c53281751e6e"
   },
   {
+    "file": "signature/portable_vm_call.ts",
+    "bytes": 8623,
+    "sha256": "31c996b96cc30d685f7a02d2e619cad7c524b8ea1106b0cfa4886b3a1d2aa4c7"
+  },
+  {
     "file": "signature/portable_vm_frame.ts",
     "bytes": 2999,
     "sha256": "d935662e8642794964c56e5b9f9fffe7ffc5b75c9fc8e081713505430c516789"
@@ -363,6 +383,11 @@
     "file": "signature/portable_vm_register.ts",
     "bytes": 4694,
     "sha256": "4720eb98a73efa9575c07221bc0d7cd15a0b5482e4090b660449f9570fff48c2"
+  },
+  {
+    "file": "signature/portable_vm_runtime.ts",
+    "bytes": 6055,
+    "sha256": "76a95b95cc71bdaadc24a710f78baadd088b82b7a5e37ec2b016615e873446cf"
   },
   {
     "file": "signature/portable_vm_scalar.ts",
@@ -401,8 +426,8 @@
   },
   {
     "file": "signature/remaining-vm-opcodes.json",
-    "bytes": 591,
-    "sha256": "cc10f94cfd3bb8fd45dd80c98ce52de53242d947bf71343d592312f11b73c94f"
+    "bytes": 498,
+    "sha256": "fcaeca32df567cbd0757e5f12d1823b0dbfa41330c9fd9d89dd30de97b2673c7"
   },
   {
     "file": "signature/sample-appkey-output-contract.asm",
@@ -615,6 +640,11 @@
     "sha256": "e9383f2f433bc7158b311b20869f4116fb5304ff7b07d6a534aae80230f56b57"
   },
   {
+    "file": "signature/test_portable_vm_runtime.cjs",
+    "bytes": 5002,
+    "sha256": "4217fccae8a0594a43f14e9df3320af49ce59d6ebfe6dd7e5555dcd060870831"
+  },
+  {
     "file": "signature/test_portable_vm_scalar.cjs",
     "bytes": 1081,
     "sha256": "ff285d9812530954028ffc5c07acc393a099390065b01d3a9ace8db16631a96c"
@@ -700,6 +730,11 @@
     "sha256": "4e94215505c20bcb974ee9c37822bc159752fb7a65d25b9096a7c4bfa3f10c89"
   },
   {
+    "file": "signature/verify_portable_vm_call.py",
+    "bytes": 22242,
+    "sha256": "a72c98091e6ee212fcd8cc9c7755184140a5dc3d12df8a0d4918fe16c153dc3a"
+  },
+  {
     "file": "signature/verify_portable_vm_frame.py",
     "bytes": 13993,
     "sha256": "80fb8e3c1a949c6ff63dcb51b88ed3cbae98b043531eac17f93a32bd7dcf85ef"
@@ -720,6 +755,11 @@
     "sha256": "ae67d71961f388465990e45c4999cbd3cbf4ac5300cdf53988d0f20153aa95fd"
   },
   {
+    "file": "signature/verify_portable_vm_runtime.py",
+    "bytes": 13223,
+    "sha256": "133cc31a842175e9f9a01caabfa0b05d1db0450a1f0d48e5d82d6ff28ae8b0b8"
+  },
+  {
     "file": "signature/verify_portable_vm_scalar.py",
     "bytes": 10904,
     "sha256": "f3f87460c3b4718e532a6353f05c9616b6de1f8c97dc478d4c9a2965e4563902"
@@ -738,6 +778,11 @@
     "file": "signature/vm-call-profile.json",
     "bytes": 14400,
     "sha256": "6fcfbaf4faf043f519a8d7669108e323a09d4f0b0bb174043029dc16d9bef847"
+  },
+  {
+    "file": "signature/vm-call-runtime-contract.asm",
+    "bytes": 10873,
+    "sha256": "cde7061b19357977419c6082254abbb00752af750a32ea80435cd5092f721428"
   },
   {
     "file": "signature/vm-dispatch-profile.json",
@@ -813,6 +858,11 @@
     "file": "signature/vm_branch_worker.cjs",
     "bytes": 1054,
     "sha256": "8bbb98b509ec9c6baa628db10549f63fe19fb16253b36a746cdddad468c9533d"
+  },
+  {
+    "file": "signature/vm_call_worker.cjs",
+    "bytes": 6765,
+    "sha256": "4c5e9e064ffb9be080deac37d2aab02dc103a12189f4173b2bc6b365f741b37e"
   },
   {
     "file": "signature/vm_frame_worker.cjs",
