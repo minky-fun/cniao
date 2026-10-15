@@ -23,7 +23,7 @@ type CainiaoSettings = {
 }
 
 const SETTINGS_KEY = "cniaoSettings"
-const VERSION = "1.1.2"
+const VERSION = "1.1.3"
 
 const DEFAULT_SETTINGS: CainiaoSettings = {
   boxJsUrl: "http://boxjs.com",

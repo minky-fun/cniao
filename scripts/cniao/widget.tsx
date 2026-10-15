@@ -473,11 +473,12 @@ function PillRow({ item, compact }: { item: PickupItem; compact?: boolean }) {
   )
 }
 
-/** 中号以两行文字同时保留标题和取件地点，固定行高便于计算容量。 */
+/** 中号展示商品缩略图、标题和取件地点，固定行高便于计算容量。 */
 function CompactMediumRow({ item }: { item: PickupItem }) {
   return (
     <HStack alignment="center" spacing={8} padding={{ top: 5, leading: 9, bottom: 5, trailing: 9 }} frame={{ minWidth: 0, maxWidth: Infinity, height: 40 }} widgetBackground={{ style: theme.pillBg, shape: { type: "rect", cornerRadius: 12, style: "continuous" } }}>
-      <Image systemName="shippingbox.fill" font={12} fontWeight="semibold" foregroundStyle={theme.icon} />
+      {item.pic ? <Image imageUrl={item.pic} resizable scaleToFit frame={{ width: 28, height: 28 }} />
+        : <Image systemName="shippingbox.fill" font={12} fontWeight="semibold" foregroundStyle={theme.icon} frame={{ width: 28, height: 28 }} />}
       <VStack alignment="leading" spacing={2} frame={{ minWidth: 0, maxWidth: Infinity }}>
         <Text font={11} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1}>{item.name || getItemMeta(item)}</Text>
         <Text font={9} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
@@ -487,7 +488,7 @@ function CompactMediumRow({ item }: { item: PickupItem }) {
   )
 }
 
-/** 小号按实际高度收紧间距，空状态也保留刷新按钮。 */
+/** 小号并排展示商品图和标题，按实际高度收紧间距并保留刷新入口。 */
 function SmallView({ items }: { items: PickupItem[] }) {
   const total = items.length
   const index = getSmallPageIndex(total)
@@ -506,8 +507,13 @@ function SmallView({ items }: { items: PickupItem[] }) {
         </Button>
       </HStack>
       {item ? <VStack alignment="leading" spacing={compact ? 4 : 6} padding={10} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.panelBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
-        <Text font={12} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={compact ? 1 : 2}>{item.name || getItemMeta(item)}</Text>
-        <Text font={10} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
+        <HStack alignment="center" spacing={6}>
+          {item.pic ? <Image imageUrl={item.pic} resizable scaleToFit frame={{ width: compact ? 28 : 34, height: compact ? 28 : 34 }} /> : null}
+          <VStack alignment="leading" spacing={3} frame={{ minWidth: 0, maxWidth: Infinity }}>
+            <Text font={12} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={compact ? 1 : 2}>{item.name || getItemMeta(item)}</Text>
+            <Text font={10} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
+          </VStack>
+        </HStack>
         <Spacer />
         <Text font={9} foregroundStyle={theme.tertiary}>{item.code ? "取件码" : "物流状态"}</Text>
         <HStack spacing={4}>
