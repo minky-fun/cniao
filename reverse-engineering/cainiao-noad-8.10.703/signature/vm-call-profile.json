@@ -1,0 +1,276 @@
+{
+  "scope": "original offline VM call helpers, synthetic input only; no call parameters or descriptor contents exported",
+  "candidate_bytes": 50,
+  "descriptor_kind_case_targets": [
+    "0x102a4db30",
+    "0x102a4db5c",
+    "0x102a4db30",
+    "0x102a4dbc0"
+  ],
+  "descriptor_kind_calls": {
+    "1": 2191
+  },
+  "distinct_descriptor_locations": 36,
+  "descriptor_target_classes": [
+    {
+      "kind": 1,
+      "class": "guest-object",
+      "count": 2191
+    }
+  ],
+  "indirect_gate_targets": [
+    {
+      "target": "0x102abf3d8",
+      "count": 79
+    },
+    {
+      "target": "0x102abf138",
+      "count": 76
+    },
+    {
+      "target": "0x102abf384",
+      "count": 36
+    },
+    {
+      "target": "0x102abf454",
+      "count": 31
+    },
+    {
+      "target": "0x102a71584",
+      "count": 6
+    },
+    {
+      "target": "0x102a72570",
+      "count": 2
+    },
+    {
+      "target": "0x102acdbac",
+      "count": 2
+    },
+    {
+      "target": "0x102abf2d8",
+      "count": 2
+    },
+    {
+      "target": "0x102a9ad58",
+      "count": 2
+    },
+    {
+      "target": "0x102a7249c",
+      "count": 2
+    },
+    {
+      "target": "0x102a715d8",
+      "count": 1
+    },
+    {
+      "target": "0x102a71530",
+      "count": 1
+    },
+    {
+      "target": "0x102a71568",
+      "count": 1
+    },
+    {
+      "target": "0x102acdc60",
+      "count": 1
+    },
+    {
+      "target": "non-image-target",
+      "count": 1
+    },
+    {
+      "target": "0x102a726cc",
+      "count": 1
+    }
+  ],
+  "server_verified": false,
+  "descriptor_function_targets": [
+    {
+      "target": "getCommonFunctionPtrLVMBridge",
+      "count": 949
+    },
+    {
+      "target": "_free",
+      "count": 405
+    },
+    {
+      "target": "0x102a53b74",
+      "count": 335
+    },
+    {
+      "target": "_malloc",
+      "count": 202
+    },
+    {
+      "target": "invokeFuncBridgeLVMBridge",
+      "count": 93
+    },
+    {
+      "target": "0x102abf3d8",
+      "count": 79
+    },
+    {
+      "target": "0x102abf138",
+      "count": 76
+    },
+    {
+      "target": "randomWrapper",
+      "count": 75
+    },
+    {
+      "target": "AlgorithmHelperGetRandomByte",
+      "count": 51
+    },
+    {
+      "target": "0x102abf384",
+      "count": 36
+    },
+    {
+      "target": "0x102abf454",
+      "count": 31
+    },
+    {
+      "target": "_pthread_mutex_lock",
+      "count": 16
+    },
+    {
+      "target": "_pthread_mutex_unlock",
+      "count": 16
+    },
+    {
+      "target": "_snprintf",
+      "count": 7
+    },
+    {
+      "target": "AlgorithmHelperMd5",
+      "count": 7
+    },
+    {
+      "target": "0x102a71584",
+      "count": 6
+    },
+    {
+      "target": "_time",
+      "count": 5
+    },
+    {
+      "target": "srandomWrapper",
+      "count": 5
+    },
+    {
+      "target": "AlgorithmHelperAesDecrypt",
+      "count": 5
+    },
+    {
+      "target": "___error",
+      "count": 4
+    },
+    {
+      "target": "AlgorithmHelperDecompressData",
+      "count": 2
+    },
+    {
+      "target": "AlgorithmHelperAesEncrypt",
+      "count": 2
+    },
+    {
+      "target": "0x102a72570",
+      "count": 2
+    },
+    {
+      "target": "_calloc",
+      "count": 2
+    },
+    {
+      "target": "0x102acdbac",
+      "count": 2
+    },
+    {
+      "target": "0x102abf2d8",
+      "count": 2
+    },
+    {
+      "target": "0x102a9ad58",
+      "count": 2
+    },
+    {
+      "target": "AlgorithmHelperHmacSha1Hex",
+      "count": 2
+    },
+    {
+      "target": "0x102a7249c",
+      "count": 2
+    },
+    {
+      "target": "0x102a715d8",
+      "count": 1
+    },
+    {
+      "target": "0x102a71530",
+      "count": 1
+    },
+    {
+      "target": "_fopen",
+      "count": 1
+    },
+    {
+      "target": "_stat",
+      "count": 1
+    },
+    {
+      "target": "_fread",
+      "count": 1
+    },
+    {
+      "target": "_fclose",
+      "count": 1
+    },
+    {
+      "target": "SGCrc32",
+      "count": 1
+    },
+    {
+      "target": "algorithm_zlib_decompress",
+      "count": 1
+    },
+    {
+      "target": "0x102a71568",
+      "count": 1
+    },
+    {
+      "target": "0x102a54b64",
+      "count": 1
+    },
+    {
+      "target": "0x102acdc60",
+      "count": 1
+    },
+    {
+      "target": "0x102a726cc",
+      "count": 1
+    },
+    {
+      "target": "AlgorithmHelperBase64Encode",
+      "count": 1
+    }
+  ],
+  "descriptor_helper_scope": "all observed helper invocations, including callers beyond opcode 3; not descriptor_kind_calls alone",
+  "descriptor_result_case_targets": [
+    "0x102a4dec8",
+    "0x102a4e00c",
+    "0x102a4de8c",
+    "0x102a4deac",
+    "0x102a4de70",
+    "0x102a4de70"
+  ],
+  "descriptor_byte_17_counts": {
+    "0": 2099,
+    "1": 335
+  },
+  "descriptor_word_36_counts": {
+    "0": 8,
+    "1": 597,
+    "2": 1494
+  }
+}

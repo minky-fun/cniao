@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及六种标量、16 种内存、22 种分支操作码已联合替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及已观察到的 73 种操作码中的 70 种已联合替换成纯 TypeScript；两组输入的外层候选结果与逐操作码执行次数均与原生一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -440,3 +440,19 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
   --portable-aes work/signature-analysis/portable-build/portable_aes.js \
   reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 ```
+
+
+## 寄存器、栈帧迁移与剩余调用画像（2026-10-15）
+
+新增 `portable_vm_register.ts` 的 24 种操作码，以及 `portable_vm_frame.ts` 的入栈 31、返回 0。累计迁移 70/73 种已观察操作码；此范围不代表所有模块、所有输入的指令覆盖率。
+
+- 寄存器运算通过 8,499 组原生 ARM64 对照，检查槽位、上下文写入、临时寄存器、NZCV 和下一指令；条件操作 121/131/161 确认为条件赋值，不能视为原生调用。
+- 栈帧通过 135 组原生对照，包含 frame 与槽位区重叠场景；按原生 LDP/STP 顺序访存，不能用整块快照替代。
+- 联合替换执行 319,164 / 319,344 条 TypeScript VM 指令以及各 17 次 AES。两组输入分别与原生候选一致，逐操作码计数也一致；输入变化会改变候选。候选内容和熵数据未导出。
+- Node 检查包括 12 组寄存器正常、18 组异常、1 组栈帧往返和 14 组异常；严格 TypeScript 检查与 20 项 Python 回归通过。证据见 `portable-vm-register-frame-validation.json` 及两份 pipeline evidence。
+
+当前仍由原生处理：操作码 3（2,191 次描述符调用）、4（244 次间接调用）和 18（76 次退出），合计 2,511 次。描述符调用的 36 个位置全部走 kind 1。`profile_vm_calls.py` 进一步观察调用助手本身的全部入口：2,434 次、42 个目标，包含 `getCommonFunctionPtrLVMBridge`、`invokeFuncBridgeLVMBridge`、随机数、内存、文件、压缩及加密函数。这一统计包含操作码 3 之外的调用，不能与 2,191 直接等同。
+
+在 `0x102a4dcf8` 助手中，已核实描述符 +8 为目标地址，+17 决定是否以 engine/context 形式直接调用。+17 为零时，+36 选择参数/结果处理：观察到 selector 1 调用后不保存结果、2 将 x0 存至 context+0x78；静态 selector 3 保存 s0、4/5 保存 d0 至 context+0x138；selector 0 进入更复杂的参数封送路径，尚未迁移。实际 selector 分布和公开目标计数见 `vm-call-profile.json`；定点汇编见 `vm-host-call-contract.asm`。不推断尚未核实的完整描述符格式。
+
+完整签名器仍依赖原生分发、模块展开、SDS 和宿主桥接。没有服务端验签、没有 iPhone 执行验证，也未接入小组件；小组件及 1.1.5 安装包未改动。下一步需还原桥接目标、selector 0 参数封送和退出协议，再构建独立解释器并验证安全因子。

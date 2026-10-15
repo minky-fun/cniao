@@ -1,84 +1,14 @@
 {
   "scope": "only the previously observed next-instruction dispatch forms; not all possible modules or inputs",
   "observed_unique_opcodes": 73,
-  "implemented_unique_opcodes": 44,
-  "remaining_observed_unique_opcodes": 29,
-  "remaining_native_dispatches_in_profile": 36420,
+  "implemented_unique_opcodes": 70,
+  "remaining_observed_unique_opcodes": 3,
+  "remaining_native_dispatches_in_profile": 2511,
   "remaining": [
-    {
-      "opcode": 54,
-      "handler": "0x102a2b650",
-      "count": 7224
-    },
-    {
-      "opcode": 56,
-      "handler": "0x102a2b6a4",
-      "count": 6605
-    },
-    {
-      "opcode": 32,
-      "handler": "0x102a2b050",
-      "count": 4290
-    },
-    {
-      "opcode": 26,
-      "handler": "0x102a2aee8",
-      "count": 3144
-    },
-    {
-      "opcode": 45,
-      "handler": "0x102a2b5d4",
-      "count": 2512
-    },
     {
       "opcode": 3,
       "handler": "0x102a2af98",
       "count": 2191
-    },
-    {
-      "opcode": 58,
-      "handler": "0x102a2b6f8",
-      "count": 1943
-    },
-    {
-      "opcode": 55,
-      "handler": "0x102a2b67c",
-      "count": 1751
-    },
-    {
-      "opcode": 9,
-      "handler": "0x102a2aff8",
-      "count": 967
-    },
-    {
-      "opcode": 31,
-      "handler": "0x102a2adc8",
-      "count": 847
-    },
-    {
-      "opcode": 0,
-      "handler": "0x102a2ae58",
-      "count": 847
-    },
-    {
-      "opcode": 15,
-      "handler": "0x102a2af70",
-      "count": 770
-    },
-    {
-      "opcode": 25,
-      "handler": "0x102a2aff8",
-      "count": 685
-    },
-    {
-      "opcode": 33,
-      "handler": "0x102a2b07c",
-      "count": 654
-    },
-    {
-      "opcode": 5,
-      "handler": "0x102a2aff8",
-      "count": 412
     },
     {
       "opcode": 4,
@@ -86,69 +16,9 @@
       "count": 244
     },
     {
-      "opcode": 14,
-      "handler": "0x102a2b034",
-      "count": 223
-    },
-    {
-      "opcode": 93,
-      "handler": "0x102a2b0a8",
-      "count": 214
-    },
-    {
-      "opcode": 121,
-      "handler": "0x102a2c528",
-      "count": 201
-    },
-    {
-      "opcode": 44,
-      "handler": "0x102a2b5d4",
-      "count": 179
-    },
-    {
-      "opcode": 57,
-      "handler": "0x102a2b6d0",
-      "count": 120
-    },
-    {
-      "opcode": 37,
-      "handler": "0x102a2b38c",
-      "count": 92
-    },
-    {
       "opcode": 18,
       "handler": "0x102a2ada0",
       "count": 76
-    },
-    {
-      "opcode": 92,
-      "handler": "0x102a2b334",
-      "count": 75
-    },
-    {
-      "opcode": 47,
-      "handler": "0x102a2b628",
-      "count": 46
-    },
-    {
-      "opcode": 131,
-      "handler": "0x102a2c81c",
-      "count": 41
-    },
-    {
-      "opcode": 24,
-      "handler": "0x102a2b014",
-      "count": 38
-    },
-    {
-      "opcode": 161,
-      "handler": "0x102a2c398",
-      "count": 19
-    },
-    {
-      "opcode": 86,
-      "handler": "0x102a2b238",
-      "count": 10
     }
   ],
   "full_portable_signer_implemented": false

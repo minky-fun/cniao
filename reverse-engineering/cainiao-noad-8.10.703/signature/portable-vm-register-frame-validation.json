@@ -1,0 +1,22 @@
+{
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "source_sha256": {
+    "register": "4720eb98a73efa9575c07221bc0d7cd15a0b5482e4090b660449f9570fff48c2",
+    "frame": "d935662e8642794964c56e5b9f9fffe7ffc5b75c9fc8e081713505430c516789"
+  },
+  "native_register_vector_cases": 8499,
+  "native_frame_vector_cases": 135,
+  "native_branch_vector_cases_rechecked_in_pipeline": 8910,
+  "fixed_register_cases": 12,
+  "invalid_register_cases": 18,
+  "frame_round_trip_cases": 1,
+  "invalid_frame_cases": 14,
+  "python_regression_tests": 20,
+  "combined_70_opcode_and_aes_pipeline_passed": true,
+  "same_input_and_changed_input_opcode_counts_match_native": true,
+  "scripting_device_execution_verified": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}
