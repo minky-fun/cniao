@@ -534,3 +534,35 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 当前目标边界已经从“VM 操作码未移植”转到“实际宿主计算与模块运行时未全部移植”。未进行认证接口请求、服务端验签或 iPhone 桌面测试；小组件的查询、自动续期及 1.1.5 安装包未改动。
+
+
+## 缓冲区与字符串对象迁移（2026-10-15，后续）
+
+`portable_buffer.ts` 新增 14 个缓冲区函数和 6 个字符串对象函数。已移植构造、按字节/数据追加、扩容、取值/设值/查找、克隆、C 字符串转换、按来源构造、清空和释放。保留原生 104 字节缓冲对象、56 字节字符串对象的字段和方法表；两类对象的容量规则分别实现，没有把字符串当作普通缓冲区处理。字符串方法表的最后一项是清空而非释放，已由原生指令核实。
+
+关键行为按原生保留：缓冲区 append 返回复制目的地址；appendByte 在未扩容时返回对象、成功扩容时返回零；错误返回是零扩展的 `0xffffffff`。索引使用有符号 32 位比较，find 的目标比较使用完整 W 寄存器而非截断为字节。字符串追加会先检查来源的 C 字符串长度，因此含零字节的不足长度来源被拒绝，追加零字节也不会增加长度。字符串扩容按原生 128 字节规则计算。
+
+独立 ARM64 对照 **440 组通过**，逐项比较返回位、全部已分配区域、分配顺序和释放顺序。覆盖空指针、负数/越界索引、零长度、边界扩容、窄值截断，以及头部/数据分配和 realloc 失败。缓冲区 realloc 失败保留旧对象；字符串原生实现没有检查 realloc 失败，写入空数据指针后在 bzero 中失败，TS 同样明确失败并保留该状态，不假装返回成功。Node 10 组行为、11 组异常、严格 TypeScript 和 20 项 Python 回归通过。
+
+`verify_portable_buffer.py` 联合独立 TS VM、整数 ABI、宿主桥和 TS AES，在两组输入上再次与完整原生执行对照。每组 **1,196 次对象入口调用**均交给 TS：缓冲区 1,181 次，字符串 15 次。包括 AES 使用的缓冲构造器。被替换原生函数体设有禁止执行检查，入口转交后原生函数体执行次数为零。两组仍各完成 76 次 TS VM 调用，分别执行 321,675 / 321,855 条 VM 指令；候选及逐操作码次数均与原生一致，改变输入仍改变候选。此处统计的是实际被拦截入口，TS 内部调用构造/追加/扩容不重复计入。
+
+对象内存与堆依赖通过 `VmMemory` / `BufferHeap` 显式提供，`buffer_worker.cjs` 只承担有界私有管道。验证仍沿用已有堆适配器：realloc 移动并复制有效旧字节，free 返回零且不复用块；这并非操作系统分配器的实现。未知对象方法、printf 追加、编码追加，以及超出明确边界的长度均拒绝，不猜测行为。数据、候选、密钥、随机熵与安全资源只留在进程及内存管道中。
+
+证据：`portable-buffer-evidence.json`、`portable-buffer-validation.json`、`buffer-runtime-contract.asm`。完整本地签名器仍未完成：其他宿主算法、对象解码、模块初始化/展开和 SDS/设备状态仍有依赖。未联网验签，未做 iPhone 桌面验证；小组件查询、自动续期与 1.1.5 安装包未变。
+
+### 复现对象联合对照
+
+在上一节的严格编译命令中加入 `portable_buffer.ts`，然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_buffer.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+使用 `--vectors-only` 可只运行 440 组独立原生对象对照。Node 行为与异常检查为 `node signature/test_portable_buffer.cjs <compiled portable_buffer.js>`。

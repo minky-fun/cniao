@@ -1,0 +1,55 @@
+{
+  "source_sha256": {
+    "portable_buffer.ts": "ef9292de4ef52d25794c0c9817b5575234c8adb285293e5dca5faddfd0b29924",
+    "buffer_worker.cjs": "3b595f7b6761a51c2afb88eb475fbd866b69c26ee0ed1d698bda5826e9db38f2",
+    "verify_portable_buffer.py": "75f780beecf2f113ff0ddc7d40578b199162a8b7be4ca44d1533a000b1a060cf",
+    "test_portable_buffer.cjs": "e904aa74018c8bc35ddc126aaee9fd3dd658653326f8fa44de134269250fa85a",
+    "buffer-runtime-contract.asm": "750f71fd5fdb10faf0a2ddd565590303f4ab30676f55e0510a2f5186469a34f7",
+    "portable_vm_memory.ts": "c83b6527b2e7295c49592f2b78b835fe87bceb0d2846954467b96d379e162bd9",
+    "verify_portable_vm_runtime.py": "133cc31a842175e9f9a01caabfa0b05d1db0450a1f0d48e5d82d6ff28ae8b0b8"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_buffer_string_vector_cases": 440,
+  "implemented_buffer_entries": 14,
+  "implemented_string_entries": 6,
+  "node_buffer_behavior_cases": 6,
+  "node_string_behavior_cases": 4,
+  "node_invalid_cases": 11,
+  "python_regression_tests": 20,
+  "replaced_object_entries_per_input": 1196,
+  "native_replaced_object_body_entries_in_ts_runs": 0,
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "guest_heap_adapter": "same explicit bounded allocator as existing baseline; moving realloc copies min(old allocation, new size), free returns zero without recycling; not an operating-system allocator implementation",
+  "standalone_failure_vectors": [
+    "header malloc failure",
+    "data malloc failure with header free",
+    "realloc failure preserving buffer object",
+    "string realloc failure stores NULL and fails rather than returning fabricated success"
+  ],
+  "explicit_limits": {
+    "single_memory_or_heap_request_bytes": 16777216,
+    "pipe_chunk_bytes": 4096,
+    "pipe_operations_per_call": 65536,
+    "cstring_max_bytes": 8192
+  },
+  "unsupported": [
+    "buffer printf append",
+    "string encoded append",
+    "foreign object methods",
+    "negative or oversized native allocation sizes"
+  ],
+  "remaining_dependencies": [
+    "other host algorithms and object decoding",
+    "module loading, initialization and expansion",
+    "SDS and SDK/device state",
+    "platform memory, random and file adapters"
+  ],
+  "raw_candidates_keys_entropy_memory_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false
+}
