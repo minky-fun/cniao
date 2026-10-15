@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 8137,
-    "sha256": "90e0df758ae003cde4fe9d994be4a58b124b0d909c9db38ddc28f1b18a6342ad"
+    "bytes": 12532,
+    "sha256": "c2d911dab9fc9c66d0109cfbbe3b4c6f7efade0a97daed0cf45b506b9c90ebc8"
   },
   {
     "file": "signature/annotate_sign.py",
@@ -75,9 +75,14 @@
     "sha256": "2305b351dbb858f2670f8d16132c690878b426af532111642e8760a8d7372b9c"
   },
   {
+    "file": "signature/core-table-install.asm",
+    "bytes": 2493,
+    "sha256": "10525d4b4b3e82c6e6ef3fcb1e3ca831b80ab923a6e0fd022dd028811a1c8295"
+  },
+  {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 1290,
-    "sha256": "81eed61fb7a7986520b49f2bec59a3ab947caa114abba6b928b4e3ae3d9f93f2"
+    "bytes": 3130,
+    "sha256": "6b3e35d413310dbd8aa2e763d70584f9c0dc6dac6c74efb2626e5aecde360b97"
   },
   {
     "file": "signature/dispatcher-install.asm",
@@ -88,6 +93,11 @@
     "file": "signature/dispatcher-stores.json",
     "bytes": 454,
     "sha256": "805e8033d2b4a08361ffe64a9eed705d263cd2387af62dca0e049ccafa549410"
+  },
+  {
+    "file": "signature/dynamic-handler-execute.asm",
+    "bytes": 2351,
+    "sha256": "39612be020c92173585a0ac0d088b54ad85a52d3728bd6d2f194040406caa87b"
   },
   {
     "file": "signature/handler-call.asm",
@@ -115,6 +125,11 @@
     "sha256": "0babb572b7eeaaf8b0ffe92451e511f9b95c7e3ce8b542ddb80f0792f8bf2bdc"
   },
   {
+    "file": "signature/metadata-handler-registration.asm",
+    "bytes": 2445,
+    "sha256": "76a9db6e4fe0768742437ef9f801683023bb2f9eda8e88792fc37aff0aa86ada"
+  },
+  {
     "file": "signature/methods.json",
     "bytes": 4992,
     "sha256": "5b97f3ee98d1570dc7675d5721d24f329cafbd7b41f71cdcbdda199930a0d20a"
@@ -130,6 +145,11 @@
     "sha256": "352bb2ce716898d81130a66ca9c42698000d5f4c9b3dd81ab99884edeed0eb13"
   },
   {
+    "file": "signature/module-execute.asm",
+    "bytes": 1326,
+    "sha256": "873236ebd32fb07718990dfc664f768261670c7e108f3f2521c6c5722a6baf53"
+  },
+  {
     "file": "signature/mtop-sign-annotated.asm",
     "bytes": 48029,
     "sha256": "0b72c3c42f99d4c126397736529cd2efc20c952a56eacb90dc682331e953824b"
@@ -138,6 +158,21 @@
     "file": "signature/mtop-sign.asm",
     "bytes": 45526,
     "sha256": "e8a06c77d866dffa1786997a50bd4098b3c9776ed3ec408daadff1623a204df7"
+  },
+  {
+    "file": "signature/native-decoder.asm",
+    "bytes": 3501,
+    "sha256": "d244bd1b0d6b1994a733f36220a1e0e49b41831a7e2ac449f6c1cf16303af5f9"
+  },
+  {
+    "file": "signature/native-routing-evidence.json",
+    "bytes": 6342,
+    "sha256": "fa49981064240879cd7044014f850b7d716f224168ff68c565f943cbeb853f7c"
+  },
+  {
+    "file": "signature/open-command-registration.asm",
+    "bytes": 10023,
+    "sha256": "9ce4209ab211a9d954b04525378193bf3deeff2e0898aff6ecdce060aa7b7e32"
   },
   {
     "file": "signature/open-secure-signature-annotated.asm",
@@ -153,6 +188,11 @@
     "file": "signature/plugin-dispatcher-install.asm",
     "bytes": 3352,
     "sha256": "9feff8b067bb7c2d44519dddbdb40ca1f5ae26133071aa1734265f5a98b8eca2"
+  },
+  {
+    "file": "signature/probe_native.py",
+    "bytes": 9047,
+    "sha256": "9f18dd39546eae6c6ffe047783c23a1208344d9f4e4e8301aa24270ad7aa1cd2"
   },
   {
     "file": "signature/sdk-security-annotated.asm",
@@ -185,9 +225,19 @@
     "sha256": "96b749370b3dba8563ecd8b3990a64a2e01113cf2945d3ccacd656b72ddbfda5"
   },
   {
+    "file": "signature/sign-type-transfer.asm",
+    "bytes": 2841,
+    "sha256": "51d4f06b52d9e91e0b77be67287ed2feaefe9636c768ad952c1c3adfb2cc9d00"
+  },
+  {
     "file": "signature/sign_input.py",
     "bytes": 2723,
     "sha256": "e705dde4236967430fc8b9943cbda1e92dbe89d87abc1921652b36bb53195d4d"
+  },
+  {
+    "file": "signature/signature-forward.asm",
+    "bytes": 2436,
+    "sha256": "1f5e5b3872fdc89aed4b0df2019a18874b282923be6c8e538f16f051b4f88a41"
   },
   {
     "file": "signature/test_sign_input.py",
@@ -203,6 +253,16 @@
     "file": "signature/unified-annotated.asm",
     "bytes": 66659,
     "sha256": "1f72142e8c17e4ce7d09bf4836c03dbb620d98f6e7ea66b5ccf14134030f8035"
+  },
+  {
+    "file": "signature/unified-command-handler.asm",
+    "bytes": 5301,
+    "sha256": "344a33ba43e4415f40d3109d01bb595d4d3a2503a6d4b650a540c052306a7dd1"
+  },
+  {
+    "file": "signature/unified-command-registration.asm",
+    "bytes": 2924,
+    "sha256": "6242cfea82a235babe8a7095260939f0fc44c50e40a79b4ea22b04960518fd24"
   },
   {
     "file": "signature/unified.asm",

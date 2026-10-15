@@ -12,7 +12,25 @@
       "initialization_store": "0x102abb868",
       "static_dispatcher_target": "0x102ae03ac",
       "static_target_resolved": true,
-      "algorithm_recovered": false
+      "algorithm_recovered": false,
+      "public_handler_registration": {
+        "entry": "0x102ae0930",
+        "call_site": "0x102ae0ab4",
+        "ids": [
+          1,
+          7,
+          1,
+          1
+        ],
+        "handler": "0x102ae051c",
+        "internal_forward_ids": [
+          1,
+          4,
+          1,
+          0
+        ],
+        "internal_handler_resolved": false
+      }
     },
     {
       "address": "0x1068fbe50",
@@ -26,7 +44,27 @@
       "initialization_store": "0x102b6d14c",
       "source_register": "x2 (caller argument)",
       "static_target_resolved": false,
-      "algorithm_recovered": false
+      "algorithm_recovered": false,
+      "registered_command_handler": {
+        "registration_prefix_entry": "0x102b3d750",
+        "call_site": "0x102b3d834",
+        "ids": [
+          7,
+          34,
+          2,
+          1
+        ],
+        "handler": "0x102b3d39c",
+        "internal_forward_call": "0x102b3d528",
+        "internal_forward_ids": [
+          7,
+          1,
+          2,
+          0
+        ],
+        "caller_dispatcher_source_verified": false,
+        "internal_handler_resolved": false
+      }
     },
     {
       "address": "0x1068fd856",
@@ -35,7 +73,56 @@
       "section": "__bss",
       "section_type": 1,
       "zero_fill": true,
-      "resolved_runtime_value": false
+      "resolved_runtime_value": false,
+      "static_decoded_value": "data",
+      "decode_block": {
+        "entry": "0x102b7173c",
+        "stop": "0x102b71780"
+      }
     }
-  ]
+  ],
+  "request_type_transfer": {
+    "source_constant_address": "0x1048297c8",
+    "source_value": 7,
+    "method": "0x102ab58c4",
+    "mapped_value": 19,
+    "table_0_to_11": [
+      2,
+      12,
+      2,
+      1,
+      0,
+      17,
+      18,
+      19,
+      20,
+      16,
+      21,
+      22
+    ],
+    "out_of_range": 23
+  },
+  "core_function_table": {
+    "global_address": "0x1068f5e40",
+    "initializer": "0x102aa9a30",
+    "entries": [
+      "0x102aa9658",
+      "0x102aa98d4",
+      "0x102aa973c",
+      "0x102aa9940"
+    ]
+  },
+  "dynamic_handler_path": {
+    "lookup": "0x102abfaec",
+    "registry_root": "0x1068f8708",
+    "registration": "0x102abf804",
+    "registration_caller": "0x102a67314",
+    "signature_lookup_number": 66010401,
+    "execute_command_ids": [
+      1,
+      36,
+      2
+    ],
+    "signature_module_resolved": false
+  }
 }

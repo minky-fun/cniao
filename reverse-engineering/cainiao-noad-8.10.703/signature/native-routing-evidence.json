@@ -1,0 +1,339 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "offline bounded execution of routing and decoder fragments; no signing handler executed",
+  "synthetic_dependencies": [
+    "function table callbacks capture arguments and return 0",
+    "zero stack-canary storage"
+  ],
+  "native_decoder_imports": {
+    "0x10442ddd0": "0x102a653a4",
+    "0x10442dddc": "0x102a65438",
+    "0x10442dde8": "0x102a65310",
+    "0x10442ddf4": "0x102b2a388",
+    "0x10442de0c": "0x102b2a5c0"
+  },
+  "mtop_request_type_constant": {
+    "address": "0x1048297c8",
+    "value": 7
+  },
+  "request_type_table_0_to_11": [
+    2,
+    12,
+    2,
+    1,
+    0,
+    17,
+    18,
+    19,
+    20,
+    16,
+    21,
+    22
+  ],
+  "middle_tier_data_field": {
+    "address": "0x1068fd856",
+    "value": "data"
+  },
+  "out_of_range_type_12": 23,
+  "open_registrations": [
+    {
+      "return_address": "0x102ae09f8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "argument4": "0x102ad05c0",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0a18",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        3,
+        1,
+        1
+      ],
+      "argument4": "0x102a87a18",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0a38",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        4,
+        1,
+        1
+      ],
+      "argument4": "0x102a87d54",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0a58",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        4,
+        2,
+        1
+      ],
+      "argument4": "0x102a880cc",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0a78",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        5,
+        1,
+        1
+      ],
+      "argument4": "0x102ae93a8",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0a98",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        5,
+        2,
+        1
+      ],
+      "argument4": "0x102ae0478",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0ab8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        7,
+        1,
+        1
+      ],
+      "argument4": "0x102ae051c",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0ad8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        8,
+        1,
+        1
+      ],
+      "argument4": "0x102ae05e8",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0af8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        9,
+        1,
+        1
+      ],
+      "argument4": "0x102ae06c0",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0b18",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        9,
+        2,
+        1
+      ],
+      "argument4": "0x102ae079c",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0b38",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        9,
+        3,
+        1
+      ],
+      "argument4": "0x102ae0860",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0b58",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        16,
+        1,
+        1
+      ],
+      "argument4": "0x102a985a4",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0b78",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        18,
+        1,
+        1
+      ],
+      "argument4": "0x102a8603c",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0b98",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        6,
+        1,
+        1
+      ],
+      "argument4": "0x102aee558",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0bb8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        26,
+        1,
+        1
+      ],
+      "argument4": "0x102ab7c54",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0bd8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        26,
+        2,
+        1
+      ],
+      "argument4": "0x102ab7ecc",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0bf8",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        37,
+        1,
+        1
+      ],
+      "argument4": "0x102aa11fc",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0c18",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        37,
+        2,
+        1
+      ],
+      "argument4": "0x102aa0f9c",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102ae0c38",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        17,
+        2,
+        1
+      ],
+      "argument4": "0x102aaf54c",
+      "argument5": "0x102ae09cc"
+    },
+    {
+      "return_address": "0x102aa9c7c",
+      "target": "0x300000000",
+      "ids": [
+        1,
+        34,
+        1,
+        1
+      ],
+      "argument4": "0x102aa9c90",
+      "argument5": "0x102aa9c50"
+    }
+  ],
+  "unified_registrations_prefix": [
+    {
+      "return_address": "0x102b3d818",
+      "target": "0x300000000",
+      "ids": [
+        7,
+        34,
+        1,
+        1
+      ],
+      "argument4": "0x102b3d1e0",
+      "argument5": "0x102b3d7ec"
+    },
+    {
+      "return_address": "0x102b3d838",
+      "target": "0x300000000",
+      "ids": [
+        7,
+        34,
+        2,
+        1
+      ],
+      "argument4": "0x102b3d39c",
+      "argument5": "0x102b3d7ec"
+    }
+  ],
+  "unified_stop_before_other_initialization": "0x102b3d838",
+  "command_10701": {
+    "return_address": "0x300000100",
+    "target": "0x102aa973c",
+    "ids": [
+      1,
+      7,
+      1,
+      1
+    ],
+    "argument4": "0x200000500",
+    "argument5": "0x200000600"
+  },
+  "inner_signature_forward": {
+    "return_address": "0x300000100",
+    "target": "0x300000008",
+    "ids": [
+      1,
+      4,
+      1,
+      0
+    ],
+    "argument4": "0x200000500",
+    "argument5": "0x200000600"
+  },
+  "metadata_loader_fields": [
+    "isPublic",
+    "destIndex",
+    "index",
+    "metainfo",
+    "stacksize"
+  ],
+  "signing_verified": false
+}

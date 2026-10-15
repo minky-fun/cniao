@@ -57,17 +57,38 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 - `SecurityGuardOpenInitialize privateInitialize:withCustomBundlePath:`（入口 `0x102abb5f4`）在 `0x102abb860` 通过 `ADR` 取到 `0x102ae03ac`，在 `0x102abb868` 写入 `0x1068f6788`，见 `dispatcher-install.asm`。这条路径的分发器目标已经可以静态确定，尚未在目标进程验证其执行状态。
 - `MiddleTierPlugin initializePlugin:`（`0x102b6d0b0`）在 `0x102b6d14c` 将调用方参数寄存器 `x2` 写入 `0x1068fbe50`；`nativeEntry`（`0x102b6d160`）返回 `0x102b3bb28`。见 `plugin-dispatcher-install.asm`。尚未完成调用方参数来源与该 nativeEntry 的完整计算追踪。
 - `0x102ae03ac` 对正命令号进行拆分，然后跳到 `0x102aa973c`；对已确认命令 `10701`，对应的三个分发编号为 `1 / 7 / 1`。见 `core-command-dispatch.asm`。这些是分发编号，不是签名算法或密钥。
-- `0x102aa973c` 既可能进入 `0x102abfaec` 路径，也可能从 `0x1068f7ea0` / `0x1068f7ea8` 的运行时注册表查找处理函数：查找过程在 `0x102aa937c`，返回的处理指针在 `0x102aa9898` 间接调用。`handler-lookup.asm` 可见注册项与上下文值之间的 XOR 指针编码；`handler-registration.asm` 对应注册入口。仍未恢复 `10701` 处理函数的完整注册与计算实现，不能从分发编号生成签名。
+- `0x102aa973c` 既可能进入 `0x102abfaec` 路径，也可能从 `0x1068f7ea0` / `0x1068f7ea8` 的运行时注册表查找处理函数：查找过程在 `0x102aa937c`，返回的处理指针在 `0x102aa9898` 间接调用。`handler-lookup.asm` 可见注册项与上下文值之间的 XOR 指针编码；`handler-registration.asm` 对应注册入口。本轮已继续定位 `10701` 的公开处理函数注册，详见下节；完整签名计算仍未还原。
 
 `trace_dispatchers.py` 在核对样本 SHA-256 后扫描相邻 ADRP/STR 指令候选，输出 `dispatcher-stores.json`。该扫描不是控制流或寄存器活跃性分析，候选须由上述定点反汇编复核，不能声称覆盖所有指针写入形式。
 
-后续仍需恢复签名命令处理函数的注册来源、完整计算及安全存储依赖，或在可读取目标进程的研究环境中取得对应运行值和合成输入的输出对照。主程序已解密只解决代码可读性，不会自动解除这些依赖。目前没有这类运行环境，也没有足以验证完整签名的输入输出对。本次没有完成用户要求的本地签名接入，没有向组件加入占位签名器或把 HMAC 分支伪装为 SecurityGuard。
+### 已复核的处理项注册与请求类型转换
+
+本轮加入 `probe_native.py`，用 Unicorn 隔离执行固定样本的有限路由和解码片段。`native-routing-evidence.json` 可直接从归档 IPA 重建。它使用合成函数表回调收集编号和地址，回调返回 0；不执行签名处理函数，不模拟签名成功。所有地址均在主程序摘要匹配后使用，片段有时间、指令数和结束地址限制。
+
+1. 核心表 `0x1068f5e40` 由 `0x102aa9a30` 分配。表的四项依次是注册 `0x102aa9658`、调用包装 `0x102aa98d4`、分发 `0x102aa973c`、另一包装 `0x102aa9940`。见 `core-table-install.asm`。
+2. 注册函数 `0x102ae0930` 实际提交 20 项。调用点 `0x102ae0ab4` 将 `(1,7,1,flag=1)` 绑定至 `0x102ae051c`，对应公开命令 `10701`。见 `open-command-registration.asm`。
+3. `0x102ae051c` 不进行签名计算，而是将原始输入和错误指针转发给 `(1,4,1,flag=0)`。模拟执行核对了两个指针原样保留。见 `signature-forward.asm`。这与公开注册项 `(1,4,1,flag=1) → 0x102a87d54` **不同**：flag 0 和 1 使用独立注册根，不能把后者当成已定位的内部签名器。
+4. MiddleTier 传入的 requestType 常量在 `0x1048297c8`，值为 7。`transferOpenSignType:`（`0x102ab58c4`）调用真实解码器后，0 至 11 的映射为 `[2,12,2,1,0,17,18,19,20,16,21,22]`，超出范围返回 23。因此 **MTOP 类型 7 转换为内部类型 19**。见 `sign-type-transfer.asm`。此前可见的类型 5/6/7 分支不是这条 MTOP 路径的直接计算证据。
+5. 编码表的导入桩 `0x10442ddd0` 可解析到本样本中的 `_CMa03Q0IM8B3Ic`，真实地址 `0x102a653a4`。其逐字节逻辑是 `((source[i] - constant) & 255) XOR key[i % keyLength]`；此处是常量混淆解码，不能当作签名算法。见 `native-decoder.asm`。
+6. MiddleTier 的字符串区 `0x1068fd856` 也已通过原生解码片段恢复为字段名 `data`；它并非未恢复的密钥或签名核心。对应初始化指令已包含在 `middle-tier.asm`。
+7. Unified 注册前缀在 `0x102b3d750`：调用点 `0x102b3d834` 注册 `(7,34,2,flag=1) → 0x102b3d39c`。该处理函数在 `0x102b3d528` 继续调用 `(7,1,2,flag=0)`。见 `unified-command-registration.asm` 和 `unified-command-handler.asm`。这里只证明注册与转发，尚未完成 `0x1068fbe50` 调用方参数的来源验证或安全因子计算。
+
+### 内部动态处理路径
+
+核心分发器在查找普通注册表前调用 `0x102abfaec`。它通过 `0x1068f8708` 中的另一套动态处理项查找模块和索引；匹配成功时，将上下文、参数、数量 2 和目标索引装入结构，再调用 `(1,36,2)`。见 `dynamic-handler-execute.asm`。对 `(1,4,1)` 构造的查找编号为 `66010401`；这只是查找编号，不能由它推出签名结果。
+
+动态条目的注册入口 `0x102abf804` 接收编号、模块上下文和目标索引。其调用方在 `0x102a67314`，从元数据读取 `isPublic`、`destIndex`、`index`，以及 `metainfo`、`stacksize` 等字段。字段名由真实解码代码复核，见 `metadata-handler-registration.asm` 和探针输出。`(1,36,2)` 的注册候选指向 `0x102a7362c`；该函数在 `0x102a738a8` 按模块表的 `+0x38` 项间接调用并传入索引、参数和输出指针，见 `module-execute.asm`。这说明仍需恢复实际加载的模块及该索引的实现，不能只移植外层字符串拼接。
+
+归档 IPA 内还确认存在 `yw_1222.jpg`（133573 字节，SHA-256 `add1c126c9e52bdc4b16335ecfee0f463b0d97d82b98ce150754dd2a359c23dd`）和 `yw_1222_mwua.jpg`（86152 字节，SHA-256 `24ee8bcb38f40568da8547969d1506259fe4a6a92b27f0eb8af8cb884174e57a`）。尚未证实它们分别提供哪些签名数据，不能仅凭资源名称将其称为已恢复密钥。
+
+下一步的具体缺口是：恢复 flag 0 的 `(1,4,1)` 和 `(7,1,2)` 实际处理项及模块来源，继续还原完整计算与所需安全数据，并取得签名输入输出对照。尚未生成 `x-sign` 或 `x-mini-wua`，没有完成用户要求的本地签名接入。主程序已解密并不等于这些计算已经还原。
 
 ## 代码与验证
 
 - `sign_input.py`：两个入口的输入拼接与显式传入密钥的普通 HMAC 分支，仅用 Python 标准库，不读账号配置、不输出密钥、不发送请求。
 - `test_sign_input.py`：字段顺序、位置顺序、extdata 分支和空槽位、缺失条件，以及 RFC 2202 公开 HMAC-SHA1 向量。合成字段测试不能证明真实 SecurityGuard 签名可用。
 - `legacy-sign-draft.ts.txt`：从组件目录移出的历史草稿，原文件声称基于 Java SDK。其 extdata 条件、追加字段顺序和手写 UTF-8/HMAC 处理未按 iOS 实现验证，不能作为已还原签名器使用。
+- `probe_native.py` / `native-routing-evidence.json`：有限原生片段复核及明确标注合成回调的输出；仅额外依赖 `unicorn==2.1.4`。
 - `methods.json`：从 Objective-C 元数据提取的相关方法入口。
 - `*.asm` / `*-annotated.asm`：定点指令与辅助注释。注释器仅识别已知形式的字符串和 selector，不是完整反编译器；以原始指令为准。注释中的厂商构建路径缩为 `MtopSDK/`。
 
@@ -76,6 +97,17 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 ```sh
 python3 -B -m unittest discover -s reverse-engineering/cainiao-noad-8.10.703/signature -p 'test_*.py'
 ```
+
+隔离复核原生路由（在独立虚拟环境安装 Unicorn 后）：
+
+```sh
+python3 -m venv work/cniao-re-env
+work/cniao-re-env/bin/python -m pip install unicorn==2.1.4
+work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_native.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+该命令也接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
 
 如需重新补充注释，从归档 IPA 提取主程序为本目录的 `Cainiao4iPhone`，核对摘要后运行 `python3 -B annotate_sign.py`。原始反汇编可用系统 `objdump -d --start-address=... --stop-address=... Cainiao4iPhone` 按证据文件首末地址重新生成，不应对整份转储中的混淆数据盲目解释为可达代码。
 
