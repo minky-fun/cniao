@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../work/cniao-build",
+    "rootDir": "../scripts/cniao"
+  },
+  "include": ["../dts/*.d.ts", "../scripts/cniao/*.tsx", "../scripts/cniao/*.ts"]
+}

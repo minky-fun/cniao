@@ -1,3 +1,4 @@
+// 历史未验证草稿，来源声称为 Java SDK；不属于 iOS 已还原实现，不应接入组件。
 // mtop x-sign 生成 — 基于 mtopsdk/security/b.java & c.java & util/a.java
 
 // ========== 配置 ==========

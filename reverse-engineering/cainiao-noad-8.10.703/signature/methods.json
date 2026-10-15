@@ -1,0 +1,212 @@
+[
+  {
+    "class": "TBSDkSignUtility",
+    "method": "init",
+    "imp": "0x10281e050"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "dealloc",
+    "imp": "0x10281e120"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "isMtopSecurityAppkeySign:withVersion:",
+    "imp": "0x10281ef18"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "removeSecurity:",
+    "imp": "0x10281fe40"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "addSecurity:",
+    "imp": "0x10281fe9c"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "appkeyApiDict",
+    "imp": "0x10281ff00"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "setAppkeyApiDict:",
+    "imp": "0x10281ff08"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "rwlock",
+    "imp": "0x10281ff14"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "setRwlock:",
+    "imp": "0x10281ff58"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": ".cxx_destruct",
+    "imp": "0x10281ff9c"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "shareInstance",
+    "imp": "0x10281dfbc"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "getMtopSignWithAppkey:withApiName:withApiVersion:withProtocolParam:withBizParam:withHttpHeader:",
+    "imp": "0x10281e168"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "getMtopSignWithAppkey:withApiName:withApiVersion:withProtocolParam:withBizParam:withHttpHeader:withInstanceId:",
+    "imp": "0x10281e250"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "sign:input:",
+    "imp": "0x10281ec64"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "getSecurityFactors:withApiName:withApiVersion:withProtocolParam:withBizParam:withHttpHeader:withUseWua:",
+    "imp": "0x10281f024"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "getSecurityFactors:withApiName:withApiVersion:withProtocolParam:withBizParam:withHttpHeader:withUseWua:withInstanceId:",
+    "imp": "0x10281f11c"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "md5:value:",
+    "imp": "0x10281fac4"
+  },
+  {
+    "class": "TBSDkSignUtility",
+    "method": "md5:",
+    "imp": "0x10281fd08"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "signRequest:authCode:",
+    "imp": "0x102ab44b4"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "getSafeCookie:secretKey:authCode:",
+    "imp": "0x102ab4aa0"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "getMetaClass",
+    "imp": "0x102ab4eb8"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "NSDictionary2HashMap:",
+    "imp": "0x102ab4f20"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "callCoreSignFunctionsWithArray:appKey:signType:mask:",
+    "imp": "0x102ab5444"
+  },
+  {
+    "class": "SecurityGuardOpenSecureSignature",
+    "method": "transferOpenSignType:",
+    "imp": "0x102ab58c4"
+  },
+  {
+    "class": "SecurityGuardSecureSignature",
+    "method": "signRequest:",
+    "imp": "0x102ab5e10"
+  },
+  {
+    "class": "SecurityGuardSecureSignature",
+    "method": "getMetaClass",
+    "imp": "0x102ab62a0"
+  },
+  {
+    "class": "SecurityGuardSecureSignature",
+    "method": "NSDictionary2HashMap:",
+    "imp": "0x102ab6308"
+  },
+  {
+    "class": "SecurityGuardSecureSignature",
+    "method": "callCoreSignFunctionsWithArray:appKey:signType:mask:",
+    "imp": "0x102ab68c0"
+  },
+  {
+    "class": "SecurityGuardOpenUnifiedSecurity",
+    "method": "init:error:",
+    "imp": "0x102b58ea0"
+  },
+  {
+    "class": "SecurityGuardOpenUnifiedSecurity",
+    "method": "getSecurityFactors:error:",
+    "imp": "0x102b593cc"
+  },
+  {
+    "class": "SecurityGuardOpenUnifiedSecurity",
+    "method": "assembleExtendParam:",
+    "imp": "0x102b5a694"
+  },
+  {
+    "class": "SecurityGuardOpenUnifiedSecurity",
+    "method": "urlEncodeString:",
+    "imp": "0x102b5a83c"
+  },
+  {
+    "class": "SecurityGuardOpenUnifiedSecurity",
+    "method": "getMetaClass",
+    "imp": "0x102b5a980"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "init:error:",
+    "imp": "0x102b71140"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "getSign:error:",
+    "imp": "0x102b71508"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "getMiniWua:error:",
+    "imp": "0x102b71afc"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "getWua:error:",
+    "imp": "0x102b71fc4"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "vmpSignV1Compitable:env:",
+    "imp": "0x102b72424"
+  },
+  {
+    "class": "SecurityGuardOpenMiddleTierGeneric",
+    "method": "getMetaClass",
+    "imp": "0x102b726f4"
+  },
+  {
+    "class": "TBSDKSecurity",
+    "method": "sign:input:",
+    "imp": "0x102813564"
+  },
+  {
+    "class": "TBSDKSecurity",
+    "method": "factorSign:input:extendParas:isUseWua:api:",
+    "imp": "0x1028138fc"
+  },
+  {
+    "class": "TBSDKSecurity",
+    "method": "hmacsha1:key:",
+    "imp": "0x102813c04"
+  }
+]

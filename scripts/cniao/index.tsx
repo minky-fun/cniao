@@ -17,18 +17,8 @@ import {
 import type { Color, DynamicShapeStyle, KeywordPoint } from "scripting"
 import { ModuleSection, createModuleActions, isBoxJsAvailable } from "./moduleSection"
 
-type CainiaoSettings = {
-  boxJsUrl: string
-  refreshInterval: number
-}
-
-const SETTINGS_KEY = "cniaoSettings"
-const VERSION = "1.1.3"
-
-const DEFAULT_SETTINGS: CainiaoSettings = {
-  boxJsUrl: "http://boxjs.com",
-  refreshInterval: 15,
-}
+import { DEFAULT_SETTINGS, SETTINGS_KEY, VERSION, getSettings } from "./settings"
+import type { CainiaoSettings } from "./settings"
 
 // ─── 液态玻璃背景 ───
 
@@ -90,22 +80,13 @@ function GlassBackground() {
 
 // ─── 设置逻辑 ───
 
-/** 读取配置并排除无效刷新间隔。 */
-function getInitialSettings(): CainiaoSettings {
-  const saved = Storage.get<Partial<CainiaoSettings>>(SETTINGS_KEY) ?? {}
-  return {
-    boxJsUrl: saved.boxJsUrl?.trim() || DEFAULT_SETTINGS.boxJsUrl,
-    refreshInterval: typeof saved.refreshInterval === "number" && Number.isFinite(saved.refreshInterval) && saved.refreshInterval > 0
-      ? saved.refreshInterval : DEFAULT_SETTINGS.refreshInterval,
-  }
-}
-
 /** 展示配置，并使用当前保存的地址检测 BoxJS。 */
 function SettingsView() {
-  const init = getInitialSettings()
+  const init = getSettings()
 
   const [boxJsUrl, setBoxJsUrl] = useState(init.boxJsUrl)
   const [refreshInterval, setRefreshInterval] = useState(init.refreshInterval)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
 
   // 自动检测 BoxJS 环境是否已安装
@@ -120,16 +101,20 @@ function SettingsView() {
       boxJsUrl: boxJsUrl.trim() || DEFAULT_SETTINGS.boxJsUrl,
       refreshInterval: refreshInterval,
     }
-    Storage.set(SETTINGS_KEY, newSettings)
+    if (!Storage.set(SETTINGS_KEY, newSettings)) {
+      setSaveError("设置保存失败，请重试。")
+      return
+    }
     Widget.reloadUserWidgets()
     Script.exit()
   }
 
   /** 恢复默认配置后请求更新桌面组件。 */
   const handleReset = () => {
-    setBoxJsUrl(DEFAULT_SETTINGS.boxJsUrl)
-    setRefreshInterval(DEFAULT_SETTINGS.refreshInterval)
-    Storage.set(SETTINGS_KEY, DEFAULT_SETTINGS)
+    if (!Storage.set(SETTINGS_KEY, DEFAULT_SETTINGS)) {
+      setSaveError("默认设置保存失败，请重试。")
+      return
+    }
     Widget.reloadUserWidgets()
     Script.exit()
   }
@@ -161,11 +146,12 @@ function SettingsView() {
             ]
           }}
         >
+          {saveError ? <Section footer={<Text foregroundStyle="red">{saveError}</Text>} /> : null}
           <ModuleSection
             headerTitle="组件模块"
             footerLines={[
               "使用前请完成以下步骤：",
-              boxJsDetected ? "1）已检测到 BoxJS 环境 ✓" : "1）安装 Loon BoxJS 插件（BoxJS 运行环境）",
+              boxJsDetected === null ? "1）正在检测 BoxJS 环境" : boxJsDetected ? "1）已检测到 BoxJS 环境" : "1）安装 Loon BoxJS 插件（BoxJS 运行环境）",
               "2）安装 Loon CainiaoHeaders 插件（抓取请求头）",
               "3）打开菜鸟 App 触发数据抓取",
             ]}

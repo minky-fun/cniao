@@ -1,5 +1,10 @@
 [
   {
+    "file": "Cainiao_8.10.703_NoAd.ipa",
+    "bytes": 69471282,
+    "sha256": "8adf786e0edf430eb3e814694df73d64ae70f79c86ba6268b599fc42837589a1"
+  },
+  {
     "file": "autologin初始化证据.txt",
     "bytes": 1889,
     "sha256": "9addd0b7a70277b892111273f0d91ccbf679fe2dab2d1b171622a71e85d4f9a0"
@@ -55,6 +60,116 @@
     "sha256": "70297351aa4be0be41714a601c5c8a33efa0626ad999ae1e625fd597c907f169"
   },
   {
+    "file": "signature/README.md",
+    "bytes": 6467,
+    "sha256": "ef5917a99a332803fb6ebea0f62c60627aaf17207dc6de8ad953fcedd3f81a6b"
+  },
+  {
+    "file": "signature/annotate_sign.py",
+    "bytes": 4656,
+    "sha256": "4e2937e2378fff40cb02202cfc8d11b11bcf68e7249ece030f1b890fa0356d22"
+  },
+  {
+    "file": "signature/dispatch-boundaries.json",
+    "bytes": 884,
+    "sha256": "ae36066fa9d3a89b72676ca73bdfa3f4d0b9c7bec5554634ce456396cca851e5"
+  },
+  {
+    "file": "signature/hmac-imports.txt",
+    "bytes": 66,
+    "sha256": "3946a9496d2d2e7a12bb489983c1fceb76ece7973fa0050f68e308e1b8f558ea"
+  },
+  {
+    "file": "signature/legacy-sign-draft.ts.txt",
+    "bytes": 11254,
+    "sha256": "0babb572b7eeaaf8b0ffe92451e511f9b95c7e3ce8b542ddb80f0792f8bf2bdc"
+  },
+  {
+    "file": "signature/methods.json",
+    "bytes": 4992,
+    "sha256": "5b97f3ee98d1570dc7675d5721d24f329cafbd7b41f71cdcbdda199930a0d20a"
+  },
+  {
+    "file": "signature/middle-tier-annotated.asm",
+    "bytes": 64036,
+    "sha256": "b8f48c6f00a95e7fb219a614bc00787a91d4bdca1f97b6e13a6b08a26f6f7151"
+  },
+  {
+    "file": "signature/middle-tier.asm",
+    "bytes": 62716,
+    "sha256": "352bb2ce716898d81130a66ca9c42698000d5f4c9b3dd81ab99884edeed0eb13"
+  },
+  {
+    "file": "signature/mtop-sign-annotated.asm",
+    "bytes": 48029,
+    "sha256": "0b72c3c42f99d4c126397736529cd2efc20c952a56eacb90dc682331e953824b"
+  },
+  {
+    "file": "signature/mtop-sign.asm",
+    "bytes": 45526,
+    "sha256": "e8a06c77d866dffa1786997a50bd4098b3c9776ed3ec408daadff1623a204df7"
+  },
+  {
+    "file": "signature/open-secure-signature-annotated.asm",
+    "bytes": 69656,
+    "sha256": "9398a258cc14534145b54b6143a6a132163d80d7334c5d697769c94497f8797f"
+  },
+  {
+    "file": "signature/open-secure-signature.asm",
+    "bytes": 68197,
+    "sha256": "43cccfcd10300f459890d7016d2299aa49441df54d0d26315bee2c997faeff30"
+  },
+  {
+    "file": "signature/sdk-security-annotated.asm",
+    "bytes": 32812,
+    "sha256": "bd36fd08e588995c53bd668b002f1c129d89532d78cff994fdaad497a648bf27"
+  },
+  {
+    "file": "signature/sdk-security.asm",
+    "bytes": 30706,
+    "sha256": "f9710c848d95cea895fa95c7273548e646c2739555c31cf2721851b71829d943"
+  },
+  {
+    "file": "signature/secure-signature-annotated.asm",
+    "bytes": 55369,
+    "sha256": "c5f99e256ceedcd87c2997514c32f612f46202cd1aacd0c197095fcd07b1ea0c"
+  },
+  {
+    "file": "signature/secure-signature.asm",
+    "bytes": 54445,
+    "sha256": "e3c7342e986ea6d790eec50118fcf4ad0be1799d611fc8780c280c9b43d10861"
+  },
+  {
+    "file": "signature/security-factors-annotated.asm",
+    "bytes": 49572,
+    "sha256": "5a7d3c7ae9d42657f51c31c1083bd328fe6d57714a087ad1073e4be3d1b2f76d"
+  },
+  {
+    "file": "signature/security-factors.asm",
+    "bytes": 46851,
+    "sha256": "96b749370b3dba8563ecd8b3990a64a2e01113cf2945d3ccacd656b72ddbfda5"
+  },
+  {
+    "file": "signature/sign_input.py",
+    "bytes": 2723,
+    "sha256": "e705dde4236967430fc8b9943cbda1e92dbe89d87abc1921652b36bb53195d4d"
+  },
+  {
+    "file": "signature/test_sign_input.py",
+    "bytes": 3136,
+    "sha256": "ff3fbdeaa42c6ab676b178b7444769041a6aefb672163ca66761f20ef7c0669d"
+  },
+  {
+    "file": "signature/unified-annotated.asm",
+    "bytes": 66659,
+    "sha256": "1f72142e8c17e4ce7d09bf4836c03dbb620d98f6e7ea66b5ccf14134030f8035"
+  },
+  {
+    "file": "signature/unified.asm",
+    "bytes": 66027,
+    "sha256": "f8f7a44b4fc10c8a3faf21301267c98a4dc21a4cc88e7afa02cae45d05363563"
+  },
+  {
     "file": "原生认证分析.md",
     "bytes": 5600,
     "sha256": "4f59ebb306ee1344753f0254c21e3565ddab927cbf66226fda5e7c993a7d78f2"
@@ -73,10 +188,5 @@
     "file": "自动续期修复说明.md",
     "bytes": 3173,
     "sha256": "a157030db3096b50ae1c1503806a9ef2c93ccfe2cf5d5a052260d2c0dfc42fd8"
-  },
-  {
-    "file": "Cainiao_8.10.703_NoAd.ipa",
-    "bytes": 69471282,
-    "sha256": "8adf786e0edf430eb3e814694df73d64ae70f79c86ba6268b599fc42837589a1"
   }
 ]

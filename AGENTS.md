@@ -24,7 +24,7 @@
 - 安装包统一放在仓库根目录 `bao/`，使用固定英文文件名，不在文件名中加入版本号；软件显示名称仍使用中文。
 - 菜鸟随行固定为 `bao/Cainiao.scripting`，后续更新覆盖该文件，保留 `script.json` 中的 `name: "cniao"`。
 - 发布更新时同步包内 `script.json` 版本和设置页显示版本。
-- `.scripting` 包为 ZIP，入口文件位于包根目录。菜鸟包只包含 `script.json`、`index.tsx`、`widget.tsx`、`app_intents.tsx`、`moduleSection.tsx`，不包含调试文件、测试、凭据或未使用模块。
+- `.scripting` 包为 ZIP，入口文件位于包根目录。菜鸟包包含 `script.json`、`index.tsx`、`widget.tsx`、`app_intents.tsx`、`moduleSection.tsx` 及实际导入的 `cainiao.ts`、`settings.ts`，不包含调试文件、测试、凭据或未使用模块。使用 `python3 tools/package-cainiao.py` 校验并生成固定安装包。
 - 打包后验证 ZIP 完整性、包内版本、依赖和源码一致性。
 
 ## Git 提交与推送

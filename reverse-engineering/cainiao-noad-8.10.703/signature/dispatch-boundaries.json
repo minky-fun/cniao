@@ -1,0 +1,32 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "boundaries": [
+    {
+      "address": "0x1068f6788",
+      "usage": "secure signature core dispatcher",
+      "reference_instruction": "0x102ab5710",
+      "section": "__bss",
+      "section_type": 1,
+      "zero_fill": true,
+      "resolved_runtime_value": false
+    },
+    {
+      "address": "0x1068fbe50",
+      "usage": "unified security core dispatcher",
+      "reference_instruction": "0x102b5a08c",
+      "section": "__bss",
+      "section_type": 1,
+      "zero_fill": true,
+      "resolved_runtime_value": false
+    },
+    {
+      "address": "0x1068fd856",
+      "usage": "middle-tier CFString backing storage",
+      "reference_instruction": "0x102b717a4",
+      "section": "__bss",
+      "section_type": 1,
+      "zero_fill": true,
+      "resolved_runtime_value": false
+    }
+  ]
+}
