@@ -41,8 +41,8 @@ http://boxjs.com
 使用已安装的 TypeScript 编译器执行 `tsc -p tools/tsconfig.cniao.json`，生成测试所需的临时 JavaScript 后运行：
 
 ```sh
-node --test tests/cniao-renewal.test.cjs
+node --test tests/cniao-*.test.cjs
 python3 -B tools/package-cainiao.py
 ```
 
-打包工具会核对 `settings.ts` 与 `script.json` 的版本，按入口的实际本地依赖生成 `bao/Cainiao.scripting`，验证 ZIP 完整性及文件内容。测试使用合成凭据和模拟网关，不读取真实账号、不发送认证请求。通过这些检查后仍需在 iPhone 上预览三种尺寸，并验证桌面刷新、分页及实际会话续期。
+打包工具会核对 `settings.ts` 与 `script.json` 的版本，按入口的实际本地依赖生成 `bao/Cainiao.scripting`，验证 ZIP 完整性及文件内容。测试使用合成凭据和模拟网关，不读取真实账号、不发送认证请求；覆盖查询续期、三种尺寸的入口执行与视图树、空列表、错误展示和按钮 Intent，不模拟原生像素布局。通过这些检查后仍需在 iPhone 上预览三种尺寸，并验证桌面刷新、分页及实际会话续期。

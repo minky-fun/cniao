@@ -6,7 +6,7 @@ export type PickupItem = {
   status: string; relation: string; name: string; code: string
   pic: string; stationName: string; postBrandName: string
 }
-export type PackageResult = { items: PickupItem[] | null; errorMessage?: string }
+type PackageResult = { items: PickupItem[] } | { items: null; errorMessage: string }
 
 const API_NAME = "mtop.cainiao.lpc.packageservice.querypdspackagedatalist.cn"
 const API_URL = `https://caps-mtop.cainiao.com/gw/${API_NAME}/1.0`
@@ -48,7 +48,7 @@ async function fetchBoxJs(key: string): Promise<string | null> {
     const json = await resp.json()
     const val = json?.val
     return typeof val === "string" && val.trim() ? val.trim() : null
-  } catch (e) { console.log(`BoxJS ${key} 读取失败，请检查代理和 BoxJS 地址`); return null }
+  } catch { console.log(`BoxJS ${key} 读取失败，请检查代理和 BoxJS 地址`); return null }
 }
 
 /** 解析现有 BoxJS 明文或 URL 编码的请求头 JSON。 */
@@ -70,14 +70,6 @@ function parseHeaders(raw: string): Record<string, string> | null {
 }
 
 // ========== 包裹查询请求构建 ==========
-
-/** 保留已验证包裹查询的业务参数及序列化顺序。 */
-function buildRequestData() {
-  return {
-    currentPage: 1, pageSize: 40, needTemporality: false,
-    needDynInfo: "{'needFindTemporality':true,'needAppointment':true}",
-  }
-}
 
 /** 沿用已验证的包裹请求头，移除传输层字段并更新时间。 */
 function preparePackageHeaders(boxJsHeaders: Record<string, string>): Record<string, string> {
@@ -209,7 +201,7 @@ async function refreshSessionId(): Promise<SessionRefreshResult> {
     const ret = json?.ret
     console.log("autologin 响应已收到")
     if (resp.ok && Array.isArray(ret) && ret.length > 0 && ret.every((value: unknown) => typeof value === "string" && value.split("::")[0] === "SUCCESS")) {
-      const sessionData = (json as any)?.data?.data
+      const sessionData = json?.data?.data
       const sid: string | undefined = sessionData?.sessionId
       if (typeof sid !== "string" || !sid.trim()) return { errorMessage: "续期响应缺少 sessionId" }
 
@@ -225,7 +217,7 @@ async function refreshSessionId(): Promise<SessionRefreshResult> {
       return { sid }
     }
     return { errorMessage: `自动续期被拒绝：${getRequestError(json, resp.status)}；请打开菜鸟更新登录态` }
-  } catch (e) { console.log("autologin 请求失败"); return { errorMessage: "自动续期网络失败，下次刷新将重试" } }
+  } catch { console.log("autologin 请求失败"); return { errorMessage: "自动续期网络失败，下次刷新将重试" } }
 }
 
 // ========== 包裹查询 ==========
@@ -237,7 +229,11 @@ export async function getPackages(): Promise<PackageResult> {
   const boxJs = parseHeaders(raw)
   if (!boxJs) return { items: null, errorMessage: "headers JSON 解析失败" }
 
-  const dataStr = JSON.stringify(buildRequestData())
+  // 保留已验证的业务参数与序列化顺序。
+  const dataStr = JSON.stringify({
+    currentPage: 1, pageSize: 40, needTemporality: false,
+    needDynInfo: "{'needFindTemporality':true,'needAppointment':true}",
+  })
   const headers = preparePackageHeaders(boxJs)
   // sid 只绑定产生它的原始抓取头；App 重新抓取或切换账号后自动停用。
   const session = Storage.get<PackageSession>(SESSION_KEY)
@@ -301,7 +297,7 @@ export async function getPackages(): Promise<PackageResult> {
       }
     }
     return { items: null, errorMessage: msg }
-  } catch (e) { console.log("包裹请求或解析失败"); return { items: null, errorMessage: "请求出错，请稍后重试" } }
+  } catch { console.log("包裹请求或解析失败"); return { items: null, errorMessage: "请求出错，请稍后重试" } }
 }
 
 // ========== 响应解析 ==========

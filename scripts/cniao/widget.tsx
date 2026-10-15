@@ -49,8 +49,6 @@ function sortPickupItems(items: PickupItem[]): PickupItem[] {
 }
 /** 按当前展示顺序选取地点、承运商、关系或状态。 */
 function getItemMeta(item: PickupItem): string { return item.stationName || item.postBrandName || item.relation || item.status }
-/** 有取件码时优先显示取件码，否则展示物流状态。 */
-function getPrimaryCode(item: PickupItem): string { return item.code || item.status }
 /** 读取小号分页索引，并限制到当前包裹数量范围。 */
 function getSmallPageIndex(total: number): number {
   if (total <= 0) return 0
@@ -91,23 +89,17 @@ function EmptyState({ message }: { message: string }) {
 }
 
 /** 大号列表展示包裹标题、取件地点和取件码。 */
-function PillRow({ item, compact }: { item: PickupItem; compact?: boolean }) {
-  const is = compact ? 13 : 15; const nf = compact ? 11 : 12; const sf = compact ? 9 : 10
-  const cf = compact ? 13 : 15; const py = compact ? 7 : 9; const ps = compact ? 24 : 28
+function PillRow({ item }: { item: PickupItem }) {
   return (
-    <HStack alignment="center" spacing={10} padding={{ top: py, leading: 10, bottom: py, trailing: 10 }} frame={{ minWidth: 0, maxWidth: Infinity }} widgetBackground={{ style: theme.pillBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
+    <HStack alignment="center" spacing={10} padding={{ top: 7, leading: 10, bottom: 7, trailing: 10 }} frame={{ minWidth: 0, maxWidth: Infinity }} widgetBackground={{ style: theme.pillBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
       <HStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity }}>
-        {item.pic ? <Image imageUrl={item.pic} resizable frame={{ width: ps, height: ps }} /> : <Image systemName="shippingbox.fill" font={is} fontWeight="semibold" foregroundStyle={theme.icon} />}
+        {item.pic ? <Image imageUrl={item.pic} resizable frame={{ width: 24, height: 24 }} /> : <Image systemName="shippingbox.fill" font={13} fontWeight="semibold" foregroundStyle={theme.icon} />}
         <VStack alignment="leading" spacing={2} frame={{ minWidth: 0, maxWidth: Infinity }}>
-          <Text font={nf} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.name || getItemMeta(item)}</Text>
-          <Text font={sf} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{getItemMeta(item)}</Text>
+          <Text font={11} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.name || getItemMeta(item)}</Text>
+          <Text font={9} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{getItemMeta(item)}</Text>
         </VStack>
       </HStack>
-      {compact ? <Text widgetAccentable font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
-        : <VStack alignment="trailing" spacing={2} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 12, style: "continuous" } }}>
-          <Text font={9} fontWeight="medium" foregroundStyle={theme.tertiary}>{item.code ? "取件码" : "状态"}</Text>
-          <Text widgetAccentable font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
-        </VStack>}
+      <Text widgetAccentable font={13} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{item.code || item.status}</Text>
     </HStack>
   )
 }
@@ -122,7 +114,7 @@ function CompactMediumRow({ item }: { item: PickupItem }) {
         <Text font={11} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1}>{item.name || getItemMeta(item)}</Text>
         <Text font={9} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
       </VStack>
-      <Text widgetAccentable font={13} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.65}>{getPrimaryCode(item)}</Text>
+      <Text widgetAccentable font={13} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.65}>{item.code || item.status}</Text>
     </HStack>
   )
 }
@@ -156,7 +148,7 @@ function SmallView({ items }: { items: PickupItem[] }) {
         <Spacer />
         <Text font={9} foregroundStyle={theme.tertiary}>{item.code ? "取件码" : "物流状态"}</Text>
         <HStack spacing={4}>
-          <Text widgetAccentable font={compact ? 22 : 26} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.5} frame={{ minWidth: 0, maxWidth: Infinity }}>{getPrimaryCode(item)}</Text>
+          <Text widgetAccentable font={compact ? 22 : 26} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.5} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.code || item.status}</Text>
           <Text font={9} foregroundStyle={theme.secondary}>{index + 1}/{total}</Text>
         </HStack>
       </VStack> : <EmptyState message="暂无进行中包裹" />}
@@ -187,7 +179,7 @@ function LargeView({ items }: { items: PickupItem[] }) {
   return (
     <VStack alignment="leading" padding={12} spacing={6} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 20, style: "continuous" } }}>
       <WidgetHeader countText={`${items.length} 件`} trailingText={`更新 ${fmtHHmm(new Date())}`} />
-      {list.length === 0 ? <EmptyState message="暂无进行中包裹" /> : list.map((item, index) => <PillRow item={item} compact key={index} />)}
+      {list.length === 0 ? <EmptyState message="暂无进行中包裹" /> : list.map((item, index) => <PillRow item={item} key={index} />)}
       <Spacer />
       {remaining > 0 ? <Link url="cainiao://"><Text font={10} foregroundStyle={theme.secondary}>另有 {remaining} 件，打开菜鸟查看</Text></Link> : null}
     </VStack>
@@ -238,9 +230,8 @@ async function showWidget() {
   const s = getSettings()
   const result = await getPackages()
   const policy: WidgetReloadPolicy = { policy: "after", date: new Date(Date.now() + s.refreshInterval * 60 * 1000) }
-  if (result.items === null) { Widget.present(<ErrorView message={result.errorMessage ?? "请求失败"} />, policy); return }
-  const items = result.items
-  Widget.present(<WidgetView items={sortPickupItems(items)} />, policy)
+  if (result.items === null) { Widget.present(<ErrorView message={result.errorMessage} />, policy); return }
+  Widget.present(<WidgetView items={sortPickupItems(result.items)} />, policy)
 }
 
 showWidget()

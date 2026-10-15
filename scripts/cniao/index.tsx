@@ -67,17 +67,6 @@ function getGlassBackground(): DynamicShapeStyle {
   }
 }
 
-/** 绘制设置页背景，不参与点击事件。 */
-function GlassBackground() {
-  return (
-    <Rectangle
-      fill={getGlassBackground()}
-      ignoresSafeArea={true}
-      allowsHitTesting={false}
-    />
-  )
-}
-
 // ─── 设置逻辑 ───
 
 /** 展示配置，并使用当前保存的地址检测 BoxJS。 */
@@ -132,7 +121,11 @@ function SettingsView() {
   return (
     <NavigationStack>
       <ZStack alignment="bottom" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
-        <GlassBackground />
+        <Rectangle
+          fill={getGlassBackground()}
+          ignoresSafeArea={true}
+          allowsHitTesting={false}
+        />
         <List
           navigationTitle="菜鸟随行"
           navigationBarTitleDisplayMode="inline"
@@ -203,7 +196,7 @@ function SettingsView() {
             <Picker
               title="自动刷新间隔"
               value={refreshInterval}
-              onChanged={(v: number) => setRefreshInterval(v)}
+              onChanged={setRefreshInterval}
               pickerStyle="menu"
             >
               <Text tag={15}>15 分钟（推荐）</Text>
