@@ -1,0 +1,238 @@
+ Generated x-sign: %@
++[UTMCHttpsHelper _payLoadHeaderToBufferWithMiniWua:]
++[UTMCHttpsHelper _v1_uploadDataToBufferWithStream:miniWua:]
+-[CNLoginSDKGlobalInfo loadSessionIdAndRefreshToken]
+-[CNLoginSDKLoginService loginWithCNRefreshToken:]
+-[UTMCTnetRequestHelper _payLoadHeaderToBufferWithSession:type:miniWua:]
+-[UTMCTnetRequestHelper _v1_uploadDataToBufferWithStream:miniWua:]
+<%@ %p accessToken:%@ refreshToken:%@>
+ALBBAutoLogin
+ALBB_NOTIFICATION_AUTOLOGIN_FAIL_WITH_CLEARSESSION
+AutoLoginOnly
+AutoLoginRequest
+AutoLoginSuccess
+CNLoginSDKLoginExtAutoLoginKey
+CNLoginSDKRefreshSessionIdRequest
+CNLoginSDKRefreshSessionIdResponse
+DPSAuthTokenWithAccessToken:refreshToken:
+Event_AutoLoginCost
+Event_AutoLoginFail
+H5 MTOP interceptor reset loginOption = AutoLoginAndManual
+H5 MTOP interceptor reset loginOption = AutoLoginOnly
+H5_AL_AUTOLOGIN_END
+H5_AL_AUTOLOGIN_RESULT
+H5_AL_AUTOLOGIN_START
+H5_AL_SESSION_ALIAUTOLOGIN
+MtopAutoLoginRequest
+RefreshSessionOfCookieJsHandler
+RefreshToken access token is empty, uid=
+RefreshToken expired, uid=
+RefreshToken failed, uid=
+RefreshToken failed,uid=
+RefreshToken success, uid=
+RefreshToken, refresh_token:(md5)
+SecurityGuardOpenMiddleTierGeneric generate 'x-sign' failed, error: %@
+SecurityGuardOpenMiddleTierGeneric generate 'x-sign': %@
+SecurityGuardOpenMiddleTierGeneric is NULL, generate 'x-sign' failed!
+SecurityGuardOpenMiddleTierGeneric ouput get 'x-sign' failed!
+SecurityGuardUnifiedTierGeneric generate 'x-sign' failed, error: %@
+SecurityGuardUnifiedTierGeneric is NULL, generate 'x-sign' failed!
+T@"NSError",&,N,V_refreshTokenError
+T@"NSString",&,N,V_autoLoginToken
+T@"NSString",&,N,V_miniwua
+T@"NSString",&,N,V_refreshToken
+T@"NSString",&,N,V_wbRefreshToken
+T@"NSString",&,N,VrefreshToken
+T@"NSString",C,N,V_autoLoginOnly
+T@"NSString",C,N,V_autoLoginRequest
+T@"NSString",C,N,V_httpsMiniWua
+T@"NSString",C,N,V_miniWua
+T@"NSString",C,N,V_needRefreshToken
+T@"NSString",C,N,V_refreshToken
+T@"NSString",C,N,V_refreshTokenExpired
+T@"NSString",C,N,V_sessionIdExpired
+T@"NSString",C,V_refreshToken
+TB,N,V_autoLogin
+TB,N,V_autoLoginRateLimit
+TB,N,V_autoLoginUseSessionSite
+TB,N,V_enableAutoLoginLimit
+TB,N,V_froceLoadCookieWithAutoLogin
+TB,N,V_initializeWithAutoLogin
+TB,N,V_isAutoLoginOnLaunch
+TB,N,V_needRefreshToken
+TB,N,V_noSupportAutologinOnly
+TB,N,V_runAutoLoginLogic
+TB,N,V_supportAutologinOnly
+TB,N,V_tryRefreshSessionWhenAuthFailed
+TQ,N,V_webViewAutoLoginCount
+Td,N,V_lastAutoLoginLimitTime
+Ti,N,V_autoLoginLimitCount
+Ti,N,V_autoLoginLimitPeriod
+Ti,N,V_autologinTimeoutInterval
+WXOpenSDKRefreshTokenError
+]  @__ZN4gaea3lwp11AuthService12RefreshTokenERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEERKNS2_8functionIFvRKNS0_10OAuthModelEEEERKNSB_IFvvEEERKNSB_IFvRKNS_4base11ErrorResultEEEE
+__ZN4gaea3lwp11AuthService12RefreshTokenERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEERKNS2_8functionIFvRKNS0_10OAuthModelEEEERKNSB_IFvvEEERKNSB_IFvRKNS_4base11ErrorResultEEEE
+_autoLogin
+_autoLoginLimitCount
+_autoLoginLimitPeriod
+_autoLoginOnly
+_autoLoginRateLimit
+_autoLoginRequest
+_autoLoginToken
+_autoLoginUseSessionSite
+_autologinTimeoutInterval
+_enableAutoLoginLimit
+_froceLoadCookieWithAutoLogin
+_httpsMiniWua
+_initializeWithAutoLogin
+_isAutoLoginOnLaunch
+_lastAutoLoginLimitTime
+_miniWua
+_miniwua
+_needRefreshToken
+_noSupportAutologinOnly
+_payLoadHeaderToBufferWithMiniWua:
+_payLoadHeaderToBufferWithSession:type:miniWua:
+_refreshToken
+_refreshTokenError
+_refreshTokenExpired
+_runAutoLoginLogic
+_sessionIdExpired
+_supportAutologinOnly
+_tryRefreshSessionWhenAuthFailed
+_v1_uploadDataToBufferWithStream:miniWua:
+_wbRefreshToken
+_webViewAutoLoginCount
+aliAutoLoginBindNewVC
+aliAutoLoginDefaultBind
+aliAutoLoginSpecialChannel
+aliAutoLoginSwitch
+aliAutoLoginWhiteList
+asyncAliAutoLoginSinceiOS10
+authResponse.refreshToken
+autoLogin
+autoLogin result:%@,%@
+autoLogin:
+autoLogin:completion:
+autoLogin:session:callBack:
+autoLogin:session:clearCookie:
+autoLogin:site:userId:reserved:onSuccess:onError:
+autoLoginLimit
+autoLoginLimit:
+autoLoginLimitCount
+autoLoginLimitPeriod
+autoLoginOnly
+autoLoginRateLimit
+autoLoginRequest
+autoLoginToken
+autoLoginUseSessionSite
+autoLoginUseSessionSite:
+autoLogin_cancel_login
+autoLogin_need_clear_session
+autoLogin_not_need_clear_session
+autologinTimeoutInterval
+autologintoken
+canAutoLogin
+canEnableAlipayAutoLogin
+checkShowAlertOnceIfLaunchAutoLogin
+cnmc_login|autoLogin|enter
+cnmc_login|autoLogin|result=%@
+cnmc_login|autoLogin|session invalid|relogin
+com.taobao.mtop.mLoginUnitService.autoLogin
+delayLaunchWXWithRefreshTokenFail:
+doLoginActionWithNeedAutoRefreshToken:comletion:
+enableAliAutoLogin:
+enableAutoLoginLimit
+fetchMiniWua:
+froceLoadCookieWithAutoLogin
+getMiniWua:error:
+getMiniWuaData
+h5_aliAutoLoginSwitch
+h5_aliAutoLoginWhiteList
+h5_autologinbind
+h5_autologinbindnewvc
+h5_shouldSkipAutoLogin
+h5_shouldWKAutoLoginSyncCookie
+h5_syncAutoLogin
+handleLoginSuccess:autoLogin:
+handleRefreshTokenOpenUrl:delegate:
+httpsMiniWua
+initWithAccessToken:refreshToken:
+initializeWithAutoLogin
+initializeWithAutoLogin:
+isAutoLogin
+isAutoLogin:
+isAutoLoginOnLaunch
+lastAutoLoginLimitTime
+loadSessionIdAndRefreshToken
+loginWithCNRefreshToken refreshToken error!
+loginWithCNRefreshToken:
+loginWithCNRefreshToken: refreshToken invalid
+markWebViewAutoLoginBegin
+markWebViewAutoLoginEnd
+miniWua
+miniwua
+mtop.cainiao.cnmember.customer.autologin
+mtop.com.taobao.mloginService.appOldAutoLogin
+mtop.taobao.alibabaMLoginService.autologin
+mtop.taobao.commonuse.mloginService.autoLogin
+mtop.taobao.gucMLoginService.autologin
+needRefreshToken
+noSupportAutologinOnly
+processFinalLoginCompletion:isAutoLogin:
+refreshMiniWua
+refreshSessionOfCookie
+refreshToken
+refreshTokenError
+refreshTokenExpired
+refreshTokenFail/?%@=%@&%@=%@&%@=%@&%@=%@
+runAutoLoginLogic
+sendLoginWithRefreshToken:completion:
+sessionIdExpired
+sessionOrRefreshTokenValid:
+setAutoLogin:
+setAutoLoginLimitCount:
+setAutoLoginLimitPeriod:
+setAutoLoginOnly:
+setAutoLoginRateLimit:
+setAutoLoginRequest:
+setAutoLoginToken:
+setAutoLoginUseSessionSite:
+setAutologinTimeoutInterval:
+setEnableAutoLoginLimit:
+setFroceLoadCookieWithAutoLogin:
+setHttpsMiniWua:
+setInitializeWithAutoLogin:
+setIsAutoLoginOnLaunch:
+setLastAutoLoginLimitTime:
+setMiniWua:
+setMiniwua:
+setNeedRefreshToken:
+setNoSupportAutologinOnly:
+setRefreshToken:
+setRefreshTokenError:
+setRefreshTokenExpired:
+setRunAutoLoginLogic:
+setSessionIdExpired:
+setSupportAutologinOnly:
+setTryRefreshSessionWhenAuthFailed:
+setWbRefreshToken:
+setWebViewAutoLoginCount:
+storeSessionWithLoginReturnInfo:autologin:
+storeSessionWithLoginReturnInfo:autologin:completionBlock:
+storeSessionWithSessionModel:autologin:completionBlock:
+supportAutologinOnly
+tryRefreshSessionWhenAuthFailed
+tryRefreshToken
+tryRefreshToken interface not implemented
+uploadDataWithV1ProtocolToBufferWithStream:miniWua:
+use HAMCSHA-1 to generate 'x-sign'
+use new SecurityGuardOpenMiddleTierGeneric interface to generate 'x-sign'
+use old SecurityGuard interface to generate 'x-sign'
+v24@?0@"NSError"8@"CNLoginSDKRefreshSessionIdResponse"16
+wbRefreshToken
+webViewAutoLoginCount
+wvmiValueLoginOptionAutoLoginOnly
+x-miniwua
+x-mpaas-miniwua
+x-sign

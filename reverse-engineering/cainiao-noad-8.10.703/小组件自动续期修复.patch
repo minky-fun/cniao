@@ -1,0 +1,267 @@
+--- before/widget.tsx
++++ after/widget.tsx
+@@ -56,12 +56,14 @@
+   }
+ }
+ 
++/** 不区分大小写读取已抓取的请求头。 */
+ function getHeaderCI(headers: Record<string, string>, name: string): string {
+   const t = name.toLowerCase()
+   for (const [k, v] of Object.entries(headers)) if (k.toLowerCase() === t) return v
+   return ""
+ }
+ 
++/** 更新已有请求头，保留原来的字段大小写。 */
+ function setHeaderCI(headers: Record<string, string>, name: string, value: string): void {
+   const t = name.toLowerCase()
+   for (const k of Object.keys(headers)) if (k.toLowerCase() === t) { headers[k] = value; return }
+@@ -117,9 +119,12 @@
+   }
+ }
+ 
++/** 沿用已验证的包裹请求头，移除传输层字段并更新时间。 */
+ function preparePackageHeaders(boxJsHeaders: Record<string, string>): Record<string, string> {
+   const h = { ...boxJsHeaders }
+-  delete h["Content-Length"]; delete h["Connection"]
++  for (const key of Object.keys(h)) {
++    if (["content-length", "connection"].includes(key.toLowerCase())) delete h[key]
++  }
+   setHeaderCI(h, "x-t", String(Math.floor(Date.now() / 1000)))
+   const li = getHeaderCI(h, "c-launch-info")
+   if (li) {
+@@ -138,9 +143,23 @@
+   return null
+ }
+ 
++/** 识别已有协议中的会话过期提示，忽略非字符串返回项。 */
+ function isSessionExpired(json: any): boolean {
+   const ret = json?.ret
+-  return Array.isArray(ret) && ret.some((r: string) => r.includes("SESSION_EXPIRED") || r.includes("Session过期"))
++  return Array.isArray(ret) && ret.some((r: unknown) => typeof r === "string" && (r.includes("SESSION_EXPIRED") || r.includes("Session过期")))
++}
++
++/** 只展示 MTOP 错误码或 HTTP 状态，不把返回描述中的账号数据带入界面或日志。 */
++function getRequestError(json: any, status: number): string {
++  const ret = json?.ret
++  if (Array.isArray(ret)) {
++    for (const value of ret) {
++      if (typeof value !== "string") continue
++      const code = value.split("::")[0]
++      if (code !== "SUCCESS" && /^[A-Z][A-Z0-9_]{0,79}$/.test(code)) return code
++    }
++  }
++  return `HTTP ${status}`
+ }
+ 
+ // ========== autologin 换 sid ==========
+@@ -150,11 +169,43 @@
+ const SESSION_KEY = "cniao_package_session"
+ 
+ type PackageSession = { sourceHeaders: string; sid: string }
+-
+-/** 同一抓取来源使用已轮换的 token；重新抓取后改用新数据。 */
++type SessionRefreshResult = { sid: string } | { errorMessage: string }
++
++/** 更新原生 autoLoginRequest 内的 token，兼容原先抓取的扁平 data；不增加猜测字段。 */
++function rotateAutologinData(raw: string, refreshToken: string, accountId: unknown): string {
++  const payload = JSON.parse(raw)
++  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("autologin data 格式错误")
++  const nested = typeof payload.autoLoginRequest === "string"
++  const request = nested ? JSON.parse(payload.autoLoginRequest) : payload
++  if (!request || typeof request !== "object" || Array.isArray(request) || typeof request.refreshToken !== "string" || !request.refreshToken.trim()) {
++    throw new Error("autologin 缺少 refreshToken")
++  }
++  request.refreshToken = refreshToken
++  if ("accountId" in request && (typeof accountId === "string" || typeof accountId === "number")) request.accountId = accountId
++  if (nested) payload.autoLoginRequest = JSON.stringify(request)
++  return JSON.stringify(payload)
++}
++
++/** 同一抓取来源使用已轮换的 token，并迁移旧版误写到外层的轮换结果。 */
+ async function getAutologinData(): Promise<string | null> {
+-  const cached = Storage.get<string>(AUTOLOGIN_DATA_KEY)
++  let cached = Storage.get<string>(AUTOLOGIN_DATA_KEY)
+   const source = Storage.get<string>(AUTOLOGIN_SOURCE_KEY)
++  if (cached && source) {
++    try {
++      const saved = JSON.parse(cached)
++      const captured = JSON.parse(source)
++      // 旧版只向外层添加 refreshToken；仅迁移原抓取没有这些字段的原生封装。
++      if (typeof saved?.autoLoginRequest === "string" && typeof saved.refreshToken === "string" && saved.refreshToken.trim()
++        && typeof captured?.autoLoginRequest === "string" && !("refreshToken" in captured)) {
++        const migrated = JSON.parse(rotateAutologinData(cached, saved.refreshToken, saved.accountId))
++        delete migrated.refreshToken
++        if (!("accountId" in captured)) delete migrated.accountId
++        cached = JSON.stringify(migrated)
++        if (!Storage.set(AUTOLOGIN_DATA_KEY, cached)) return null
++        console.log("已迁移旧版续期凭据")
++      }
++    } catch { console.log("续期凭据迁移失败，保留原始数据") }
++  }
+   const fromBox = await fetchBoxJs("cainiao_autologin_data")
+   if (!fromBox) return cached || null
+   if (source === fromBox && cached) return cached
+@@ -164,17 +215,27 @@
+ }
+ 
+ /** 沿用原有 autologin 请求续期会话，仅记录执行状态。 */
+-async function refreshSessionId(): Promise<string | null> {
++async function refreshSessionId(): Promise<SessionRefreshResult> {
+   const raw = await fetchBoxJs("cainiao_autologin_headers_json")
+-  if (!raw) { console.log("无 autologin headers"); return null }
++  if (!raw) return { errorMessage: "缺少续期请求头，请打开菜鸟触发 autologin 抓取" }
+   const boxJs = parseHeaders(raw)
+-  if (!boxJs) { console.log("autologin headers 解析失败"); return null }
++  if (!boxJs) return { errorMessage: "续期请求头格式错误，请重新抓取" }
+ 
+   const appData = await getAutologinData()
+-  if (!appData) { console.log("无 autologin data"); return null }
++  if (!appData) return { errorMessage: "缺少续期 data，请打开菜鸟触发 autologin 抓取" }
++  try {
++    // 先校验真实请求结构，避免将缺失或错误的数据发送给登录接口。
++    const payload = JSON.parse(appData)
++    const request = typeof payload?.autoLoginRequest === "string" ? JSON.parse(payload.autoLoginRequest) : payload
++    if (!request || typeof request.refreshToken !== "string" || !request.refreshToken.trim()) {
++      return { errorMessage: "续期 data 缺少 refreshToken，请重新抓取" }
++    }
++  } catch { return { errorMessage: "续期 data 格式错误，请重新抓取" } }
+ 
+   const h = { ...boxJs }
+-  delete h["Content-Length"]; delete h["Connection"]
++  for (const key of Object.keys(h)) {
++    if (["content-length", "connection"].includes(key.toLowerCase())) delete h[key]
++  }
+   setHeaderCI(h, "x-t", String(Math.floor(Date.now() / 1000)))
+   setHeaderCI(h, "Host", "cn-acs.m.cainiao.com")
+   h["x-cniao-skip-capture"] = "1"
+@@ -183,28 +244,27 @@
+   const url = `${REFRESH_URL}?rnd=${encodeURIComponent(generateRnd())}&data=${encodeURIComponent(appData)}`
+   try {
+     const resp = await fetch(url, { method: "GET", headers: h, timeout: 12 })
+-    const json = await resp.json()
+-    const ret = (json as any)?.ret?.[0] || ""
++    const json = await resp.json().catch(() => null)
++    const ret = json?.ret
+     console.log("autologin 响应已收到")
+-    if (resp.ok && ret.includes("SUCCESS")) {
++    if (resp.ok && Array.isArray(ret) && ret.length > 0 && ret.every((value: unknown) => typeof value === "string" && value.split("::")[0] === "SUCCESS")) {
+       const sessionData = (json as any)?.data?.data
+       const sid: string | undefined = sessionData?.sessionId
+-      if (!sid) { console.log("autologin 返回无 sessionId"); return null }
++      if (typeof sid !== "string" || !sid.trim()) return { errorMessage: "续期响应缺少 sessionId" }
++
++      const newRefreshToken: string | undefined = sessionData?.refreshToken
++      if (typeof newRefreshToken === "string" && newRefreshToken.trim()) {
++        try {
++          // token 可能在服务端立即轮换，先保存；包裹查询失败也不能回滚成旧 token。
++          const updated = rotateAutologinData(appData, newRefreshToken, sessionData?.cnAccountId)
++          if (!Storage.set(AUTOLOGIN_DATA_KEY, updated)) return { errorMessage: "新续期凭据保存失败，请重试" }
++        } catch { return { errorMessage: "新续期凭据更新失败，请重新抓取" } }
++      }
+       console.log("会话续期成功")
+-
+-      const newRefreshToken: string | undefined = sessionData?.refreshToken
+-      if (newRefreshToken) {
+-        try {
+-          const dataObj = JSON.parse(appData)
+-          dataObj.refreshToken = newRefreshToken
+-          if (sessionData?.cnAccountId != null) dataObj.accountId = sessionData.cnAccountId
+-          Storage.set(AUTOLOGIN_DATA_KEY, JSON.stringify(dataObj))
+-        } catch { console.log("更新 autologin data 失败") }
+-      }
+-      return sid
++      return { sid }
+     }
+-    return null
+-  } catch (e) { console.log("autologin 请求或解析失败"); return null }
++    return { errorMessage: `自动续期被拒绝：${getRequestError(json, resp.status)}；请打开菜鸟更新登录态` }
++  } catch (e) { console.log("autologin 请求失败"); return { errorMessage: "自动续期网络失败，下次刷新将重试" } }
+ }
+ 
+ // ========== 包裹查询 ==========
+@@ -229,34 +289,36 @@
+   try {
+     const url = `${API_URL}?rnd=${encodeURIComponent(generateRnd())}&data=${encodeURIComponent(dataStr)}`
+     const resp = await fetch(url, { method: "GET", headers, timeout: 12 })
+-    const json = await resp.json()
++    // HTTP 401/403 即使返回 HTML 或空响应，也必须进入续期分支。
++    const json = await resp.json().catch(() => null)
+ 
+     if (resp.ok && !isSessionExpired(json)) {
+       const items = extractPackages(json)
+       if (items) return { items }
+-      return { items: null, errorMessage: (json as any)?.ret?.[0] || "返回数据格式不符合预期" }
++      return { items: null, errorMessage: json ? getRequestError(json, resp.status) : "包裹响应不是 JSON" }
+     }
+ 
+     // Session 过期 → autologin 换 sid → 重试
+-    const msg = (json as any)?.ret?.[0] || `请求出错: ${resp.status}`
++    let msg = getRequestError(json, resp.status)
+     console.log("包裹查询失败，HTTP 状态:", resp.status)
+ 
+     if (resp.status === 401 || resp.status === 403 || isSessionExpired(json)) {
+       console.log("会话过期，autologin 换 sid...")
+-      const newSid = await refreshSessionId()
+-      if (newSid) {
+-        setHeaderCI(headers, "x-sid", newSid)
++      const renewal = await refreshSessionId()
++      if ("sid" in renewal) {
++        setHeaderCI(headers, "x-sid", renewal.sid)
+         const r2 = await fetch(url, { method: "GET", headers, timeout: 12 })
+-        const j2 = await r2.json()
++        const j2 = await r2.json().catch(() => null)
+         if (r2.ok && !isSessionExpired(j2)) {
+           const items = extractPackages(j2)
+           if (items) {
+             // 只有业务查询成功，才持久化新 sid，供下一轮组件刷新复用。
+-            Storage.set<PackageSession>(SESSION_KEY, { sourceHeaders: raw, sid: newSid })
++            Storage.set<PackageSession>(SESSION_KEY, { sourceHeaders: raw, sid: renewal.sid })
+             return { items }
+           }
+         }
+-      }
++        msg = `续期后包裹查询失败：${getRequestError(j2, r2.status)}`
++      } else msg = renewal.errorMessage
+       // 回退 BoxJS
+       console.log("回退 BoxJS 重试...")
+       const fbRaw = await fetchBoxJs("cainiao_pcs_headers_json")
+@@ -265,7 +327,7 @@
+         if (fbBoxJs) {
+           const fbH = preparePackageHeaders(fbBoxJs)
+           const fbResp = await fetch(url, { method: "GET", headers: fbH, timeout: 12 })
+-          const fbJson = await fbResp.json()
++          const fbJson = await fbResp.json().catch(() => null)
+           if (fbResp.ok && !isSessionExpired(fbJson)) {
+             const items = extractPackages(fbJson)
+             if (items) {
+@@ -283,7 +345,10 @@
+ 
+ // ========== 响应解析 ==========
+ 
++/** 只接受包裹数组；存在 MTOP 返回码时必须全部成功。 */
+ function extractPackages(json: unknown): PickupItem[] | null {
++  const ret = (json as { ret?: unknown })?.ret
++  if (ret !== undefined && (!Array.isArray(ret) || ret.length === 0 || !ret.every(value => typeof value === "string" && value.split("::")[0] === "SUCCESS"))) return null
+   const pkgs = (json as { data?: { packages?: unknown } })?.data?.packages
+   return Array.isArray(pkgs) ? filterPackages(pkgs) : null
+ }
+--- before/index.tsx
++++ after/index.tsx
+@@ -22,7 +22,7 @@
+ }
+ 
+ const SETTINGS_KEY = "cniaoSettings"
+-const VERSION = "1.1.0"
++const VERSION = "1.1.1"
+ 
+ const DEFAULT_SETTINGS: CainiaoSettings = {
+   boxJsUrl: "http://boxjs.com",
+@@ -159,7 +159,7 @@
+             header={<Text>⚠️ 重要说明</Text>}
+             footer={
+               <Text font="caption2" foregroundStyle="secondaryLabel">
+-                菜鸟 App 的会话令牌（sid）经过加密处理，具有时效性，无法永久有效。当小组件显示"连接异常"时，请打开菜鸟 App 刷新登录态，然后点击小组件上的刷新按钮即可恢复。
++                已抓取 autologin 请求头和 data 时，小组件在会话过期后自动续期、保存轮换凭据并重试。若续期凭据失效或服务端拒绝请求，组件会显示具体原因，此时需打开菜鸟更新登录态。
+               </Text>
+             }
+           />

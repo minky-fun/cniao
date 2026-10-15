@@ -1,0 +1,814 @@
+0000000105810d18 0x1063f53d8
+    isa        0x1063f5400
+    superclass 0x0 _OBJC_CLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce41a0
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  8
+        instanceSize   56
+        reserved       0x0
+        ivarLayout     0x105008b83
+        layout map     0x06 
+        name           0x105031538 CNLoginSDKLoginInfo
+        baseMethods    0x105ce3f18
+            entsize 24
+            count   14
+            name    0x104e894e6 initWithInfo:
+            types   0x10505cf0e @24@0:8@16
+            imp     0x1020be910
+            name    0x104f04915 refreshToken
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beaac
+            name    0x104f8eadb setRefreshToken:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020beab4
+            name    0x104f31efe sessionId
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beabc
+            name    0x104f98911 setSessionId:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020beac4
+            name    0x104dfcfd7 cnAccountId
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beacc
+            name    0x104cd644b setCnAccountId:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020bead4
+            name    0x104e38119 employeeId
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beadc
+            name    0x104f55644 setEmployeeId:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020beae4
+            name    0x104eba18c loginExt
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beaec
+            name    0x104f754d9 setLoginExt:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020beaf4
+            name    0x104e43f15 extention
+            types   0x10505bff2 @16@0:8
+            imp     0x1020beb00
+            name    0x104f5a50d setExtention:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020beb08
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020beb14
+        baseProtocols  0x0
+        ivars          0x105ce4070
+            entsize   32
+            count     6
+            offset    0x1062ef0ac 8
+            name      0x104da0aa8 _refreshToken
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef0b0 16
+            name      0x104da8f4d _sessionId
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef0b4 24
+            name      0x104d64a4a _cnAccountId
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef0b8 32
+            name      0x104d721b9 _employeeId
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef0bc 40
+            name      0x104d8bf49 _loginExt
+            type      0x105093f40 @"CNLoginSDKExt"
+            alignment 3
+            size      8
+            offset    0x1062ef0c0 48
+            name      0x104d76299 _extention
+            type      0x10505c076 @"NSDictionary"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105ce4138
+            entsize    16
+            count      6
+            name       0x104f04915 refreshToken
+            attributes 0x104c8fcbe T@"NSString",C,N,V_refreshToken
+            name       0x104f31efe sessionId
+            attributes 0x104ceca86 T@"NSString",C,N,V_sessionId
+            name       0x104dfcfd7 cnAccountId
+            attributes 0x104ce3745 T@"NSString",C,N,V_cnAccountId
+            name       0x104e38119 employeeId
+            attributes 0x104c8428d T@"NSString",C,N,V_employeeId
+            name       0x104eba18c loginExt
+            attributes 0x104c495f7 T@"CNLoginSDKExt",&,N,V_loginExt
+            name       0x104e43f15 extention
+            attributes 0x104cc012c T@"NSDictionary",&,N,V_extention
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x0 _OBJC_METACLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce3ed0
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x105031538 CNLoginSDKLoginInfo
+        baseMethods    0x0
+        baseProtocols  0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0
+
+0000000105810d80 0x1063f57e8
+    isa        0x1063f5810
+    superclass 0x0 _OBJC_CLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce62c0
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  8
+        instanceSize   32
+        reserved       0x0
+        ivarLayout     0x105008557
+        layout map     0x03 
+        name           0x10503166d CNLoginSDKLoginService
+        baseMethods    0x105ce5fd8
+            entsize 24
+            count   24
+            name    0x104e7f84f init
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c7690
+            name    0x104eba90d loginWithCNRefreshToken:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c775c
+            name    0x104eba36f loginHavanaAndCNServer:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c7a28
+            name    0x104e75ea3 havanaLoginSuccess:completionBlock:
+            types   0x10505db60 v32@0:8@16@?24
+            imp     0x1020c7d64
+            name    0x104f09cdf registerWVJsBridge4SsoLogin
+            types   0x10505bffa v16@0:8
+            imp     0x1020c7fbc
+            name    0x104cc6188 logoutCNServer:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c8208
+            name    0x104fc479a ssoLogin:completion:
+            types   0x10505db60 v32@0:8@16@?24
+            imp     0x1020c8538
+            name    0x104ee0478 p_loginCNWithHavanaToken:completion:
+            types   0x10505db60 v32@0:8@16@?24
+            imp     0x1020c86f8
+            name    0x104de6927 buildExtString
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c89a4
+            name    0x104ee54bb parseH5PageTitle:
+            types   0x10505cf0e @24@0:8@16
+            imp     0x1020c8b38
+            name    0x104ee628a parseUrlParam:
+            types   0x10505cf0e @24@0:8@16
+            imp     0x1020c8c10
+            name    0x104eaa22c jumpWebPage:pageTitle:error:completion:
+            types   0x10505c257 v48@0:8@16@24@32@?40
+            imp     0x1020c8ce8
+            name    0x104edefbf p_cnmemberLoginSucProcess:completion:
+            types   0x10505db60 v32@0:8@16@?24
+            imp     0x1020c8ef4
+            name    0x104e2f527 doLogout:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c932c
+            name    0x104ee0bc6 p_queryPersonalDetailInfo:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c953c
+            name    0x104ee0b2e p_processLoginResult:completion:
+            types   0x10505db60 v32@0:8@16@?24
+            imp     0x1020c96dc
+            name    0x104ee0b4f p_processLoginResult:completion:clear:
+            types   0x105093fa3 v36@0:8@16@?24B32
+            imp     0x1020c96e4
+            name    0x104eba0e4 loginCompletionBlock
+            types   0x10505d119 @?16@0:8
+            imp     0x1020c9808
+            name    0x104f75462 setLoginCompletionBlock:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c9810
+            name    0x104e06500 completion2
+            types   0x10505d119 @?16@0:8
+            imp     0x1020c9818
+            name    0x104c75854 setCompletion2:
+            types   0x10505d122 v24@0:8@?16
+            imp     0x1020c9820
+            name    0x104f04922 refreshTokenError
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c9828
+            name    0x104f8eaec setRefreshTokenError:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c9830
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020c983c
+        baseProtocols  0x0
+        ivars          0x105ce6220
+            entsize   32
+            count     3
+            offset    0x1062ef140 8
+            name      0x104d8bebe _loginCompletionBlock
+            type      0x10505d130 @?
+            alignment 3
+            size      8
+            offset    0x1062ef144 16
+            name      0x104d65863 _completion2
+            type      0x10505d130 @?
+            alignment 3
+            size      8
+            offset    0x1062ef148 24
+            name      0x104da0ab6 _refreshTokenError
+            type      0x10505ed51 @"NSError"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105ce6288
+            entsize    16
+            count      3
+            name       0x104eba0e4 loginCompletionBlock
+            attributes 0x104d17b72 T@?,C,N,V_loginCompletionBlock
+            name       0x104e06500 completion2
+            attributes 0x104d15baa T@?,C,N,V_completion2
+            name       0x104f04922 refreshTokenError
+            attributes 0x104cc43be T@"NSError",&,N,V_refreshTokenError
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x0 _OBJC_METACLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce5f90
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x10503166d CNLoginSDKLoginService
+        baseMethods    0x105ce5f70
+            entsize 24
+            count   1
+            name    0x104fb576c sharedInstance
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c76ec
+        baseProtocols  0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0
+
+0000000105810d90 0x1063f5888
+    isa        0x1063f58b0
+    superclass 0x0 _OBJC_CLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce6790
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  8
+        instanceSize   64
+        reserved       0x0
+        ivarLayout     0x1050316ad
+        layout map     0x02 0x12 0x11 
+        name           0x105031697 CNLoginSDKBaseRequest
+        baseMethods    0x105ce6418
+            entsize 24
+            count   20
+            name    0x104e7f84f init
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c9890
+            name    0x104cad605 apiName
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c9950
+            name    0x104dcf10c apiVersion
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c9958
+            name    0x104dd6697 assembleDictionary4Model
+            types   0x10505bffa v16@0:8
+            imp     0x1020c9960
+            name    0x104e282f3 dictionary4Model
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c9964
+            name    0x104f3737c setApiName:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c9998
+            name    0x104f3740e setApiVersion:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c99a0
+            name    0x104ea0977 isNeedEcode
+            types   0x10505c002 B16@0:8
+            imp     0x1020c99a8
+            name    0x104cda6fb setIsNeedEcode:
+            types   0x10505c00a v20@0:8B16
+            imp     0x1020c99b0
+            name    0x104cc7f7c mtopAccountInfo
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c99b8
+            name    0x104f7c12f setMtopAccountInfo:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c99c0
+            name    0x104ce62cd timeout
+            types   0x10505c046 i16@0:8
+            imp     0x1020c99c8
+            name    0x104fa4cb2 setTimeout:
+            types   0x10505c04e v20@0:8i16
+            imp     0x1020c99d0
+            name    0x104c5d60e headers
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c99d8
+            name    0x104f622c2 setHeaders:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c99e0
+            name    0x104c70282 requestTypeEnum
+            types   0x10505c15b Q16@0:8
+            imp     0x1020c99ec
+            name    0x104f90da7 setRequestTypeEnum:
+            types   0x10505db84 v24@0:8Q16
+            imp     0x1020c99f4
+            name    0x104e28095 dic4Model
+            types   0x10505bff2 @16@0:8
+            imp     0x1020c99fc
+            name    0x104f506d9 setDic4Model:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020c9a04
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020c9a10
+        baseProtocols  0x0
+        ivars          0x105ce6600
+            entsize   32
+            count     8
+            offset    0x1062ef14c 8
+            name      0x104d5a39c _apiName
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef150 16
+            name      0x104d5a43f _apiVersion
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef154 24
+            name      0x104d848b5 _isNeedEcode
+            type      0x10505c059 B
+            alignment 0
+            size      1
+            offset    0x1062ef158 28
+            name      0x104db3087 _timeout
+            type      0x10505c05d i
+            alignment 2
+            size      4
+            offset    0x1062ef15c 32
+            name      0x104d9150a _mtopAccountInfo
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef160 40
+            name      0x104d7d2c7 _headers
+            type      0x10505c076 @"NSDictionary"
+            alignment 3
+            size      8
+            offset    0x1062ef164 48
+            name      0x104da2c3e _requestTypeEnum
+            type      0x10505db8f Q
+            alignment 3
+            size      8
+            offset    0x1062ef168 56
+            name      0x104d6e014 _dic4Model
+            type      0x10505c668 @"NSMutableDictionary"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105ce6708
+            entsize    16
+            count      8
+            name       0x104cad605 apiName
+            attributes 0x104ce186c T@"NSString",C,N,V_apiName
+            name       0x104dcf10c apiVersion
+            attributes 0x104c80a06 T@"NSString",C,N,V_apiVersion
+            name       0x104ea0977 isNeedEcode
+            attributes 0x104d267ea TB,N,V_isNeedEcode
+            name       0x104cc7f7c mtopAccountInfo
+            attributes 0x104ce8ded T@"NSString",C,N,V_mtopAccountInfo
+            name       0x104ce62cd timeout
+            attributes 0x104d43cb7 Ti,N,V_timeout
+            name       0x104c5d60e headers
+            attributes 0x104cc058a T@"NSDictionary",&,N,V_headers
+            name       0x104c70282 requestTypeEnum
+            attributes 0x104d36e4d TQ,N,V_requestTypeEnum
+            name       0x104e28095 dic4Model
+            attributes 0x104c6ae9c T@"NSMutableDictionary",&,N,V_dic4Model
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x0 _OBJC_METACLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce63d0
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x105031697 CNLoginSDKBaseRequest
+        baseMethods    0x0
+        baseProtocols  0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0
+
+0000000105810e28 0x1063f5e78
+    isa        0x1063f5ea0
+    superclass 0x1063f5888
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce8160
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  24
+        instanceSize   32
+        reserved       0x0
+        ivarLayout     0x105008663
+        layout map     0x01 
+        name           0x1050318d9 CNLoginSDKRefreshSessionIdRequest
+        baseMethods    0x105ce80a0
+            entsize 24
+            count   5
+            name    0x104e7f84f init
+            types   0x10505bff2 @16@0:8
+            imp     0x1020cb270
+            name    0x104dd6697 assembleDictionary4Model
+            types   0x10505bffa v16@0:8
+            imp     0x1020cb2f8
+            name    0x104f04915 refreshToken
+            types   0x10505bff2 @16@0:8
+            imp     0x1020cb3c8
+            name    0x104f8eadb setRefreshToken:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020cb3d8
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020cb3e4
+        baseProtocols  0x0
+        ivars          0x105ce8120
+            entsize   32
+            count     1
+            offset    0x1062ef1cc 24
+            name      0x104da0aa8 _refreshToken
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105ce8148
+            entsize    16
+            count      1
+            name       0x104f04915 refreshToken
+            attributes 0x104c8fcbe T@"NSString",C,N,V_refreshToken
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x1063f58b0
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce8058
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x1050318d9 CNLoginSDKRefreshSessionIdRequest
+        baseMethods    0x0
+        baseProtocols  0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0
+
+0000000105810e30 0x1063f5ec8
+    isa        0x1063f5ef0
+    superclass 0x1063f79f8
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce8298
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  8
+        instanceSize   16
+        reserved       0x0
+        ivarLayout     0x105008663
+        layout map     0x01 
+        name           0x1050318fb CNLoginSDKRefreshSessionIdResponse
+        baseMethods    0x105ce81f0
+            entsize 24
+            count   4
+            name    0x104e8e79f initWithResponseInfo:
+            types   0x10505cf0e @24@0:8@16
+            imp     0x1020cb3f8
+            name    0x104eba408 loginInfo
+            types   0x10505bff2 @16@0:8
+            imp     0x1020cb4b4
+            name    0x104f75632 setLoginInfo:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020cb4c4
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020cb4d8
+        baseProtocols  0x0
+        ivars          0x105ce8258
+            entsize   32
+            count     1
+            offset    0x1062ef1d0 8
+            name      0x104d8c042 _loginInfo
+            type      0x105093fcf @"CNLoginSDKLoginInfo"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105ce8280
+            entsize    16
+            count      1
+            name       0x104eba408 loginInfo
+            attributes 0x104caa403 T@"CNLoginSDKLoginInfo",&,N,V_loginInfo
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x1063f7a20
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105ce81a8
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x1050318fb CNLoginSDKRefreshSessionIdResponse
+        baseMethods    0x0
+        baseProtocols  0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0
+
+00000001058111f0 0x1063f87a0
+    isa        0x1063f87c8
+    superclass 0x0 _OBJC_CLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105cf58d0
+        flags          0x184 RO_HAS_CXX_STRUCTORS
+        instanceStart  8
+        instanceSize   80
+        reserved       0x0
+        ivarLayout     0x105008e6e
+        layout map     0x09 
+        name           0x10503282c CNLoginSDKGlobalInfo
+        baseMethods    0x105cf5480
+            entsize 24
+            count   27
+            name    0x104e3bc4c encodeWithCoder:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e36e0
+            name    0x104e84af4 initWithCoder:
+            types   0x10505cf0e @24@0:8@16
+            imp     0x1020e3928
+            name    0x104e97e0a invalidateLoginInfo
+            types   0x10505bffa v16@0:8
+            imp     0x1020e3dd4
+            name    0x104f25364 saveLoginSuccessInfo:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e3ee8
+            name    0x104cb85de employeeSession
+            types   0x10505c002 B16@0:8
+            imp     0x1020e4184
+            name    0x104eb33cb loadSessionIdAndRefreshToken
+            types   0x10505bffa v16@0:8
+            imp     0x1020e423c
+            name    0x104e0f038 copyGlobalInfo:toInfo:
+            types   0x10505c1ff v32@0:8@16@24
+            imp     0x1020e44d8
+            name    0x104ee1118 p_saveEmployeeIdOfCurrentEnterprise:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e47c0
+            name    0x104f31efe sessionId
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e48c4
+            name    0x104f98911 setSessionId:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e48cc
+            name    0x104e38119 employeeId
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e48d4
+            name    0x104f55644 setEmployeeId:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e48dc
+            name    0x104eeb577 personalInfo
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e48e4
+            name    0x104f872d9 setPersonalInfo:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e48ec
+            name    0x104e3db1d enterpriseList
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e48f8
+            name    0x104f57f55 setEnterpriseList:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4900
+            name    0x104eba18c loginExt
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e490c
+            name    0x104f754d9 setLoginExt:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4914
+            name    0x104f04915 refreshToken
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e4920
+            name    0x104f8eadb setRefreshToken:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4928
+            name    0x104f31f08 sessionIdExpired
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e4930
+            name    0x104f9891f setSessionIdExpired:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4938
+            name    0x104f04934 refreshTokenExpired
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e4940
+            name    0x104f8eb02 setRefreshTokenExpired:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4948
+            name    0x104eba195 loginExtModel
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e4950
+            name    0x104f754e6 setLoginExtModel:
+            types   0x10505c015 v24@0:8@16
+            imp     0x1020e4958
+            name    0x104c89f86 .cxx_destruct
+            types   0x10505bffa v16@0:8
+            imp     0x1020e4964
+        baseProtocols  0x105cf5420
+            count    1
+            list[0]  0x1065149f0
+                isa       0x0
+                name      0x10500957e NSSecureCoding
+                protocols 0x1059b8158
+                    count    1
+                    list[0]  0x1064d81f0
+                        isa       0x0
+                        name      0x10500833c NSCoding
+                        protocols 0x0
+                        instanceMethods 0x10583cba8
+                            entsize 24
+                            count   2
+                            name    0x104e3bc4c encodeWithCoder:
+                            types   0x10505c015 v24@0:8@16
+                            imp     0x0
+                            name    0x104e84af4 initWithCoder:
+                            types   0x10505cf0e @24@0:8@16
+                            imp     0x0
+                        classMethods 0x0
+                        optionalInstanceMethods 0x0
+                        optionalClassMethods 0x0
+                        instanceProperties 0x0
+                instanceMethods 0x0
+                classMethods 0x1059b8170
+                    entsize 24
+                    count   1
+                    name    0x104fcff47 supportsSecureCoding
+                    types   0x10505c002 B16@0:8
+                    imp     0x0
+                optionalInstanceMethods 0x0
+                optionalClassMethods 0x0
+                instanceProperties 0x0
+        ivars          0x105cf5710
+            entsize   32
+            count     9
+            offset    0x1062ef570 8
+            name      0x104da8f4d _sessionId
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef574 16
+            name      0x104d721b9 _employeeId
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef578 24
+            name      0x104d9a923 _personalInfo
+            type      0x105093fb5 @"CNLoginSDKPersonalInfo"
+            alignment 3
+            size      8
+            offset    0x1062ef57c 32
+            name      0x104c9cd16 _enterpriseList
+            type      0x10505d064 @"NSArray"
+            alignment 3
+            size      8
+            offset    0x1062ef580 40
+            name      0x104d8bf49 _loginExt
+            type      0x10505c076 @"NSDictionary"
+            alignment 3
+            size      8
+            offset    0x1062ef584 48
+            name      0x104da0aa8 _refreshToken
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef588 56
+            name      0x104da8f58 _sessionIdExpired
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef58c 64
+            name      0x104da0ac9 _refreshTokenExpired
+            type      0x10505c06a @"NSString"
+            alignment 3
+            size      8
+            offset    0x1062ef590 72
+            name      0x104d8bf53 _loginExtModel
+            type      0x105093f40 @"CNLoginSDKExt"
+            alignment 3
+            size      8
+        weakIvarLayout 0x0
+        baseProperties 0x105cf5838
+            entsize    16
+            count      9
+            name       0x104f04915 refreshToken
+            attributes 0x104c8fcbe T@"NSString",C,N,V_refreshToken
+            name       0x104f31f08 sessionIdExpired
+            attributes 0x104cecaa3 T@"NSString",C,N,V_sessionIdExpired
+            name       0x104f04934 refreshTokenExpired
+            attributes 0x104ceb197 T@"NSString",C,N,V_refreshTokenExpired
+            name       0x104eba195 loginExtModel
+            attributes 0x104caa3d5 T@"CNLoginSDKExt",&,N,V_loginExtModel
+            name       0x104f31efe sessionId
+            attributes 0x104ceca86 T@"NSString",C,N,V_sessionId
+            name       0x104e38119 employeeId
+            attributes 0x104c8428d T@"NSString",C,N,V_employeeId
+            name       0x104eeb577 personalInfo
+            attributes 0x104caa46f T@"CNLoginSDKPersonalInfo",&,N,V_personalInfo
+            name       0x104e3db1d enterpriseList
+            attributes 0x104c564a4 T@"NSArray",&,N,V_enterpriseList
+            name       0x104eba18c loginExt
+            attributes 0x104c2bfca T@"NSDictionary",&,N,V_loginExt
+Meta Class
+    isa        0x0 _OBJC_METACLASS_$_NSObject
+    superclass 0x0 _OBJC_METACLASS_$_NSObject
+    cache      0x0 __objc_empty_cache
+    vtable     0x0
+    data       0x105cf5438
+        flags          0x185 RO_META RO_HAS_CXX_STRUCTORS
+        instanceStart  40
+        instanceSize   40
+        reserved       0x0
+        ivarLayout     0x0
+        name           0x10503282c CNLoginSDKGlobalInfo
+        baseMethods    0x105cf53b8
+            entsize 24
+            count   4
+            name    0x104fcff47 supportsSecureCoding
+            types   0x10505c002 B16@0:8
+            imp     0x1020e36d8
+            name    0x104fb576c sharedInstance
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e3d64
+            name    0x104dd4fc5 archiveGlobalInfo
+            types   0x10505bffa v16@0:8
+            imp     0x1020e4640
+            name    0x104eb4483 localFilePath
+            types   0x10505bff2 @16@0:8
+            imp     0x1020e484c
+        baseProtocols  0x105cf5420
+            count    1
+            list[0]  0x1065149f0
+                isa       0x0
+                name      0x10500957e NSSecureCoding
+                protocols 0x1059b8158
+                    count    1
+                    list[0]  0x1064d81f0
+                        isa       0x0
+                        name      0x10500833c NSCoding
+                        protocols 0x0
+                        instanceMethods 0x10583cba8
+                            entsize 24
+                            count   2
+                            name    0x104e3bc4c encodeWithCoder:
+                            types   0x10505c015 v24@0:8@16
+                            imp     0x0
+                            name    0x104e84af4 initWithCoder:
+                            types   0x10505cf0e @24@0:8@16
+                            imp     0x0
+                        classMethods 0x0
+                        optionalInstanceMethods 0x0
+                        optionalClassMethods 0x0
+                        instanceProperties 0x0
+                instanceMethods 0x0
+                classMethods 0x1059b8170
+                    entsize 24
+                    count   1
+                    name    0x104fcff47 supportsSecureCoding
+                    types   0x10505c002 B16@0:8
+                    imp     0x0
+                optionalInstanceMethods 0x0
+                optionalClassMethods 0x0
+                instanceProperties 0x0
+        ivars          0x0
+        weakIvarLayout 0x0
+        baseProperties 0x0

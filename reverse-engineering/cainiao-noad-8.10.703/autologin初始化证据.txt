@@ -1,0 +1,38 @@
+1020dfa54:	ff c3 00 d1	sub	sp, sp, #0x30
+1020dfa58:	f4 4f 01 a9	stp	x20, x19, [sp, #0x10]
+1020dfa5c:	fd 7b 02 a9	stp	x29, x30, [sp, #0x20]
+1020dfa60:	fd 83 00 91	add	x29, sp, #0x20
+1020dfa64:	88 0f 02 90	adrp	x8, 16880 ; 0x1062cf000
+1020dfa68:	08 ed 44 f9	ldr	x8, [x8, #0x9d8] ; Objc class ref: MtopAutoLoginRequest
+1020dfa6c:	e0 23 00 a9	stp	x0, x8, [sp]
+1020dfa70:	e8 0a 02 d0	adrp	x8, 16734 ; 0x10623d000
+1020dfa74:	01 29 41 f9	ldr	x1, [x8, #0x250] ; Objc selector ref: init
+1020dfa78:	e0 03 00 91	mov	x0, sp
+1020dfa7c:	78 47 8d 94	bl	0x10443185c ; Objc message: -[[x0 super] init]
+1020dfa80:	f3 03 00 aa	mov	x19, x0
+1020dfa84:	20 01 00 b4	cbz	x0, 0x1020dfaa8
+1020dfa88:	82 b1 01 d0	adrp	x2, 13874 ; 0x105711000
+1020dfa8c:	42 e0 0b 91	add	x2, x2, #0x2f8 ; Objc cfstring ref: @"mtop.cainiao.cnmember.customer.autologin"
+1020dfa90:	e0 03 13 aa	mov	x0, x19
+1020dfa94:	13 1d 93 94	bl	0x1045a6ee0
+1020dfa98:	22 a8 01 b0	adrp	x2, 13573 ; 0x1055e4000
+1020dfa9c:	42 e0 14 91	add	x2, x2, #0x538 ; Objc cfstring ref: @"1.0"
+1020dfaa0:	e0 03 13 aa	mov	x0, x19
+1020dfaa4:	77 ea 94 94	bl	0x10461a480
+1020dfaa8:	e0 03 13 aa	mov	x0, x19
+1020dfaac:	fd 7b 42 a9	ldp	x29, x30, [sp, #0x20]
+1020dfab0:	f4 4f 41 a9	ldp	x20, x19, [sp, #0x10]
+1020dfab4:	ff c3 00 91	add	sp, sp, #0x30
+1020dfab8:	c0 03 5f d6	ret
+1020dfabc:	88 10 02 90	adrp	x8, 16912 ; 0x1062ef000
+1020dfac0:	08 0d 85 b9	ldrsw	x8, [x8, #0x50c]
+1020dfac4:	00 68 68 f8	ldr	x0, [x0, x8]
+1020dfac8:	c0 03 5f d6	ret
+1020dfacc:	88 10 02 90	adrp	x8, 16912 ; 0x1062ef000
+1020dfad0:	03 0d 85 b9	ldrsw	x3, [x8, #0x50c]
+1020dfad4:	9e 47 8d 14	b	0x10443194c ; symbol stub for: _objc_setProperty_nonatomic_copy
+1020dfad8:	88 10 02 90	adrp	x8, 16912 ; 0x1062ef000
+1020dfadc:	08 0d 85 b9	ldrsw	x8, [x8, #0x50c]
+1020dfae0:	00 00 08 8b	add	x0, x0, x8
+1020dfae4:	01 00 80 d2	mov	x1, #0x0
+1020dfae8:	9c 47 8d 14	b	0x104431958 ; symbol stub for: _objc_storeStrong

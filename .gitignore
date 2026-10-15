@@ -1,6 +1,12 @@
 # macOS system files
 .DS_Store
 
+# Local reverse-engineering binaries and regenerated disassembly
+reverse-engineering/**/*.ipa
+reverse-engineering/**/Cainiao4iPhone
+reverse-engineering/**/auth-annotated.asm
+reverse-engineering/**/__pycache__/
+
 # Node dependencies
 node_modules/
 

@@ -1,0 +1,77 @@
+[
+  {
+    "file": "autologin初始化证据.txt",
+    "bytes": 1889,
+    "sha256": "9addd0b7a70277b892111273f0d91ccbf679fe2dab2d1b171622a71e85d4f9a0"
+  },
+  {
+    "file": "evidence/annotate.py",
+    "bytes": 1563,
+    "sha256": "86393662176d986fcd4c6748ed43c252568ef8df803ba79b089393396cc3e51a"
+  },
+  {
+    "file": "evidence/auth-classes.txt",
+    "bytes": 31027,
+    "sha256": "6061a26f8b41b719aa71dbbc65d892318612b6b4159fd63217098d85e9f77801"
+  },
+  {
+    "file": "evidence/auth-strings.txt",
+    "bytes": 7119,
+    "sha256": "83e26afcd957847b6dc546a77bd522ad2ecabf7fff5753e2168bc7621e9fc7ec"
+  },
+  {
+    "file": "evidence/autologin-selected.asm",
+    "bytes": 5360,
+    "sha256": "c5e3cdbd397ec3c99e56982e26ee3bcdf42f440894a4e3cd3bbba71ec414d075"
+  },
+  {
+    "file": "evidence/base-request-selected.asm",
+    "bytes": 2436,
+    "sha256": "17070793df5b662f53a946d8e463cdd064acb6fab470c3000c6705bb726b74c4"
+  },
+  {
+    "file": "evidence/global-info-selected.asm",
+    "bytes": 18445,
+    "sha256": "2ab5499393c88dadbe6006a017cac01ecc72064928c15be7399e146fad9e9e81"
+  },
+  {
+    "file": "evidence/login-info-selected.asm",
+    "bytes": 5167,
+    "sha256": "a217894c9a478b94c8d9967c5395a52a9b2137008dad45391e1fa724b4909305"
+  },
+  {
+    "file": "evidence/login-service-selected.asm",
+    "bytes": 8589,
+    "sha256": "1e630155ac483da03b000eefdbd5b18e1a0e42e128e34a4de4dd0c037528a037"
+  },
+  {
+    "file": "evidence/more-selected.asm",
+    "bytes": 77086,
+    "sha256": "e13ad2af93ab6822f3843bee4f5b8bfb58633d2a0115090b81ed95e616df322d"
+  },
+  {
+    "file": "evidence/refresh-request-selected.asm",
+    "bytes": 7252,
+    "sha256": "70297351aa4be0be41714a601c5c8a33efa0626ad999ae1e625fd597c907f169"
+  },
+  {
+    "file": "原生认证分析.md",
+    "bytes": 5600,
+    "sha256": "4f59ebb306ee1344753f0254c21e3565ddab927cbf66226fda5e7c993a7d78f2"
+  },
+  {
+    "file": "原生认证反汇编.txt",
+    "bytes": 131928,
+    "sha256": "fc153b40d6a34aedcfc15674577fa0c58d643ec5913db31e2c9980e40451afad"
+  },
+  {
+    "file": "小组件自动续期修复.patch",
+    "bytes": 13333,
+    "sha256": "678a9b79f5ee9d5f31be2c8f2cad0f9c947d7fc384af9dcaaf5da4d54d3f8a82"
+  },
+  {
+    "file": "自动续期修复说明.md",
+    "bytes": 3173,
+    "sha256": "a157030db3096b50ae1c1503806a9ef2c93ccfe2cf5d5a052260d2c0dfc42fd8"
+  }
+]

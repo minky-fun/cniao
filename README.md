@@ -8,6 +8,10 @@
 
 菜鸟随行的固定安装包为 [Cainiao.scripting](bao/Cainiao.scripting)。更新时始终使用此路径。
 
+## 逆向分析资料
+
+[reverse-engineering/](reverse-engineering/README.md) 归档去广告版菜鸟 8.10.703 的原生认证分析、自动续期修复说明和反汇编证据，与小组件运行代码分开。
+
 ## Codex Reset
 
 `scripts/codex-reset` 按小号、中号和大号三种桌面组件展示最近一次 Codex 用量重置、累计次数、平均间隔、最长间隔与最近 26 周记录。
