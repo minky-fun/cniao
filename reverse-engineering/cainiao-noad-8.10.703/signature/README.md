@@ -50,9 +50,18 @@ protocol[x-location].split(",")[0]
 
 MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:authCode:`（`0x102b71a84` 至 `0x102b71a90`）。开放签名包装器的核心调用位于 `0x102ab5710`，命令值 `10701`，通过地址 `0x1068f6788` 中的函数指针执行；Unified 核心调用位于 `0x102b5a08c`，命令值由两条指令组成 `0x11eba`，通过 `0x1068fbe50` 中的函数指针执行。
 
-以上两个指针所在节均为 `__bss`、`S_ZEROFILL`，静态文件不包含运行时填充的指针值。MiddleTier 部分 CFString 的后备字符串也指向此类区域。附近还存在混淆跳转和运行时初始化调用。`dispatch-boundaries.json` 保存这些边界；当前没有还原其初始化与分发实现，不能将看到包装器或算法名称等同于还原了安全核心。
+以上两个指针所在节均为 `__bss`、`S_ZEROFILL`，静态文件不直接保存其运行值；但这不代表不能从初始化代码追踪目标。继续分析后，已定位下面两个写入位置，修正此前只停留在零填充节的分析边界。`dispatch-boundaries.json` 保存最新状态。
 
-后续需要继续追踪这些运行时初始化函数、核心分发器及安全存储依赖，或在可读取目标进程的研究环境中取得对应运行值和合成输入的输出对照。主程序已解密只解决代码可读性，不会自动解除这些依赖。目前没有这类运行环境，也没有足以验证完整签名的输入输出对。
+### 新定位的初始化与分发路径
+
+- `SecurityGuardOpenInitialize privateInitialize:withCustomBundlePath:`（入口 `0x102abb5f4`）在 `0x102abb860` 通过 `ADR` 取到 `0x102ae03ac`，在 `0x102abb868` 写入 `0x1068f6788`，见 `dispatcher-install.asm`。这条路径的分发器目标已经可以静态确定，尚未在目标进程验证其执行状态。
+- `MiddleTierPlugin initializePlugin:`（`0x102b6d0b0`）在 `0x102b6d14c` 将调用方参数寄存器 `x2` 写入 `0x1068fbe50`；`nativeEntry`（`0x102b6d160`）返回 `0x102b3bb28`。见 `plugin-dispatcher-install.asm`。尚未完成调用方参数来源与该 nativeEntry 的完整计算追踪。
+- `0x102ae03ac` 对正命令号进行拆分，然后跳到 `0x102aa973c`；对已确认命令 `10701`，对应的三个分发编号为 `1 / 7 / 1`。见 `core-command-dispatch.asm`。这些是分发编号，不是签名算法或密钥。
+- `0x102aa973c` 既可能进入 `0x102abfaec` 路径，也可能从 `0x1068f7ea0` / `0x1068f7ea8` 的运行时注册表查找处理函数：查找过程在 `0x102aa937c`，返回的处理指针在 `0x102aa9898` 间接调用。`handler-lookup.asm` 可见注册项与上下文值之间的 XOR 指针编码；`handler-registration.asm` 对应注册入口。仍未恢复 `10701` 处理函数的完整注册与计算实现，不能从分发编号生成签名。
+
+`trace_dispatchers.py` 在核对样本 SHA-256 后扫描相邻 ADRP/STR 指令候选，输出 `dispatcher-stores.json`。该扫描不是控制流或寄存器活跃性分析，候选须由上述定点反汇编复核，不能声称覆盖所有指针写入形式。
+
+后续仍需恢复签名命令处理函数的注册来源、完整计算及安全存储依赖，或在可读取目标进程的研究环境中取得对应运行值和合成输入的输出对照。主程序已解密只解决代码可读性，不会自动解除这些依赖。目前没有这类运行环境，也没有足以验证完整签名的输入输出对。本次没有完成用户要求的本地签名接入，没有向组件加入占位签名器或把 HMAC 分支伪装为 SecurityGuard。
 
 ## 代码与验证
 

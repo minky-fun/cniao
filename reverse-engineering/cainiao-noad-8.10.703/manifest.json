@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 6467,
-    "sha256": "ef5917a99a332803fb6ebea0f62c60627aaf17207dc6de8ad953fcedd3f81a6b"
+    "bytes": 8137,
+    "sha256": "90e0df758ae003cde4fe9d994be4a58b124b0d909c9db38ddc28f1b18a6342ad"
   },
   {
     "file": "signature/annotate_sign.py",
@@ -70,9 +70,39 @@
     "sha256": "4e2937e2378fff40cb02202cfc8d11b11bcf68e7249ece030f1b890fa0356d22"
   },
   {
+    "file": "signature/core-command-dispatch.asm",
+    "bytes": 2478,
+    "sha256": "2305b351dbb858f2670f8d16132c690878b426af532111642e8760a8d7372b9c"
+  },
+  {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 884,
-    "sha256": "ae36066fa9d3a89b72676ca73bdfa3f4d0b9c7bec5554634ce456396cca851e5"
+    "bytes": 1290,
+    "sha256": "81eed61fb7a7986520b49f2bec59a3ab947caa114abba6b928b4e3ae3d9f93f2"
+  },
+  {
+    "file": "signature/dispatcher-install.asm",
+    "bytes": 1527,
+    "sha256": "66542ca8f01fd67b1babd65c0e29244b3df121a8a3d0e59ded79a73a99ec8379"
+  },
+  {
+    "file": "signature/dispatcher-stores.json",
+    "bytes": 454,
+    "sha256": "805e8033d2b4a08361ffe64a9eed705d263cd2387af62dca0e049ccafa549410"
+  },
+  {
+    "file": "signature/handler-call.asm",
+    "bytes": 5056,
+    "sha256": "76fc02eba86c48bd1b3a2e3996ba57e444b132ada28a54fe2f50f9dbaef7fcd2"
+  },
+  {
+    "file": "signature/handler-lookup.asm",
+    "bytes": 9429,
+    "sha256": "f8347e081f31768ceac2b9edf20912dc84b5475fe4fe6d61ee8fa097f6b322d2"
+  },
+  {
+    "file": "signature/handler-registration.asm",
+    "bytes": 2746,
+    "sha256": "c1a6f4d6562ec32a294f5f836ca6e71fc6b413b6f3c980267aac907f943ddfa3"
   },
   {
     "file": "signature/hmac-imports.txt",
@@ -120,6 +150,11 @@
     "sha256": "43cccfcd10300f459890d7016d2299aa49441df54d0d26315bee2c997faeff30"
   },
   {
+    "file": "signature/plugin-dispatcher-install.asm",
+    "bytes": 3352,
+    "sha256": "9feff8b067bb7c2d44519dddbdb40ca1f5ae26133071aa1734265f5a98b8eca2"
+  },
+  {
     "file": "signature/sdk-security-annotated.asm",
     "bytes": 32812,
     "sha256": "bd36fd08e588995c53bd668b002f1c129d89532d78cff994fdaad497a648bf27"
@@ -158,6 +193,11 @@
     "file": "signature/test_sign_input.py",
     "bytes": 3136,
     "sha256": "ff3fbdeaa42c6ab676b178b7444769041a6aefb672163ca66761f20ef7c0669d"
+  },
+  {
+    "file": "signature/trace_dispatchers.py",
+    "bytes": 2898,
+    "sha256": "906f9a6b89b12f9fe92b0a178aa411b04fb77c3154296f075a7b4c61d4b0ec62"
   },
   {
     "file": "signature/unified-annotated.asm",

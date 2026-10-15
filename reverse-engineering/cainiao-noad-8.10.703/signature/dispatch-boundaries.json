@@ -8,7 +8,11 @@
       "section": "__bss",
       "section_type": 1,
       "zero_fill": true,
-      "resolved_runtime_value": false
+      "resolved_runtime_value": false,
+      "initialization_store": "0x102abb868",
+      "static_dispatcher_target": "0x102ae03ac",
+      "static_target_resolved": true,
+      "algorithm_recovered": false
     },
     {
       "address": "0x1068fbe50",
@@ -17,7 +21,12 @@
       "section": "__bss",
       "section_type": 1,
       "zero_fill": true,
-      "resolved_runtime_value": false
+      "resolved_runtime_value": false,
+      "initialization_method": "MiddleTierPlugin initializePlugin:",
+      "initialization_store": "0x102b6d14c",
+      "source_register": "x2 (caller argument)",
+      "static_target_resolved": false,
+      "algorithm_recovered": false
     },
     {
       "address": "0x1068fd856",

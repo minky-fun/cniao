@@ -1,0 +1,18 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scan": "nearby ADRP/64-bit STR candidates; manual disassembly required",
+  "candidates": [
+    {
+      "adrp": "0x102abb85c",
+      "store": "0x102abb868",
+      "target": "0x1068f6788",
+      "source_register": "x8"
+    },
+    {
+      "adrp": "0x102b6d148",
+      "store": "0x102b6d14c",
+      "target": "0x1068fbe50",
+      "source_register": "x2"
+    }
+  ]
+}
