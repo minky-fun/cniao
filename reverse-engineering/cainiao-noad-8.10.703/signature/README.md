@@ -230,3 +230,33 @@ xcrun --sdk iphoneos clang -target arm64-apple-ios12.0 -c \
 ## 对组件的影响
 
 组件仍沿用已验证的抓取头与 GET 查询/续期流程，没有用普通 HMAC 分支替换 SecurityGuard，也没有引入签名服务。静态证据表明签名输入包含时间、sid 和 data；因此组件更新时间、轮换 token 或 sid 后重放旧签名不能获得永久有效保证。是否在某条线上接口成功，仍需真实设备和服务端验证。
+
+### 定位空操作数来源并继续状态目录路径
+
+新增 `--with-sdk-directory`（必须同时启用 `--with-zlib`）后，切片越过上述空地址故障，得到真实 SDS 返回：**导出项 34 的 VM 状态 0、业务错误 11、无输出**。这不是签名成功；外层签名 VM 仍停在后续错误报告的 Objective-C 依赖。结果见 `sds-state-directory-evidence.json`，完整跟踪与加速跟踪输出一致。
+
+原故障来自探针将 SDK 构造器的 **x5 置零**，并非已证明真实手机缺少设备字段。原生 `0x102a71568` 回调读取 SDK `+0x20`，为空时返回 0；上游 VM 随后读取这个返回对象的首成员而故障。回调的非空返回是字符串对象，首成员才是 C 字符串指针。目录非空时，切片实际调用同一回调并核对对象内容，未替换其返回值。
+
+`SDK x5` 的业务来源已沿上游指令定位为 `getSgRootPath`：
+
+- Objective-C 初始化器 `0x102abb9e4` 读取该 selector，结果保存到 x26，经 UTF-8 转换写入初始化结构 `+0x28`；公开命令为 10501。
+- 注册处理器 `0x102ae93a8` 从结构 `+0x28` 解引用，保存至栈 `+0x158`；`0x102aeb304` 加载到 x5，`0x102aeb30c` 调用 SDK 构造器。
+- `getSgRootPath` 实现 `0x102abaa04` 调用 `NSSearchPathForDirectoriesInDomains(9,1,1)`，追加公开组件 `SGDocuments`。枚举 **9 是 Documents，不是 Library**。`verify_root_component` 实际运行常量解码前缀，只核对该组件。`verify_ios_state.m` 用 iPhoneOS arm64 头文件编译断言目录、访问模式、系统调用和 errno 常量。选取指令见 `sdk-state-directory.asm`。
+
+新切片只提供 `/synthetic/Documents/SGDocuments` 这个合成空目录，**不代表真实 iPhone 的完整 SDK 状态**。程序检查其子项时直接执行 `svc #0`，x16=33、模式 0，即 Darwin `access(F_OK)`。`guest_empty_state.py` 对明确位于该目录内的子项返回 ENOENT=2 并设置 carry；未知路径、穿越路径、系统调用和模式均停止。它不读写宿主状态文件，也不打印子项名。
+
+错误跳板解析 `cerror`。其 LP64 ABI 来自 Apple XNU 固定版本源码：
+
+`https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/libsyscall/custom/errno.c`
+
+源码 SHA-256：`49d3e1f7f46875b559bfcc2d932ca28923bac8bdceaabc7728b5377034c0c044`。实现写入 errno，128 位返回值为 -1，因此 x0/x1 均设为全一；探针共用已有 `___error` 槽。限制是未取消的单线程，不模拟 pthread cancellation。`calloc` 对乘积做上限检查并实际清零内存。
+
+SDS 返回错误 11 后，外层 VM 调用 `(1,14,5,0)`。按注册点 `0x102a925b4/0x102a925cc` 将它接到真实处理器 `0x102af24c4`，随后停在 `_objc_msgSend` 的 `stringWithFormat:`（返回地址 `0x102a69b0c`）。没有为报告函数补假成功返回。**尚未证明错误 11 的业务含义，也没有证明缺失子项就是其直接原因**；请求仍使用合成 INPUT/appKey 和空 authCode，其他初始化参数也不完整。
+
+复现：
+
+```sh
+python3 -B signature/probe_sds_slice.py --omit-monitoring --with-zlib --with-sdk-directory Cainiao_8.10.703_NoAd.ipa
+```
+
+16 项离线测试通过，其中新增 Darwin carry/errno、双寄存器返回、拒绝越界路径，以及 calloc 清零和乘积上限测试。组件及安装包未改动；真实签名生成、服务端验证和本地签名接入仍未完成。下一步应追踪 SDS 错误 11 的设置分支及真实配置输入，而不是把后续错误报告的运行完成当作签名完成。

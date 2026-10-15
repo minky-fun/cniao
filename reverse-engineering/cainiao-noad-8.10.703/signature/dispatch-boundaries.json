@@ -240,5 +240,36 @@
     "invalid_read_address": "0x0",
     "invalid_read_bytes": 8,
     "signing_verified": false
+  },
+  "sds_state_directory_continuation": {
+    "evidence": "sds-state-directory-evidence.json",
+    "previous_null_source": "SDK constructor x5 was zero in synthetic probe; +0x70 callback reads SDK +0x20 and returns null",
+    "proven_source": "getSgRootPath; NSDocumentDirectory=9; NSUserDomainMask=1; append SGDocuments",
+    "native_sdk_callback": "0x102a71568",
+    "synthetic_filesystem": "empty /synthetic/Documents/SGDocuments; exact child access(F_OK) returns ENOENT with Darwin carry set",
+    "sds_export_index": 34,
+    "sds_vm_status": 0,
+    "sds_business_error": 11,
+    "sds_output_present": false,
+    "next_native_command": {
+      "ids": [
+        1,
+        14,
+        5,
+        0
+      ],
+      "handler": "0x102af24c4"
+    },
+    "stop_dependency": "objc_msgSend stringWithFormat:",
+    "stop_return_address": "0x102a69b0c",
+    "signature_vm_returned": false,
+    "error11_semantics_proven": false,
+    "full_sdk_initialization_verified": false,
+    "signing_verified": false,
+    "cerror_abi_source": {
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/libsyscall/custom/errno.c",
+      "sha256": "49d3e1f7f46875b559bfcc2d932ca28923bac8bdceaabc7728b5377034c0c044",
+      "limitation": "uncancelled single thread only"
+    }
   }
 }

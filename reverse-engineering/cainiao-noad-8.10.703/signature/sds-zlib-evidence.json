@@ -11,7 +11,7 @@
     "printf supports only observed %d and %d_%d formats with Apple ARM64 stack varargs",
     "SDS routing shim uses the metadata-verified export index and native wrapper ABI",
     "monitor command (1,37,1,1) side effects omitted; normal return constant 0 verified at 0x102aa16ec; not full SDK initialization",
-    "SDK constructor uses zero flags and one public synthetic directory; other parameters zero",
+    "SDK constructor uses zero flags, a public synthetic resource directory, and an explicit synthetic state directory only when requested; remaining parameters zero",
     "read-only guest file and Darwin arm64 stat metadata for exact IPA asset; no host user files",
     "real host libz with bounded guest ABI adapter; no guest custom allocators; host system entropy for arc4random",
     "NSBundle and NSString model limited to main-image class and Info.plist bundle identifier; ARC lifetime deferred"
@@ -853,6 +853,10 @@
     ],
     "host_random_u32_calls": 16,
     "stop_reason": "unresolved_runtime_state_null_read",
+    "sdk_state_directory_enabled": false,
+    "sdk_state_directory": null,
+    "empty_state_events": [],
+    "completed_module_calls": [],
     "memory_fault": {
       "native_pc": "0x102a2b7e4",
       "address": "0x0",

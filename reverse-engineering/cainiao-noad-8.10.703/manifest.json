@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 27784,
-    "sha256": "de96c6d8b1c593377ba68faca3204d75cc9fb00f1d1e337326546e180973d0e6"
+    "bytes": 31387,
+    "sha256": "525338766cbbf8a5502bea8061c2dc124bdf2c3a4923432bf574d0b7de6f2adc"
   },
   {
     "file": "signature/algorithm-helper-md5.asm",
@@ -86,8 +86,8 @@
   },
   {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 6989,
-    "sha256": "45f989dca8c255addd25087ef3d0fbc899e23021612942864b2b571d2cd8d639"
+    "bytes": 8297,
+    "sha256": "7e8806f01d140e350caba6b0139ef72d0e04102488a535d509f5e5b6d0130de1"
   },
   {
     "file": "signature/dispatcher-install.asm",
@@ -103,6 +103,11 @@
     "file": "signature/dynamic-handler-execute.asm",
     "bytes": 2351,
     "sha256": "39612be020c92173585a0ac0d088b54ad85a52d3728bd6d2f194040406caa87b"
+  },
+  {
+    "file": "signature/guest_empty_state.py",
+    "bytes": 3941,
+    "sha256": "5467221d75b1d91a00de8fcb14ba2bdaeec864df2b100d6c9008204d6f961239"
   },
   {
     "file": "signature/guest_zlib.py",
@@ -236,8 +241,8 @@
   },
   {
     "file": "signature/probe_sds_slice.py",
-    "bytes": 19427,
-    "sha256": "51f474fb45cc5528296dfd72086c653c928203ee850af63ccae0b6e44ee4a1b5"
+    "bytes": 22160,
+    "sha256": "35712113d7ba89c38cb3e6484cecec751d56891daf33e2ea271b327d5bf6a11d"
   },
   {
     "file": "signature/probe_vm.py",
@@ -263,6 +268,11 @@
     "file": "signature/sdk-security.asm",
     "bytes": 30706,
     "sha256": "f9710c848d95cea895fa95c7273548e646c2739555c31cf2721851b71829d943"
+  },
+  {
+    "file": "signature/sdk-state-directory.asm",
+    "bytes": 4054,
+    "sha256": "9bbb0540e8e2bcf5ca9d90a8117b5c0097a110b9bf73abd1df5fc704a880098a"
   },
   {
     "file": "signature/sds-bundle-environment.asm",
@@ -296,13 +306,18 @@
   },
   {
     "file": "signature/sds-slice-evidence.json",
-    "bytes": 14920,
-    "sha256": "3ac7798e4bf0af4c448198e9efc82db1ef3ff8ad436733431232fef612bd8432"
+    "bytes": 15130,
+    "sha256": "0c0deae3d1095bb1ff538aafa79c938bbedceeb440e243567e46bf4714c91d74"
+  },
+  {
+    "file": "signature/sds-state-directory-evidence.json",
+    "bytes": 21805,
+    "sha256": "c3c83872bded6bf610d8a83868c79953e96b9de610f834fe16d91f8e922e3150"
   },
   {
     "file": "signature/sds-zlib-evidence.json",
-    "bytes": 20538,
-    "sha256": "bb91012fceed339a5939fd95c5a43027a98998e15e40f8fd6a887b27a4cdb161"
+    "bytes": 20748,
+    "sha256": "b8c95123a4767c7c5747753199466e63fa42f12b593c104027181ff30760632b"
   },
   {
     "file": "signature/secure-signature-annotated.asm",
@@ -355,6 +370,16 @@
     "sha256": "ef5a0d1e5b334d43932827a67b08f39b1c1b93ddbc5fdd7755865003c596dd04"
   },
   {
+    "file": "signature/state-directory-continuation.asm",
+    "bytes": 1468,
+    "sha256": "2f70d4f62175d21cb619f1a70f1de8dde435c88ffcdb67b71e03d10bf9780837"
+  },
+  {
+    "file": "signature/test_guest_empty_state.py",
+    "bytes": 3833,
+    "sha256": "e46aaae202c4425c3c337c9bc93dca7247b88d42c3c4857980d07afcb12e27d0"
+  },
+  {
     "file": "signature/test_guest_zlib.py",
     "bytes": 4169,
     "sha256": "e65a39e88e6b66749ef4f6b27968166f08856c0fe079b8e3230d9f9e9acc8d13"
@@ -398,6 +423,11 @@
     "file": "signature/verify_ios_stat.c",
     "bytes": 473,
     "sha256": "bdc84095d78f5bb94f385bcae88f08d349e867b4b2b0f6f87f51c43d80a01bba"
+  },
+  {
+    "file": "signature/verify_ios_state.m",
+    "bytes": 547,
+    "sha256": "3fb7a0819cf8246d794ddb1f1dd8adc8afce9ed02945a967a08571b2901c8a64"
   },
   {
     "file": "signature/verify_ios_zlib.c",
