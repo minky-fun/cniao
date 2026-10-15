@@ -29,7 +29,10 @@
           1,
           0
         ],
-        "internal_handler_resolved": false
+        "internal_handler_resolved": true,
+        "resolution_scope": "module metadata and offline VM load; live signing unverified",
+        "internal_module": "lvm_sig",
+        "internal_export_index": 3
       }
     },
     {
@@ -63,7 +66,11 @@
           0
         ],
         "caller_dispatcher_source_verified": false,
-        "internal_handler_resolved": false
+        "internal_handler_resolved": true,
+        "resolution_scope": "embedded module metadata only; caller dispatcher and module execution unverified",
+        "internal_module": "lvm_unifiedsec",
+        "internal_lookup_number": 66070102,
+        "internal_export_index": 1
       }
     },
     {
@@ -123,6 +130,31 @@
       36,
       2
     ],
-    "signature_module_resolved": false
+    "signature_module_resolved": true,
+    "signature_module": "lvm_sig",
+    "signature_export_index": 3,
+    "signature_code_offset": "0x5770",
+    "signature_entry_bytecode_offset": "0x5984",
+    "evidence": "module-vm-evidence.json",
+    "algorithm_recovered": false
+  },
+  "signature_vm_dependency": {
+    "observed_command_ids": [
+      1,
+      6,
+      36,
+      0
+    ],
+    "module": "lvm_sds",
+    "lookup_number": 66010636,
+    "export_index": 34,
+    "resolution_scope": "module metadata plus optional offline native export execution; synthetic request returns business error 1",
+    "continued_trace_evidence": "module-sds-evidence.json",
+    "next_missing_command_ids": [
+      1,
+      14,
+      5,
+      0
+    ]
   }
 }

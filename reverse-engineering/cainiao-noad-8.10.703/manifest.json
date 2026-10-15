@@ -61,8 +61,13 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 12532,
-    "sha256": "c2d911dab9fc9c66d0109cfbbe3b4c6f7efade0a97daed0cf45b506b9c90ebc8"
+    "bytes": 18060,
+    "sha256": "80d8596172a0d2abcc52c156ab2a6d7eb5029eb8c818a759a83da2454b74da81"
+  },
+  {
+    "file": "signature/algorithm-helper-md5.asm",
+    "bytes": 3480,
+    "sha256": "5d9ea6d4e0137d36c57f0df594553da28022d56349544c60725391e86cafafed"
   },
   {
     "file": "signature/annotate_sign.py",
@@ -81,8 +86,8 @@
   },
   {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 3130,
-    "sha256": "6b3e35d413310dbd8aa2e763d70584f9c0dc6dac6c74efb2626e5aecde360b97"
+    "bytes": 4221,
+    "sha256": "1f01363cd7a4831a76eb70878d8121f967fbd46ffcaa63525856fc4b01f61dbe"
   },
   {
     "file": "signature/dispatcher-install.asm",
@@ -120,6 +125,11 @@
     "sha256": "3946a9496d2d2e7a12bb489983c1fceb76ece7973fa0050f68e308e1b8f558ea"
   },
   {
+    "file": "signature/host-bindings-install.asm",
+    "bytes": 8157,
+    "sha256": "ed331713b8c454c3400df8f2dba2db46854ea33bdbe7bfa7d9aaa0bf216c667a"
+  },
+  {
     "file": "signature/legacy-sign-draft.ts.txt",
     "bytes": 11254,
     "sha256": "0babb572b7eeaaf8b0ffe92451e511f9b95c7e3ce8b542ddb80f0792f8bf2bdc"
@@ -148,6 +158,21 @@
     "file": "signature/module-execute.asm",
     "bytes": 1326,
     "sha256": "873236ebd32fb07718990dfc664f768261670c7e108f3f2521c6c5722a6baf53"
+  },
+  {
+    "file": "signature/module-sds-evidence.json",
+    "bytes": 11223,
+    "sha256": "cbf3bf89639f4b04d2d5d7a5102797f2ad3641eaf22e9f2b3740083cbcfdae62"
+  },
+  {
+    "file": "signature/module-vm-evidence.json",
+    "bytes": 10460,
+    "sha256": "23493230e2b4fde99cfbbcff26c4f08c7ba4db02cca2626bb836af9384a82bf8"
+  },
+  {
+    "file": "signature/module_container.py",
+    "bytes": 2123,
+    "sha256": "0be9520c6307d3a2c8483ffef8049ffe83a011cfb30307a04b0b9bbf18a52ebc"
   },
   {
     "file": "signature/mtop-sign-annotated.asm",
@@ -195,6 +220,11 @@
     "sha256": "9f18dd39546eae6c6ffe047783c23a1208344d9f4e4e8301aa24270ad7aa1cd2"
   },
   {
+    "file": "signature/probe_vm.py",
+    "bytes": 18917,
+    "sha256": "11278099dd1331d04b587323ce915b0d241d8c421983873dfb5a0e2bd015eef6"
+  },
+  {
     "file": "signature/sdk-security-annotated.asm",
     "bytes": 32812,
     "sha256": "bd36fd08e588995c53bd668b002f1c129d89532d78cff994fdaad497a648bf27"
@@ -240,6 +270,21 @@
     "sha256": "1f5e5b3872fdc89aed4b0df2019a18874b282923be6c8e538f16f051b4f88a41"
   },
   {
+    "file": "signature/signature-module-install.asm",
+    "bytes": 4379,
+    "sha256": "5ca8ceea43e89ab8c459f331ab2772543cffc4b24e09255df00443af24c9ebc7"
+  },
+  {
+    "file": "signature/signature-module-source.asm",
+    "bytes": 1695,
+    "sha256": "f70c5e78b7aefb9cfb528f8529d1e75f9950464a0ff80d5ae6e8e8c2e6b329fd"
+  },
+  {
+    "file": "signature/test_module_container.py",
+    "bytes": 3175,
+    "sha256": "8f258535c2853dbb992bbfc679808391e861659e5f3a22cb8f328d530ddb072c"
+  },
+  {
     "file": "signature/test_sign_input.py",
     "bytes": 3136,
     "sha256": "ff3fbdeaa42c6ab676b178b7444769041a6aefb672163ca66761f20ef7c0669d"
@@ -268,6 +313,16 @@
     "file": "signature/unified.asm",
     "bytes": 66027,
     "sha256": "f8f7a44b4fc10c8a3faf21301267c98a4dc21a4cc88e7afa02cae45d05363563"
+  },
+  {
+    "file": "signature/vm-export-dispatch.asm",
+    "bytes": 1111,
+    "sha256": "e6179a0dc6cea9d7c9901294ca9f7e497c923b69ca9159442bc42c0ec626076c"
+  },
+  {
+    "file": "signature/vm-string-decode.asm",
+    "bytes": 1392,
+    "sha256": "cf3ebab5cc837cfb6073ffc87049636b2a4bf74b872d37ce91815883f3643cfc"
   },
   {
     "file": "原生认证分析.md",

@@ -81,13 +81,43 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 
 归档 IPA 内还确认存在 `yw_1222.jpg`（133573 字节，SHA-256 `add1c126c9e52bdc4b16335ecfee0f463b0d97d82b98ce150754dd2a359c23dd`）和 `yw_1222_mwua.jpg`（86152 字节，SHA-256 `24ee8bcb38f40568da8547969d1506259fe4a6a92b27f0eb8af8cb884174e57a`）。尚未证实它们分别提供哪些签名数据，不能仅凭资源名称将其称为已恢复密钥。
 
-下一步的具体缺口是：恢复 flag 0 的 `(1,4,1)` 和 `(7,1,2)` 实际处理项及模块来源，继续还原完整计算与所需安全数据，并取得签名输入输出对照。尚未生成 `x-sign` 或 `x-mini-wua`，没有完成用户要求的本地签名接入。主程序已解密并不等于这些计算已经还原。
+本轮继续恢复了这两个内部命令的模块元数据映射，以及 `lvm_sig` 的真实宿主绑定和加载过程，见下节。完整计算与所需安全数据仍未还原，也没有签名输入输出对照。尚未生成 `x-sign` 或 `x-mini-wua`，没有完成用户要求的本地签名接入。主程序已解密并不等于这些计算已经还原。
+
+### 已提取签名模块并复核 VM 加载
+
+`probe_vm.py` 用真实 ARM64 加载器和解释器继续复核，结果保存在 `module-vm-evidence.json`。它接受归档 IPA 或主程序，先核对 SHA-256，再在隔离内存中运行；不启动 iOS 程序、不读取账号资料、不访问网络、不输出字节码常量或安全数据。
+
+1. `0x102a885ac` 解码名称 `lvm_sig`，将描述符 `0x105530118` 交给 `(1,34,13,flag=0)`。描述符回调 `0x102abfdf4` 返回数据地址 `0x106682a00`、长度 **17608**。见 `signature-module-install.asm` 和 `signature-module-source.asm`。
+2. 容器前四字节声明代码压缩流长 **17424**，其后依次为代码与 JSON 元数据两个独立 zlib 流。代码解压后 **34236** 字节；尾部元数据压缩流 **180** 字节。`module_container.py` 严格校验两个流的边界、结束标志、输出上限及字节码头，避免普通 `zlib.decompress` 忽略尾随数据造成漏读。
+3. 元数据明确绑定 `66010401 → index 3`、`66011903 → index 4`、`66011904 → index 5`，均 `isPublic=0`。前者对应已追到的内部 `(1,4,1,flag=0)`。
+4. `0x102a8f424` 的名称解码前缀对应静态宿主表 `0x1055302d8`，**165 项，每项 24 字节**。`(1,36,6)` 处理器 `0x102a73a88` 最终调用 `0x102a5475c` 注册。表中已核对 28 个 `AlgorithmHelper*` 和 10 个 `*LVMBridge`，包括 AES、MD5、HMAC-SHA1、Base64 和桥接函数。见 `host-bindings-install.asm`。这些是真实函数地址，不能把名字直接当作类型 19 的算法流程。
+5. 使用真实表注册后，VM 构造器 `0x102a52988` 与模块加载器 `0x102a516ac` 完成加载，后者返回 **0**。真实导出分发表 `0x102a518ec` 通过导出数组将索引 3 转成代码区偏移 **0x5770**；代码区起于字节码 **0x214**，所以该入口在字节码 **0x5984**。见 `vm-export-dispatch.asm`。
+6. 同一原生加载过程执行字符串区解码，逐字节规则为 `byte XOR ((initialKey + i*0x53) & 255)`，见 `vm-string-decode.asm`。这是字节码区段的混淆解码，并非签名计算。
+7. 对空请求执行导出项 3，VM 返回值为 0，但业务错误被设置为 **1**。这直接说明“VM 返回 0”仅代表解释器完成调用，不能解释为签名成功。以公开合成 `INPUT`、appkey 和内部类型 **19** 执行时，观察到 16 次 `getCommonFunctionPtrLVMBridge`，然后经 `invokeFuncBridgeLVMBridge` 请求 **`(1,6,36,flag=0)`**。探针在这项未初始化的业务调用前抛出异常，绝不为它补一个成功返回值。
+
+相关内嵌模块也已由同一容器解析器复核：
+
+| 模块 | 原始容器地址 / 长度 | 已核对的元数据绑定 | 验证范围 |
+| --- | --- | --- | --- |
+| `lvm_sig` | `0x106682a00` / 17608 | `66010401 → 3` | 描述符、真实宿主表、VM 加载和合成参数执行边界 |
+| `lvm_sds` | `0x1066871e0` / 26314 | `66010636 → 34` | 元数据匹配首个依赖命令；默认探针进入前停止，`--with-sds` 可继续执行真实导出项 |
+| `lvm_unifiedsec` | `0x10669a7c8` / 34317 | `66070102 → 1` | 元数据匹配 Unified 的内部 `(7,1,2)`；调用方分发器来源和模块执行尚未验证 |
+
+`--with-sds` 模式会另建真实 SDS 引擎，并按已核对的动态包装 ABI 将 `(1,6,36,0)` 转交导出项 34。`module-sds-evidence.json` 保存该模式的结果：SDS 解释器返回 0，合成输入的业务错误为 **1**，没有输出对象；之后签名模块调用 `(1,14,5,0)`，探针在该未初始化命令前停止。这个错误的具体原因尚未定位，不能仅凭错误 1 断言一定缺少某个密钥或设备字段。
+
+宿主加密函数仍会继续转发到 SecurityGuard 核心，例如 `AlgorithmHelperMd5`（`0x102aa3900`）构造请求后调用 `(1,2,1,flag=0)`，见 `algorithm-helper-md5.asm`。因此 165 项表的恢复解决了模块装载依赖，尚未恢复全部业务状态、加密处理和设备安全数据。
+
+隔离依赖有明确限制：内存由有界单调分配器提供，释放延后；锁按单线程实现，TLS 与线程号为合成状态；时间固定为零；系统符号解析只映射固定样本中确实存在的导入桩。所有加密函数使用样本自身地址；未解析的导入或核心命令会中断。该环境不能代表 iPhone 进程，更不能作为服务端验证。
+
+下一步具体目标是定位 `lvm_sds` 索引 34 的业务错误分支及所需初始化，追踪类型 19 的后续计算与真实安全数据来源，再恢复算法并建立输入输出对照。**本地签名生成与小组件接入仍未完成**。
 
 ## 代码与验证
 
 - `sign_input.py`：两个入口的输入拼接与显式传入密钥的普通 HMAC 分支，仅用 Python 标准库，不读账号配置、不输出密钥、不发送请求。
 - `test_sign_input.py`：字段顺序、位置顺序、extdata 分支和空槽位、缺失条件，以及 RFC 2202 公开 HMAC-SHA1 向量。合成字段测试不能证明真实 SecurityGuard 签名可用。
 - `legacy-sign-draft.ts.txt`：从组件目录移出的历史草稿，原文件声称基于 Java SDK。其 extdata 条件、追加字段顺序和手写 UTF-8/HMAC 处理未按 iOS 实现验证，不能作为已还原签名器使用。
+- `module_container.py` / `test_module_container.py`：双流容器的有界解析及损坏输入测试，仅使用标准库。
+- `probe_vm.py` / `module-vm-evidence.json` / `module-sds-evidence.json`：真实签名模块及宿主表恢复、加载与两种合成参数执行边界；依赖 macOS 的 `otool`、`nm` 和 `unicorn==2.1.4`，不需要 Capstone。
 - `probe_native.py` / `native-routing-evidence.json`：有限原生片段复核及明确标注合成回调的输出；仅额外依赖 `unicorn==2.1.4`。
 - `methods.json`：从 Objective-C 元数据提取的相关方法入口。
 - `*.asm` / `*-annotated.asm`：定点指令与辅助注释。注释器仅识别已知形式的字符串和 selector，不是完整反编译器；以原始指令为准。注释中的厂商构建路径缩为 `MtopSDK/`。
@@ -107,7 +137,21 @@ work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature
   reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 ```
 
-该命令也接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
+继续复核模块（使用同一个虚拟环境）：
+
+```sh
+work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_vm.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+进入真实 SDS 导出项（仍不执行未初始化的其他业务命令）：
+
+```sh
+work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_vm.py --with-sds \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+两个探针命令都接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
 
 如需重新补充注释，从归档 IPA 提取主程序为本目录的 `Cainiao4iPhone`，核对摘要后运行 `python3 -B annotate_sign.py`。原始反汇编可用系统 `objdump -d --start-address=... --stop-address=... Cainiao4iPhone` 按证据文件首末地址重新生成，不应对整份转储中的混淆数据盲目解释为可达代码。
 

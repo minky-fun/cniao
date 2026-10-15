@@ -1,6 +1,6 @@
 # 菜鸟原生认证逆向资料
 
-本目录仅归档用户提供的去广告版 **8.10.703** 的静态分析资料，与 `scripts/cniao` 运行代码分开。
+本目录仅归档用户提供的去广告版 **8.10.703** 的静态分析资料及离线隔离探针，与 `scripts/cniao` 运行代码分开。
 
 ## 阅读顺序
 
@@ -8,7 +8,7 @@
 2. [自动续期修复说明](cainiao-noad-8.10.703/自动续期修复说明.md)：内嵌 `autoLoginRequest` 的 token 轮换、sid 保存时机、错误处理和模拟测试结果。
 3. [原生认证反汇编](cainiao-noad-8.10.703/原生认证反汇编.txt)与 [autologin 初始化证据](cainiao-noad-8.10.703/autologin初始化证据.txt)：定点 ARM64 指令和 selector 注释。
 4. [evidence](cainiao-noad-8.10.703/evidence/)：选取的认证类、字符串、分段反汇编与注释辅助脚本。
-5. [签名调用链与参考实现](cainiao-noad-8.10.703/signature/README.md)：两种签名输入、普通 HMAC 分支，以及尚未还原的 SecurityGuard 核心边界。
+5. [签名调用链与参考实现](cainiao-noad-8.10.703/signature/README.md)：两种签名输入、普通 HMAC 分支、已提取的 `lvm_sig` 模块与真实 VM 加载探针，以及尚未还原的 SecurityGuard 计算和业务状态。
 
 ## 归档范围与使用
 
