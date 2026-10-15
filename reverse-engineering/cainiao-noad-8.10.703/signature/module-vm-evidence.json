@@ -1,14 +1,14 @@
 {
   "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
-  "scope": "offline bounded VM load and synthetic argument tracing; no cryptographic handler executed",
+  "scope": "offline bounded VM load and synthetic argument tracing; no valid signature generated",
   "synthetic_dependencies": [
     "bounded bump allocator; free is deferred",
     "single-thread locks return 0",
     "single-thread TLS and thread id 1",
-    "gettimeofday returns zero",
+    "gettimeofday and time return zero",
     "zero stack-canary storage",
     "system symbol lookup uses verified Mach-O import names only",
-    "sprintf supports only the observed %d format with Apple ARM64 stack varargs"
+    "printf supports only observed %d and %d_%d formats with Apple ARM64 stack varargs"
   ],
   "module": {
     "name": "lvm_sig",
@@ -74,6 +74,10 @@
       "selected_command_binding": {
         "index": 34,
         "destIndex": 66010636
+      },
+      "initialization_command_binding": {
+        "index": 38,
+        "destIndex": 66010640
       }
     },
     {
@@ -368,11 +372,24 @@
     "signature_export_index": 3,
     "signature_entry_bytecode_offset": "0x5984"
   },
+  "sds_load_status": null,
+  "signing_verified": false,
+  "widget_integration_completed": false,
   "execution_boundary": {
     "entry": "0x102a518ec",
     "empty_argument_vm_status": 0,
     "empty_argument_business_error": 1,
+    "native_request_fields": [
+      "hashmap_pointer",
+      "appkey_cstring",
+      "authcode_cstring",
+      "internal_type_u32",
+      "zero_u32"
+    ],
+    "appkey_empty": false,
+    "authcode_empty": true,
     "synthetic_type": 19,
+    "stop_reason": "uninitialized_core_command",
     "observed_commands": [
       [
         1,
@@ -387,16 +404,17 @@
       36,
       0
     ],
+    "memory_fault": null,
+    "context_dependency": null,
     "sds_load_status": null,
     "completed_module_calls": [],
     "active_module_calls_at_stop": [],
     "business_error_at_stop": 99,
+    "business_error_is_final": false,
     "host_call_counts": {
       "getCommonFunctionPtrLVMBridge": 16,
       "invokeFuncBridgeLVMBridge": 1
     },
     "missing_command_result_fabricated": false
-  },
-  "signing_verified": false,
-  "widget_integration_completed": false
+  }
 }

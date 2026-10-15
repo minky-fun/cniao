@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 18060,
-    "sha256": "80d8596172a0d2abcc52c156ab2a6d7eb5029eb8c818a759a83da2454b74da81"
+    "bytes": 23641,
+    "sha256": "9b1e311bd8bdb1c33a9e3adfa9a7214bf7fc1a4d71f4c06b43d9837a684403b1"
   },
   {
     "file": "signature/algorithm-helper-md5.asm",
@@ -86,8 +86,8 @@
   },
   {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 4221,
-    "sha256": "1f01363cd7a4831a76eb70878d8121f967fbd46ffcaa63525856fc4b01f61dbe"
+    "bytes": 5716,
+    "sha256": "d3855b3af2ce9cd5148f6b09809a57138489ba2e5bbb08b19a96e54ca650f5ec"
   },
   {
     "file": "signature/dispatcher-install.asm",
@@ -160,14 +160,19 @@
     "sha256": "873236ebd32fb07718990dfc664f768261670c7e108f3f2521c6c5722a6baf53"
   },
   {
+    "file": "signature/module-sds-empty-appkey-evidence.json",
+    "bytes": 11714,
+    "sha256": "39853bda3488639039f5b469076e901c31a627bb6559c35484cc459d78f31f1e"
+  },
+  {
     "file": "signature/module-sds-evidence.json",
-    "bytes": 11223,
-    "sha256": "cbf3bf89639f4b04d2d5d7a5102797f2ad3641eaf22e9f2b3740083cbcfdae62"
+    "bytes": 11853,
+    "sha256": "12da725034767868f9ac04000a7f758aa908a555f7069c3fba36e72f73f05235"
   },
   {
     "file": "signature/module-vm-evidence.json",
-    "bytes": 10460,
-    "sha256": "23493230e2b4fde99cfbbcff26c4f08c7ba4db02cca2626bb836af9384a82bf8"
+    "bytes": 10955,
+    "sha256": "e6a05b09b8dc269b58f41e076e13ec15f23c76d40b6caac884260162399cd8a8"
   },
   {
     "file": "signature/module_container.py",
@@ -220,9 +225,24 @@
     "sha256": "9f18dd39546eae6c6ffe047783c23a1208344d9f4e4e8301aa24270ad7aa1cd2"
   },
   {
+    "file": "signature/probe_sds.py",
+    "bytes": 7317,
+    "sha256": "91bb05a9bdcde90434dd05e4b170b26642158180cfd90413e5fc164d131b8128"
+  },
+  {
     "file": "signature/probe_vm.py",
-    "bytes": 18917,
-    "sha256": "11278099dd1331d04b587323ce915b0d241d8c421983873dfb5a0e2bd015eef6"
+    "bytes": 24312,
+    "sha256": "e2314d264c2977af6c3085c31bb8f6f220bf15e8156cce0012c776df4ed0049c"
+  },
+  {
+    "file": "signature/sdk-context-callbacks.asm",
+    "bytes": 6890,
+    "sha256": "2efbf1a13f67ce42be1f00f1d7a766635de5f6ca4e6134c45cd010d45ac2c2ec"
+  },
+  {
+    "file": "signature/sdk-context-constructor.asm",
+    "bytes": 8431,
+    "sha256": "a8a1affccff482b5551047bb13dd7d99b4afbd70132ef70cd7d2a40a58e32aac"
   },
   {
     "file": "signature/sdk-security-annotated.asm",
@@ -233,6 +253,21 @@
     "file": "signature/sdk-security.asm",
     "bytes": 30706,
     "sha256": "f9710c848d95cea895fa95c7273548e646c2739555c31cf2721851b71829d943"
+  },
+  {
+    "file": "signature/sds-initialization-evidence.json",
+    "bytes": 14250,
+    "sha256": "8f7efdc9b92f580fc4d3cc3abc91be47ce9112bc32f601dceb3e962c9ac7e287"
+  },
+  {
+    "file": "signature/sds-module-initialization.asm",
+    "bytes": 7770,
+    "sha256": "7507dfa06d5548c66745026c9a355babdc6e233fa201fefb1f23bf4124334636"
+  },
+  {
+    "file": "signature/sds-runtime-gate.asm",
+    "bytes": 7081,
+    "sha256": "cdd32758d7691fb34c0ec608ada896adb376e8fa6a3b8dd3212dcdc41a876597"
   },
   {
     "file": "signature/secure-signature-annotated.asm",
@@ -278,6 +313,11 @@
     "file": "signature/signature-module-source.asm",
     "bytes": 1695,
     "sha256": "f70c5e78b7aefb9cfb528f8529d1e75f9950464a0ff80d5ae6e8e8c2e6b329fd"
+  },
+  {
+    "file": "signature/signature-request-layout.asm",
+    "bytes": 1426,
+    "sha256": "ef5a0d1e5b334d43932827a67b08f39b1c1b93ddbc5fdd7755865003c596dd04"
   },
   {
     "file": "signature/test_module_container.py",

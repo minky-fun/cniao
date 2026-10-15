@@ -103,13 +103,47 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 | `lvm_sds` | `0x1066871e0` / 26314 | `66010636 → 34` | 元数据匹配首个依赖命令；默认探针进入前停止，`--with-sds` 可继续执行真实导出项 |
 | `lvm_unifiedsec` | `0x10669a7c8` / 34317 | `66070102 → 1` | 元数据匹配 Unified 的内部 `(7,1,2)`；调用方分发器来源和模块执行尚未验证 |
 
-`--with-sds` 模式会另建真实 SDS 引擎，并按已核对的动态包装 ABI 将 `(1,6,36,0)` 转交导出项 34。`module-sds-evidence.json` 保存该模式的结果：SDS 解释器返回 0，合成输入的业务错误为 **1**，没有输出对象；之后签名模块调用 `(1,14,5,0)`，探针在该未初始化命令前停止。这个错误的具体原因尚未定位，不能仅凭错误 1 断言一定缺少某个密钥或设备字段。
+`--with-sds` 模式会另建真实 SDS 引擎，并按已核对的动态包装 ABI 将 `(1,6,36,0)` 转交导出项 34。本轮纠正了此前合成请求中 **appKey 与 authCode 放反** 的错误。先前“错误 1 后进入 `(1,14,5,0)`”实际来自空 appKey 分支，不能代表正确字段顺序下的签名主路径；对应负例现单独保存在 `module-sds-empty-appkey-evidence.json`。正确顺序的结果已重建为 `module-sds-evidence.json`，详见下节。
 
 宿主加密函数仍会继续转发到 SecurityGuard 核心，例如 `AlgorithmHelperMd5`（`0x102aa3900`）构造请求后调用 `(1,2,1,flag=0)`，见 `algorithm-helper-md5.asm`。因此 165 项表的恢复解决了模块装载依赖，尚未恢复全部业务状态、加密处理和设备安全数据。
 
 隔离依赖有明确限制：内存由有界单调分配器提供，释放延后；锁按单线程实现，TLS 与线程号为合成状态；时间固定为零；系统符号解析只映射固定样本中确实存在的导入桩。所有加密函数使用样本自身地址；未解析的导入或核心命令会中断。该环境不能代表 iPhone 进程，更不能作为服务端验证。
 
-下一步具体目标是定位 `lvm_sds` 索引 34 的业务错误分支及所需初始化，追踪类型 19 的后续计算与真实安全数据来源，再恢复算法并建立输入输出对照。**本地签名生成与小组件接入仍未完成**。
+下一步需要继续恢复下述初始化依赖，取得 SDS 实际读取的安全数据和类型 19 的完整计算，再建立签名输入输出对照。**本地签名生成与小组件接入仍未完成**。
+
+### 修正原生请求布局并定位 SDS 初始化缺口
+
+此前 `probe_vm.py` 的合成请求错误地将第二、第三个指针当作 authCode、appKey。本轮按 Objective-C 调用寄存器和最终栈结构重新核对并修正；这也是前一轮错误 1 的直接原因。`signature-request-layout.asm` 与既有 `open-secure-signature-annotated.asm` 保留依据：
+
+| 原生请求偏移 | 实际来源 | 指令证据 |
+| --- | --- | --- |
+| `+0x00` | 参数 HashMap | `0x102ab566c` |
+| `+0x08` | appKey 的 UTF-8 C 字符串 | 参数 x3 在 `0x102ab546c` 保存为 x19，`0x102ab5698` 写入 |
+| `+0x10` | authCode 的 UTF-8 C 字符串 | 上层 `signRequest:authCode:` 的 x3 在 `0x102ab44d4` 保存，经过 `objc_retain` 后由 `0x102ab4a58` 放入 x5；`0x102ab5464` 保存，`0x102ab56b0` 写入 |
+| `+0x18` | 转换后的内部签名类型 19 | `0x102ab56b4` 写入低 32 位 |
+| `+0x1c` | 零值槽 | 同一条指令写入高 32 位；不猜测用途 |
+
+现在有三条独立复核路径，均先清零错误槽，避免将前一个空请求的错误当成新调用结果：
+
+1. 非空合成 appKey、空 authCode，在 SDS 之前停止：命令为 `(1,6,36,0)`，见 `module-vm-evidence.json`。
+2. 空 appKey、空 authCode，实际执行 SDS 导出项 34：VM 返回 0、业务错误 1、无输出，随后进入 `(1,14,5,0)`，见 `module-sds-empty-appkey-evidence.json`。这是参数拒绝路径，不是签名成功。
+3. 非空合成 appKey、空 authCode，实际执行 SDS：越过上述拒绝分支，读取 SDS 模块相对偏移 **`0xabe8`** 的全局上下文槽；该槽为零。代码区 **`0x38d4`** 随后读取该对象的 `+0x48` 成员，实际 ARM64 指令 `0x102a2ba18` 访问未映射地址 `0x48`，解释器未返回。见 `module-sds-evidence.json`。此时错误槽的 99 是中间值，不能当成最终业务错误。
+
+探针同时核对当前 VM 指令位置、上下文槽的实际重定位地址和零值。它只将这一个已核对的空上下文读记录为已知停止点，其他内存错误继续抛出；不映射空页、不返回伪造输出。
+
+对应初始化链也已定位：
+
+- 原生 `0x102ab5a28` 装载 SDS 描述符后，在 `0x102ab5c6c` 将 SDK 上下文送给 **`(1,6,40,flag=0)`**，见 `sds-module-initialization.asm`。容器元数据明确将 **`66010640 → 导出项 38`**；真实导出表地址偏移为 **`0x8340`**。
+- 导出项 38 的代码区 **`0x847c`** 将上下文保存至上述全局槽。`probe_sds.py` 通过真实加载器展开的指令验证槽地址和 store 操作，不输出原始字节码或数据常量。
+- SDK 上下文由 `0x102a71164` 分配 **240 字节**。主初始化器在 `0x102aeb30c` 调用构造器，经 `0x102ae9d14` 存入全局 `0x1068f9e78`，之后在 `0x102aea5e0` 传给 SDS 初始化器。见 `sdk-context-constructor.asm`。
+- 上下文 `+0x60/+0x68/+0x70/+0x78` 分别保存真实回调 `0x102a71530/0x102a7154c/0x102a71568/0x102a71584`，分别读取对象成员 `+0x10/+0x18/+0x20/+0x28` 并继续解码。见 `sdk-context-callbacks.asm`。尚未确认这些成员的业务名称，不把它们猜成某个设备标识或密钥。
+- 签名主路径最先读取的上下文 `+0x48` 实际是回调指针 **`0x102a71500`**。它只读取上下文首个 32 位标志的 **bit 2**；相邻 `+0x38/+0x40/+0x50/+0x58` 分别读取 bit 0/1/3/4。探针在独立合成对象上实际运行五个原生回调，用七组标志核对结果。这里还不能确认每一位的业务含义，不能把 `+0x48` 直接称作设备数据或密钥。
+
+`probe_sds.py` 目前可以执行真实 SDK 构造器，并核对以上回调地址。其输入为零标志、一个公开合成字符串和其余零参数，**不是 iPhone 的完整 SDK 配置**。构造时 `(1,1,3,0)` 按真实注册转发至 `0x102aed18c`，该处理器从样本状态读取字节；不人工填充返回值。
+
+随后实际执行 SDS 导出项 38，经 `(1,37,1,flag=1)` 进入真实处理器 `0x102aa11fc`，在 `0x102aa17fc` 调用 Foundation 的 **`NSClassFromString`** 时停止。该探针没有实现 Objective-C 运行时；不返回猜测的类或消息结果。`sds-initialization-evidence.json` 明确记录初始化未返回、上下文槽尚未保存、未生成签名。这一停止点不能解释为“必须换一台设备”或“算法无法继续还原”，后续仍可继续分析相应原生路径及初始化输入来源。
+
+`sds-runtime-gate.asm` 进一步保留了该检查的控制流：`0x102aa13f8` 调用检查器，把低字节保存到全局 `0x1068f7a48`；检查器先按字符串查找类和选择子，再发送 `instancesRespondToSelector:`。若此消息结果为零，`0x102aa1828` 跳过后续实例消息。处理器在 `0x102aa1438` 再按保存的低字节跳过后续区段，最终从 `0x102aa16ec` 返回 0。这里描述两条静态分支，不假定真实设备上的类是否存在，也不把跳过区段或返回 0 当成 SDK 初始化或签名成功。
 
 ## 代码与验证
 
@@ -117,7 +151,8 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 - `test_sign_input.py`：字段顺序、位置顺序、extdata 分支和空槽位、缺失条件，以及 RFC 2202 公开 HMAC-SHA1 向量。合成字段测试不能证明真实 SecurityGuard 签名可用。
 - `legacy-sign-draft.ts.txt`：从组件目录移出的历史草稿，原文件声称基于 Java SDK。其 extdata 条件、追加字段顺序和手写 UTF-8/HMAC 处理未按 iOS 实现验证，不能作为已还原签名器使用。
 - `module_container.py` / `test_module_container.py`：双流容器的有界解析及损坏输入测试，仅使用标准库。
-- `probe_vm.py` / `module-vm-evidence.json` / `module-sds-evidence.json`：真实签名模块及宿主表恢复、加载与两种合成参数执行边界；依赖 macOS 的 `otool`、`nm` 和 `unicorn==2.1.4`，不需要 Capstone。
+- `probe_vm.py` / `module-vm-evidence.json` / `module-sds-evidence.json` / `module-sds-empty-appkey-evidence.json`：真实签名模块、宿主表和三种合成参数执行边界；依赖 macOS 的 `otool`、`nm` 和 `unicorn==2.1.4`，不需要 Capstone。
+- `probe_sds.py` / `sds-initialization-evidence.json`：真实 SDK 上下文构造和 SDS 初始化前缀，遇到缺失的 Objective-C 导入即中止。
 - `probe_native.py` / `native-routing-evidence.json`：有限原生片段复核及明确标注合成回调的输出；仅额外依赖 `unicorn==2.1.4`。
 - `methods.json`：从 Objective-C 元数据提取的相关方法入口。
 - `*.asm` / `*-annotated.asm`：定点指令与辅助注释。注释器仅识别已知形式的字符串和 selector，不是完整反编译器；以原始指令为准。注释中的厂商构建路径缩为 `MtopSDK/`。
@@ -144,14 +179,23 @@ work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature
   reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 ```
 
-进入真实 SDS 导出项（仍不执行未初始化的其他业务命令）：
+按正确字段顺序进入真实 SDS 导出项（在缺失上下文读处中止）：
 
 ```sh
 work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_vm.py --with-sds \
   reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 ```
 
-两个探针命令都接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
+复核空 appKey 负例及 SDS 初始化前缀：
+
+```sh
+work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_vm.py --with-sds --empty-appkey \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature/probe_sds.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+所有探针都接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
 
 如需重新补充注释，从归档 IPA 提取主程序为本目录的 `Cainiao4iPhone`，核对摘要后运行 `python3 -B annotate_sign.py`。原始反汇编可用系统 `objdump -d --start-address=... --stop-address=... Cainiao4iPhone` 按证据文件首末地址重新生成，不应对整份转储中的混淆数据盲目解释为可达代码。
 

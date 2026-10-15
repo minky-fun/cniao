@@ -148,13 +148,53 @@
     "module": "lvm_sds",
     "lookup_number": 66010636,
     "export_index": 34,
-    "resolution_scope": "module metadata plus optional offline native export execution; synthetic request returns business error 1",
+    "resolution_scope": "real offline native export execution with corrected appKey/authCode layout; stops at null SDS context, interpreter does not return",
     "continued_trace_evidence": "module-sds-evidence.json",
-    "next_missing_command_ids": [
+    "stop_reason": "uninitialized_sds_context",
+    "context_slot_module_offset": "0xabe8",
+    "fault_code_offset": "0x38d4",
+    "required_member_offset": "0x48",
+    "member_callback_target": "0x102a71500",
+    "member_callback_reads": "bit 2 of context u32 at offset 0",
+    "member_business_meaning_verified": false,
+    "negative_case": {
+      "appkey_empty": true,
+      "authcode_empty": true,
+      "vm_status": 0,
+      "business_error": 1,
+      "output_present": false,
+      "next_missing_command_ids": [
+        1,
+        14,
+        5,
+        0
+      ],
+      "evidence": "module-sds-empty-appkey-evidence.json",
+      "applies_to_correct_nonempty_appkey_path": false
+    }
+  },
+  "sds_initialization": {
+    "native_entry": "0x102ab5a28",
+    "native_dispatch_call": "0x102ab5c6c",
+    "command_ids": [
       1,
-      14,
-      5,
+      6,
+      40,
       0
-    ]
+    ],
+    "lookup_number": 66010640,
+    "export_index": 38,
+    "export_code_offset": "0x8340",
+    "context_store_code_offset": "0x847c",
+    "context_slot_module_offset": "0xabe8",
+    "sdk_context_constructor": "0x102a71164",
+    "sdk_context_bytes": 240,
+    "sdk_context_global": "0x1068f9e78",
+    "resolution_scope": "real SDK constructor and initialization prefix with synthetic arguments; stops before Objective-C class lookup result",
+    "missing_import": "_NSClassFromString",
+    "missing_import_call_site": "0x102aa17fc",
+    "runtime_gate_static_evidence": "sds-runtime-gate.asm",
+    "initialization_completed": false,
+    "evidence": "sds-initialization-evidence.json"
   }
 }

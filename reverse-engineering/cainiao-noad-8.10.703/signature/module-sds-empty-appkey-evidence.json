@@ -1,0 +1,462 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "offline bounded VM load and synthetic argument tracing; no valid signature generated",
+  "synthetic_dependencies": [
+    "bounded bump allocator; free is deferred",
+    "single-thread locks return 0",
+    "single-thread TLS and thread id 1",
+    "gettimeofday and time return zero",
+    "zero stack-canary storage",
+    "system symbol lookup uses verified Mach-O import names only",
+    "printf supports only observed %d and %d_%d formats with Apple ARM64 stack varargs",
+    "SDS routing shim uses the metadata-verified export index and native wrapper ABI"
+  ],
+  "module": {
+    "name": "lvm_sig",
+    "initializer": "0x102a885ac",
+    "descriptor": "0x105530118",
+    "callback": "0x102abfdf4",
+    "source": "0x106682a00",
+    "container_bytes": 17608,
+    "container_sha256": "4918d315c509a24712e6cac93228ce2606ef43e063692ad0676e4ea48b71f010",
+    "compressed_code_bytes": 17424,
+    "bytecode_bytes": 34236,
+    "bytecode_sha256": "6fdc009507bbbe949a9603210d2099fe12e4808e1e84ded8732d7f54e9aaf5c6",
+    "metadata": {
+      "basic": {
+        "bizid": "lvm_sig",
+        "bizver": "1",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "1.0",
+        "uvm_min_version": "1.7",
+        "libc_min_version": "3",
+        "sgmain_min_version": "6.0.0"
+      },
+      "metainfo": "[{\"index\": 3, \"destIndex\": 66010401, \"isPublic\": 0}, {\"index\": 4, \"destIndex\": 66011903, \"isPublic\": 0}, {\"index\": 5, \"destIndex\": 66011904, \"isPublic\": 0}]"
+    },
+    "command_bindings": [
+      {
+        "index": 3,
+        "destIndex": 66010401,
+        "isPublic": 0
+      },
+      {
+        "index": 4,
+        "destIndex": 66011903,
+        "isPublic": 0
+      },
+      {
+        "index": 5,
+        "destIndex": 66011904,
+        "isPublic": 0
+      }
+    ]
+  },
+  "related_modules": [
+    {
+      "name": "lvm_sds",
+      "source": "0x1066871e0",
+      "container_bytes": 26314,
+      "container_sha256": "804b0c8bc743ca5a2e3804c09af302218bf3cd224b4189168a938198c95c6627",
+      "bytecode_bytes": 48016,
+      "bytecode_sha256": "680241e3682b2b62b9bf0ba65f511a961be77be14eb770554e026f2ac5d64060",
+      "basic_metadata": {
+        "bizid": "lvm_sds",
+        "bizver": "3",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "1.6",
+        "uvm_min_version": "1.66",
+        "libc_min_version": "5",
+        "sgmain_min_version": "6.0.0",
+        "protocols": "default"
+      },
+      "selected_command_binding": {
+        "index": 34,
+        "destIndex": 66010636
+      },
+      "initialization_command_binding": {
+        "index": 38,
+        "destIndex": 66010640
+      }
+    },
+    {
+      "name": "lvm_unifiedsec",
+      "source": "0x10669a7c8",
+      "container_bytes": 34317,
+      "container_sha256": "ab3a82622c9f9f49b6ff9ba8a9b77bb99c9b341bdece26f4efa688680d9f9c30",
+      "bytecode_bytes": 68792,
+      "bytecode_sha256": "7149e192b18c9693745f85acf977f99253266a09638bcd835b98e5615568e4c0",
+      "basic_metadata": {
+        "bizid": "lvm_unifiedsec",
+        "bizver": "7",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "2.4",
+        "uvm_min_version": "3.0",
+        "libc_min_version": "5",
+        "protocols": "default"
+      },
+      "selected_command_binding": {
+        "index": 1,
+        "destIndex": 66070102
+      }
+    }
+  ],
+  "host_binding_table": {
+    "decoder_prefix": "0x102a8f424",
+    "stop_before_copy": "0x102a91b4c",
+    "source": "0x1055302d8",
+    "entries": 165,
+    "entry_bytes": 24,
+    "registration": "0x102a5475c",
+    "registration_status": 0,
+    "selected_bindings": [
+      {
+        "entry": "0x105530608",
+        "name": "sendSyncRequestLVMBridge",
+        "target": "0x102a8e950",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530620",
+        "name": "invokeFuncBridgeLVMBridge",
+        "target": "0x102a8e9a0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530650",
+        "name": "getCommonFunctionPtrLVMBridge",
+        "target": "0x102a8ea08",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530668",
+        "name": "addOperationToQueueLVMBridge",
+        "target": "0x102a8f21c",
+        "flags": 256
+      },
+      {
+        "entry": "0x105530680",
+        "name": "addOperationToSpecificThreadPoolQueueLVMBridge",
+        "target": "0x102a8f2e0",
+        "flags": 256
+      },
+      {
+        "entry": "0x105530698",
+        "name": "bcOpenLVMBridge",
+        "target": "0x102a8eab8",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306b0",
+        "name": "bcCloseLVMBridge",
+        "target": "0x102a8eb14",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306c8",
+        "name": "bcSymbolLVMBridge",
+        "target": "0x102a8eb74",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306e0",
+        "name": "bcRunByIndexLVMBridge",
+        "target": "0x102a8ebdc",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306f8",
+        "name": "bcRunBySymbolLVMBridge",
+        "target": "0x102a8ec28",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530710",
+        "name": "AlgorithmHelperHexString",
+        "target": "0x102aa3724",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530728",
+        "name": "AlgorithmHelperHexStringExt",
+        "target": "0x102aa3668",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530740",
+        "name": "AlgorithmHelperHexStringToByte",
+        "target": "0x102aa37e0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530758",
+        "name": "AlgorithmHelperMd5",
+        "target": "0x102aa3900",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530770",
+        "name": "AlgorithmHelperMd5Hex",
+        "target": "0x102aa3a20",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530788",
+        "name": "AlgorithmHelperSha1",
+        "target": "0x102aa3b68",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307a0",
+        "name": "AlgorithmHelperSha1Hex",
+        "target": "0x102aa3c7c",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307b8",
+        "name": "AlgorithmHelperHmacSha1",
+        "target": "0x102aa3dc4",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307d0",
+        "name": "AlgorithmHelperHmacSha1Hex",
+        "target": "0x102aa3ec4",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307e8",
+        "name": "AlgorithmHelperHmacSha1Base64",
+        "target": "0x102aa4014",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530800",
+        "name": "AlgorithmHelperBase64Encode",
+        "target": "0x102aa41dc",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530818",
+        "name": "AlgorithmHelperBase64Decode",
+        "target": "0x102aa42d8",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530830",
+        "name": "AlgorithmHelperAesEncrypt",
+        "target": "0x102aa4470",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530848",
+        "name": "AlgorithmHelperAesDecrypt",
+        "target": "0x102aa45f4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530860",
+        "name": "AlgorithmHelperAes128EncryptBase64",
+        "target": "0x102aa47e0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530878",
+        "name": "AlgorithmHelperAes128DecryptBase64",
+        "target": "0x102aa49f0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530890",
+        "name": "AlgorithmHelperAes256EncryptBase64",
+        "target": "0x102aa4ba8",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308a8",
+        "name": "AlgorithmHelperAes256DecryptBase64",
+        "target": "0x102aa4c00",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308c0",
+        "name": "AlgorithmHelperCompressData",
+        "target": "0x102aa4c64",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308d8",
+        "name": "AlgorithmHelperDecompressData",
+        "target": "0x102aa4d58",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308f0",
+        "name": "AlgorithmHelperGetRandom",
+        "target": "0x102aa4e38",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530908",
+        "name": "AlgorithmHelperGetRandomBuffer",
+        "target": "0x102aa4ea4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530920",
+        "name": "AlgorithmHelperGetRandomByte",
+        "target": "0x102aa4f44",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530938",
+        "name": "AlgorithmHelperGetRandomString",
+        "target": "0x102aa4fb4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530950",
+        "name": "AlgorithmHelperRcEncryptV1Base64",
+        "target": "0x102aa5098",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530968",
+        "name": "AlgorithmHelperRcDecryptV1Base64",
+        "target": "0x102aa51a4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530980",
+        "name": "AlgorithmHelperRcEncrypt",
+        "target": "0x102aa52a4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530998",
+        "name": "AlgorithmHelperRcDecrypt",
+        "target": "0x102aa53c0",
+        "flags": 0
+      }
+    ]
+  },
+  "native_vm_load": {
+    "constructor": "0x102a52988",
+    "loader": "0x102a516ac",
+    "load_status": 0,
+    "system_imports": [
+      "malloc",
+      "free",
+      "realloc",
+      "atoll",
+      "atoi",
+      "sprintf",
+      "snprintf",
+      "fprintf",
+      "fscanf",
+      "sscanf",
+      "pthread_mutex_lock",
+      "pthread_mutex_unlock",
+      "malloc",
+      "free",
+      "realloc",
+      "calloc",
+      "atoll",
+      "atoi",
+      "sprintf",
+      "fopen",
+      "fread",
+      "fclose",
+      "opendir",
+      "readdir",
+      "closedir",
+      "strdup",
+      "fwrite",
+      "fflush",
+      "remove",
+      "snprintf",
+      "time",
+      "sscanf",
+      "fprintf",
+      "fscanf",
+      "__error",
+      "stat",
+      "rmdir",
+      "pthread_mutex_lock",
+      "pthread_mutex_unlock"
+    ],
+    "export_code_offsets": [
+      "0x6944",
+      "0x6954",
+      "0x6964",
+      "0x5770",
+      "0xb30",
+      "0x988"
+    ],
+    "code_section_offset": "0x214",
+    "signature_export_index": 3,
+    "signature_entry_bytecode_offset": "0x5984"
+  },
+  "sds_load_status": 0,
+  "signing_verified": false,
+  "widget_integration_completed": false,
+  "execution_boundary": {
+    "entry": "0x102a518ec",
+    "empty_argument_vm_status": 0,
+    "empty_argument_business_error": 1,
+    "native_request_fields": [
+      "hashmap_pointer",
+      "appkey_cstring",
+      "authcode_cstring",
+      "internal_type_u32",
+      "zero_u32"
+    ],
+    "appkey_empty": true,
+    "authcode_empty": true,
+    "synthetic_type": 19,
+    "stop_reason": "uninitialized_core_command",
+    "observed_commands": [
+      [
+        1,
+        6,
+        36,
+        0
+      ],
+      [
+        1,
+        14,
+        5,
+        0
+      ]
+    ],
+    "first_missing_command": [
+      1,
+      14,
+      5,
+      0
+    ],
+    "memory_fault": null,
+    "context_dependency": null,
+    "sds_load_status": 0,
+    "completed_module_calls": [
+      {
+        "module": "lvm_sds",
+        "export_index": 34,
+        "vm_status": 0,
+        "business_error": 1,
+        "output_present": false
+      }
+    ],
+    "active_module_calls_at_stop": [],
+    "business_error_at_stop": 1,
+    "business_error_is_final": false,
+    "host_call_counts": {
+      "getCommonFunctionPtrLVMBridge": 16,
+      "invokeFuncBridgeLVMBridge": 2
+    },
+    "missing_command_result_fabricated": false
+  }
+}
