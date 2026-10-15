@@ -5,7 +5,7 @@
   "source_sha256": {
     "portable_vm_host.ts": "4c8c06f6af39d93eb5b1a88ee03618d35afd8cbe28a5aea201b769ea3fa2b486",
     "vm_host_worker.cjs": "cdab5bbf6bf812c1284b64a59ab3ff6f3ee1686f47edda58adbe57384116616e",
-    "verify_portable_vm_host.py": "996d2134fb53072c11069851972ddaabf5676ef215c2390159888b49848a4657",
+    "verify_portable_vm_host.py": "3cfd7abbea7740d4c7b9540420db6e953f70b40830e9ce0b2a737b2022c2c183",
     "test_portable_vm_host.cjs": "51f827ca11d689508eff54fda7a8021f15d10c67d5cb1af2a3acd87c6e65d71f"
   },
   "native_host_abi_cases": 165,
@@ -14,7 +14,7 @@
   "native_dispatch_bridge_cases": 688,
   "node_host_boundary_cases": 13,
   "node_invalid_cases": 25,
-  "python_regression_tests": 20,
+  "python_regression_tests": 21,
   "combined_candidate_and_opcode_counts_match_native": true,
   "execution_scope": "bounded offline ARM64 simulation with native callees, initialization, module expansion and complex ABI path retained",
   "initial_simple_helper_attempt_hit_execution_time_limit": true,
@@ -23,5 +23,6 @@
   "volatile_register_state_equivalence_claimed": false,
   "scripting_device_execution_verified": false,
   "full_portable_signer_implemented": false,
-  "server_verified": false
+  "server_verified": false,
+  "followup_validation": "portable-digest-validation.json: original independent buffer/host vectors rechecked with current pipe and diagnostics, plus combined independent TS VM/AES/object/standard-core comparisons"
 }

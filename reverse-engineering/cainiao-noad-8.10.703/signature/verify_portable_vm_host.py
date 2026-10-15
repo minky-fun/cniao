@@ -213,13 +213,13 @@ class HostReplacement(frame_probe.FrameReplacement):
             self.cpu.mem_write(address, raw)
 
     def run(self, entry, arguments=(), stop=None):
-        """只在候选完成后保存调用次数，必须已经清空所有宿主返回帧。"""
+        """仅报告各运行模式共有的宿主诊断；候选完成后保存次数并检查返回帧。"""
         try:
             status = super().run(entry, arguments, stop)
         except RuntimeError:
             pc = self.cpu.reg_read(UC_ARM64_REG_PC)
             location = hex(pc) if 0x100000000 <= pc < 0x107000000 else 'outside-image'
-            raise RuntimeError('宿主替换执行未完成：' + json.dumps({'code': location, 'counts': dict(self.host_counts), 'pending_frames': len(self.host_frames), 'vm_entries': sum(self.opcode_trace.values())})) from None
+            raise RuntimeError('宿主替换执行未完成：' + json.dumps({'code': location, 'counts': dict(self.host_counts), 'pending_frames': len(self.host_frames)})) from None
         if entry == 0x102a518ec and len(arguments) == 5 and arguments[1] == 3 and status == 0:
             if self.host_frames:
                 raise RuntimeError('宿主返回帧未清空')

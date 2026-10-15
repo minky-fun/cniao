@@ -1,8 +1,8 @@
 {
   "source_sha256": {
     "portable_buffer.ts": "ef9292de4ef52d25794c0c9817b5575234c8adb285293e5dca5faddfd0b29924",
-    "buffer_worker.cjs": "3b595f7b6761a51c2afb88eb475fbd866b69c26ee0ed1d698bda5826e9db38f2",
-    "verify_portable_buffer.py": "75f780beecf2f113ff0ddc7d40578b199162a8b7be4ca44d1533a000b1a060cf",
+    "buffer_worker.cjs": "4e9ec05eec549551471e871a5a50e97803adf5757a3d2c2f313331fc72d6b244",
+    "verify_portable_buffer.py": "2d8442196a2c5ead2fe5219c452f8b41931b0e715e8930e3ed90a109475158e2",
     "test_portable_buffer.cjs": "e904aa74018c8bc35ddc126aaee9fd3dd658653326f8fa44de134269250fa85a",
     "buffer-runtime-contract.asm": "750f71fd5fdb10faf0a2ddd565590303f4ab30676f55e0510a2f5186469a34f7",
     "portable_vm_memory.ts": "c83b6527b2e7295c49592f2b78b835fe87bceb0d2846954467b96d379e162bd9",
@@ -17,7 +17,7 @@
   "node_buffer_behavior_cases": 6,
   "node_string_behavior_cases": 4,
   "node_invalid_cases": 11,
-  "python_regression_tests": 20,
+  "python_regression_tests": 21,
   "replaced_object_entries_per_input": 1196,
   "native_replaced_object_body_entries_in_ts_runs": 0,
   "same_and_changed_input_results_equal_native": true,
@@ -51,5 +51,6 @@
   "full_portable_signer_implemented": false,
   "server_verified": false,
   "scripting_device_execution_verified": false,
-  "widget_or_package_changed": false
+  "widget_or_package_changed": false,
+  "followup_validation": "portable-digest-validation.json: original independent buffer/host vectors rechecked with current pipe and diagnostics, plus combined independent TS VM/AES/object/standard-core comparisons"
 }

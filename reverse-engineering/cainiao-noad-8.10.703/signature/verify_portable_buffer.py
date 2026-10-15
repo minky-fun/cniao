@@ -10,7 +10,7 @@ import subprocess
 from unittest.mock import patch
 
 from unicorn import UcError
-from unicorn.arm64_const import UC_ARM64_REG_PC, UC_ARM64_REG_X30
+from unicorn.arm64_const import UC_ARM64_REG_PC, UC_ARM64_REG_SP, UC_ARM64_REG_X30
 from probe_native import ARGUMENT_REGISTERS, read_binary
 from probe_vm import ModuleProbe
 import verify_portable_vm_runtime as runtime_probe
@@ -30,10 +30,11 @@ MASK64 = (1 << 64) - 1
 class BufferWorker:
     """对 TS 仅暴露明确堆适配器与有界 guest 访存，协议只通过内存管道传递。"""
 
-    def __init__(self, compiled, node):
+    def __init__(self, compiled, node, standard=None):
         """加载明确本地模块，不继承可打印私密参数的 stderr。"""
         self.process = subprocess.Popen([node, str(Path(__file__).with_name('buffer_worker.cjs')),
-                                         str(Path(compiled).resolve(strict=True))],
+                                         str(Path(compiled).resolve(strict=True)),
+                                         *([str(Path(standard).resolve(strict=True))] if standard else [])],
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=subprocess.DEVNULL, text=True, bufsize=1)
 
@@ -44,7 +45,7 @@ class BufferWorker:
 
     def calculate(self, probe, entry, arguments):
         """执行有界内存和堆请求；分配失败、未知指针及越界均不替换成成功。"""
-        self.send({'entry': str(entry), 'arguments': [str(value) for value in arguments]})
+        self.send({'entry': str(entry), 'arguments': [str(value) for value in arguments], 'stack': str(probe.cpu.reg_read(UC_ARM64_REG_SP))})
         for _ in range(65538):
             if not select.select([self.process.stdout], [], [], 15)[0]:
                 raise RuntimeError('TS 缓冲区计算超时')

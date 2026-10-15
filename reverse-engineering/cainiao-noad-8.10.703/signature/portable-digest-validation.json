@@ -1,0 +1,109 @@
+{
+  "source_sha256": {
+    "portable_digest.ts": "387fb31a9dc6f80076ada98efbe05b842112a2b2a452112bb05c4aa92959bff6",
+    "portable_crypto_host.ts": "8c1f53334a5de672eb9c56555d7e9f6dfabb63dcff5ba2722af5200dedd8d888",
+    "buffer_worker.cjs": "4e9ec05eec549551471e871a5a50e97803adf5757a3d2c2f313331fc72d6b244",
+    "verify_portable_digest.py": "93d2b13afbb9d1c7422c4dc5e80a777569b61eb7fd64152a77ffed7f8ef16d26",
+    "verify_portable_buffer.py": "2d8442196a2c5ead2fe5219c452f8b41931b0e715e8930e3ed90a109475158e2",
+    "verify_portable_vm_host.py": "3cfd7abbea7740d4c7b9540420db6e953f70b40830e9ce0b2a737b2022c2c183",
+    "test_portable_digest.cjs": "b7b3b59600b333ef7f3e54961c8987e4fad6ac09b717efa246586788810e07a5",
+    "test_portable_crypto_host.cjs": "278d4a5e5cf2417d668f7a270bfc0ea937a13f2e8ba582a0cb70f7dd3c988d3b",
+    "test_portable_host_diagnostics.py": "6e13aa6803811c0dadd94bb1f270cb8a96fe87b594fdc3c5b8375dc7a125ec0f",
+    "standard-crypto-runtime-contract.asm": "88d53c847f5b76470538daf96ec8624aa876c491cfe52646c2dca486e1619142"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_standard_vector_cases": {
+    "md5": 25,
+    "sha1": 31,
+    "base64": 38,
+    "crc": 31,
+    "hmac": 129
+  },
+  "native_standard_vector_total": 254,
+  "native_buffer_string_vectors_rechecked": 440,
+  "native_runtime_program_cases_rechecked": 5,
+  "node_primitive_cases": {
+    "md5_sha1": 56,
+    "hmac_sha1": 224,
+    "base64": 28,
+    "raw_crc32": 30
+  },
+  "node_primitive_invalid_cases": 11,
+  "node_crypto_host_behavior_cases": 5,
+  "node_crypto_host_invalid_cases": 12,
+  "node_buffer_string_behavior_cases_rechecked": 10,
+  "node_buffer_string_invalid_cases_rechecked": 11,
+  "node_host_bridge_behavior_cases_rechecked": 13,
+  "node_host_bridge_invalid_cases_rechecked": 25,
+  "native_host_bridge_vectors_rechecked": {
+    "native_host_abi_cases": 165,
+    "native_pending_descriptor_cases": 72,
+    "native_common_function_cases": 128,
+    "native_dispatch_bridge_cases": 688
+  },
+  "python_regression_tests": 21,
+  "primitive_oracles": [
+    "Node crypto MD5/SHA1/HMAC",
+    "Node Buffer Base64",
+    "Python zlib CRC values for public synthetic patterns with adjusted initial/final XOR",
+    "original ARM64 routines"
+  ],
+  "standard_core_calls_per_input": {
+    "md5": 7,
+    "hmac_sha1": 2,
+    "base64": 1,
+    "raw_crc32": 1
+  },
+  "native_replaced_standard_body_entries_in_ts_runs": 0,
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "crc_binding": {
+    "name": "SGCrc32",
+    "table_entry": "0x105530e30",
+    "target": "0x102adefb8",
+    "flags": 0,
+    "polynomial": "0xedb88320",
+    "initial": 0,
+    "final_xor": 0,
+    "table_entries": 256,
+    "native_table_slot_bytes": 8,
+    "all_256_native_table_entries_match_polynomial": true
+  },
+  "native_abi_details": [
+    "MD5 zero length means bounded strlen, not forced empty input",
+    "MD5 void helper leaves x0 at final memcpy destination; stack metadata explicitly supplied",
+    "SHA1 rejects zero-length source and insufficient output capacity",
+    "Base64 rejects zero-length input and writes no terminator in the raw function",
+    "HMAC preserves provided scratch selection, minimum allocation, content and free ordering",
+    "already initialized Base64 and CRC tables are read from guest memory, including nonstandard public vector contents"
+  ],
+  "crc_large_vector_bytes": 65537,
+  "crc_pipeline_initial_attempt_failed": true,
+  "crc_final_pipe_strategy": "read input chunks and the 2048-byte table once per invocation; calculate in TypeScript without per-byte parent requests",
+  "host_diagnostics_fix": "remove access to legacy opcode_trace from shared error reporting; verify failure reporting without that attribute and redact original exception details",
+  "explicit_limits": {
+    "single_input_or_allocation_bytes": 16777216,
+    "md5_cstring_bytes": 8192,
+    "pipe_chunk_bytes": 4096,
+    "pipe_operations_per_call": 65536
+  },
+  "unsupported": [
+    "Base64 input/output overlap",
+    "Base64 output overlapping alphabet storage",
+    "HMAC scratch overlapping its descriptor",
+    "sizes outside explicit bounds"
+  ],
+  "remaining_dependencies": [
+    "native object/algorithm wrappers and object decoding",
+    "zlib and other remaining native hosts",
+    "module loading, initialization and expansion",
+    "SDS and SDK/device/platform state"
+  ],
+  "raw_candidates_keys_entropy_resources_memory_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false
+}

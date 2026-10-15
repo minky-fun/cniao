@@ -1,6 +1,7 @@
 /** Execute verified buffer operations using private, synchronous parent memory/heap pipes. */
 const fs = require('node:fs')
 const {bufferCall, stringCall, stringEntries} = require(require('node:path').resolve(process.argv[2]))
+const standard = process.argv[3] ? require(require('node:path').resolve(process.argv[3])) : undefined
 let pending = ''
 
 /** Read one bounded message; parent EOF terminates the worker without saving state. */
@@ -65,6 +66,7 @@ function execute(request) {
     free(address) { return BigInt(exchange({event: 'free', address}).integer) },
   }
   const entry = BigInt(request.entry)
+  if (standard && Object.values(standard.standardEntries).includes(entry)) return standard.standardCall(entry, request.arguments.map(BigInt), BigInt(request.stack), memory, heap)
   const operation = Object.values(stringEntries).includes(entry) ? stringCall : bufferCall
   return operation(entry, request.arguments.map(BigInt), memory, heap)
 }

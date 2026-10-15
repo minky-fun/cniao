@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 67764,
-    "sha256": "2029dcd3786946ad3b79097635768b85dd69f4ee3233a5f7bf69c53478ff7f9d"
+    "bytes": 72667,
+    "sha256": "508c30218bc634f5abecec4f92adb8103226921024554e43251e89997ba38e33"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -86,8 +86,8 @@
   },
   {
     "file": "signature/buffer_worker.cjs",
-    "bytes": 3742,
-    "sha256": "3b595f7b6761a51c2afb88eb475fbd866b69c26ee0ed1d698bda5826e9db38f2"
+    "bytes": 4023,
+    "sha256": "4e9ec05eec549551471e871a5a50e97803adf5757a3d2c2f313331fc72d6b244"
   },
   {
     "file": "signature/commoncrypto-evidence.json",
@@ -276,13 +276,23 @@
   },
   {
     "file": "signature/portable-buffer-validation.json",
-    "bytes": 2526,
-    "sha256": "91efc540c42df0f96e998e5d88b656495f7a051a62e042bfe89c79eab76b8cbe"
+    "bytes": 2742,
+    "sha256": "f42f03ba2cb1f4ebb8b31f98b1690b42aed831a8b012c72affc75ccaa9f44e6d"
   },
   {
     "file": "signature/portable-crypto-evidence.json",
     "bytes": 6082,
     "sha256": "e5806c3432503b57ee6b337aa5763194cbbcf5a2046f8f6d8527865e8a963ffc"
+  },
+  {
+    "file": "signature/portable-digest-evidence.json",
+    "bytes": 9846,
+    "sha256": "b478b54728785404a28c55ef4032cd87fa2f0eaecc3c4b00ef369ed7f850f961"
+  },
+  {
+    "file": "signature/portable-digest-validation.json",
+    "bytes": 4695,
+    "sha256": "19076fa8d1f88ce4088b043ee6bbda010f39cf757e101f499a8f586f53f41ad9"
   },
   {
     "file": "signature/portable-vm-aes-combined-evidence.json",
@@ -311,8 +321,8 @@
   },
   {
     "file": "signature/portable-vm-host-bridge-validation.json",
-    "bytes": 1317,
-    "sha256": "30f7243996c1a4f1f688d09774be751503debcab7ba4041ae35541a00972e83b"
+    "bytes": 1533,
+    "sha256": "5636804625af6b321357acb09f0f2d2a1d7a1ce765f9927580d23e3303d6fa1e"
   },
   {
     "file": "signature/portable-vm-integer-abi-evidence.json",
@@ -373,6 +383,16 @@
     "file": "signature/portable_buffer.ts",
     "bytes": 12983,
     "sha256": "ef9292de4ef52d25794c0c9817b5575234c8adb285293e5dca5faddfd0b29924"
+  },
+  {
+    "file": "signature/portable_crypto_host.ts",
+    "bytes": 6585,
+    "sha256": "8c1f53334a5de672eb9c56555d7e9f6dfabb63dcff5ba2722af5200dedd8d888"
+  },
+  {
+    "file": "signature/portable_digest.ts",
+    "bytes": 6310,
+    "sha256": "387fb31a9dc6f80076ada98efbe05b842112a2b2a452112bb05c4aa92959bff6"
   },
   {
     "file": "signature/portable_vm_abi.ts",
@@ -600,6 +620,11 @@
     "sha256": "ef5a0d1e5b334d43932827a67b08f39b1c1b93ddbc5fdd7755865003c596dd04"
   },
   {
+    "file": "signature/standard-crypto-runtime-contract.asm",
+    "bytes": 17570,
+    "sha256": "88d53c847f5b76470538daf96ec8624aa876c491cfe52646c2dca486e1619142"
+  },
+  {
     "file": "signature/state-directory-continuation.asm",
     "bytes": 1468,
     "sha256": "2f70d4f62175d21cb619f1a70f1de8dde435c88ffcdb67b71e03d10bf9780837"
@@ -638,6 +663,21 @@
     "file": "signature/test_portable_buffer.cjs",
     "bytes": 5249,
     "sha256": "e904aa74018c8bc35ddc126aaee9fd3dd658653326f8fa44de134269250fa85a"
+  },
+  {
+    "file": "signature/test_portable_crypto_host.cjs",
+    "bytes": 5071,
+    "sha256": "278d4a5e5cf2417d668f7a270bfc0ea937a13f2e8ba582a0cb70f7dd3c988d3b"
+  },
+  {
+    "file": "signature/test_portable_digest.cjs",
+    "bytes": 2677,
+    "sha256": "b7b3b59600b333ef7f3e54961c8987e4fad6ac09b717efa246586788810e07a5"
+  },
+  {
+    "file": "signature/test_portable_host_diagnostics.py",
+    "bytes": 1584,
+    "sha256": "6e13aa6803811c0dadd94bb1f270cb8a96fe87b594fdc3c5b8375dc7a125ec0f"
   },
   {
     "file": "signature/test_portable_vm_abi.cjs",
@@ -751,8 +791,13 @@
   },
   {
     "file": "signature/verify_portable_buffer.py",
-    "bytes": 18692,
-    "sha256": "75f780beecf2f113ff0ddc7d40578b199162a8b7be4ca44d1533a000b1a060cf"
+    "bytes": 18883,
+    "sha256": "2d8442196a2c5ead2fe5219c452f8b41931b0e715e8930e3ed90a109475158e2"
+  },
+  {
+    "file": "signature/verify_portable_digest.py",
+    "bytes": 11642,
+    "sha256": "93d2b13afbb9d1c7422c4dc5e80a777569b61eb7fd64152a77ffed7f8ef16d26"
   },
   {
     "file": "signature/verify_portable_vm_abi.py",
@@ -776,8 +821,8 @@
   },
   {
     "file": "signature/verify_portable_vm_host.py",
-    "bytes": 19861,
-    "sha256": "996d2134fb53072c11069851972ddaabf5676ef215c2390159888b49848a4657"
+    "bytes": 19826,
+    "sha256": "3cfd7abbea7740d4c7b9540420db6e953f70b40830e9ce0b2a737b2022c2c183"
   },
   {
     "file": "signature/verify_portable_vm_memory.py",

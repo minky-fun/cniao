@@ -566,3 +566,39 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 使用 `--vectors-only` 可只运行 440 组独立原生对象对照。Node 行为与异常检查为 `node signature/test_portable_buffer.cjs <compiled portable_buffer.js>`。
+
+
+## 标准摘要、Base64 与 SGCrc32 迁移（2026-10-15，后续）
+
+新增 `portable_digest.ts`，纯 TypeScript 实现 MD5、SHA-1、HMAC-SHA1、Base64 编码和原始 CRC-32。计算模块不导入 Node crypto、WebCrypto、CommonCrypto 或其他原生算法。`portable_crypto_host.ts` 则实现固定样本的 5 个原生入口契约，保留参数检查、输出写入、临时缓冲区及返回位模式。原生对象包装器和外层 SDK 分派暂时保留，没有把核心算法替换等同于整个宿主层移植。
+
+已核对的特殊行为包括：MD5 的零长度参数改用 C 字符串长度，原生 void 函数留下的 x0 仍按最终 memcpy 目的地址返回；SHA-1 原生入口拒绝空数据或不足 20 字节的输出容量；原生 Base64 拒绝空输入，裸编码函数不补终止符。HMAC 描述符保留长密钥先做 SHA-1、已有 scratch 的容量选择、新分配的最小长度、原生 scratch 中间/最终字节与释放顺序。Base64 输入/输出重叠、输出覆盖字母表，以及 HMAC scratch 覆盖自身描述符明确拒绝，不猜测未支持的别名行为。
+
+宿主表还确认 `SGCrc32` 绑定为 `0x102adefb8`。它使用反射多项式 `0xedb88320`、初值零且无末尾异或，不能直接使用 zlib 默认 CRC 约定。原生表有 256 个八字节槽，所有表项均与该多项式的 32 位结果一致。已初始化的 CRC/Base64 表仍从 guest 内存读取，独立对照包含改写的公开表数据，避免忽略原生可变状态。首次联合 CRC 替换未完成；改为每次调用一次读取 2 KiB 表并在 TS 中查表，移除逐字节跨进程读取，并新增 65,537 字节原生向量覆盖该路径。
+
+验证结果：
+
+- **254 组原生标准算法/ABI 对照通过**：MD5 25、SHA-1 31、Base64 38、CRC 31、HMAC 129；比较返回位、全部堆字节、scratch、分配/释放顺序和全局查表状态。覆盖分块/填充边界、长密钥、空指针、容量不足、分配失败、scratch 与来源/密钥/输出别名，以及已有自定义表。
+- Node 独立标准算法对照 **338 组通过**（MD5/SHA-1 56、HMAC 224、Base64 28、CRC 30），另有 11 组异常；原生接口行为 5 组、异常 12 组通过。CRC 公开模式的期望值独立由 Python zlib 按正确初值/末尾异或换算。
+- 原有 440 组对象对照、5 组完整 VM 程序、1,053 组宿主 ABI/桥接对照重新通过；对象和桥接 Node 检查通过，严格 TypeScript 与 **21 项 Python 回归**通过。共享宿主错误报告也修复了对旧 `opcode_trace` 字段的依赖，避免独立 TS VM 的真正失败被额外 AttributeError 掩盖，新增回归同时确认原始异常内容不进入报告。
+- 两组输入的完整离线对照分别完成 76 次 TS VM 调用、321,675 / 321,855 条 VM 指令。每组新增 **11 次 TS 核心算法调用**：7 次 MD5、2 次 HMAC、1 次 Base64、1 次 CRC；此前 17 次 AES、1,196 次对象入口及全部 73 种 VM 操作码继续同时替换。被替换原生算法体/核心设有禁止执行检查，进入次数为零；候选与逐操作码次数仍分别与原生一致，改变输入仍改变候选。SHA-1 在 HMAC 的 TS 实现内部执行，不额外计为一次原生入口拦截。
+
+证据：`portable-digest-evidence.json`、`portable-digest-validation.json`、`standard-crypto-runtime-contract.asm`。原始候选、输入、密钥、随机熵、安全资源和运行内存均不导出。完整本地签名器仍未完成：zlib、其他宿主/对象解码、模块初始化/展开和 SDS/设备状态仍有依赖。未联网验签或 iPhone 桌面验证；小组件查询、自动续期及 1.1.5 安装包未改。下一步继续移植压缩/解码与模块初始化依赖。
+
+### 复现标准算法联合对照
+
+严格编译时加入 `portable_crypto_host.ts`（自动编译 `portable_digest.ts` 依赖），然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_digest.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 只运行 254 组标准算法原生向量；独立算法与接口检查分别用 `test_portable_digest.cjs <compiled portable_digest.js>`、`test_portable_crypto_host.cjs <compiled portable_crypto_host.js>`。
