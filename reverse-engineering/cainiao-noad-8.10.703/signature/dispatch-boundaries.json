@@ -148,15 +148,14 @@
     "module": "lvm_sds",
     "lookup_number": 66010636,
     "export_index": 34,
-    "resolution_scope": "real offline native export execution with corrected appKey/authCode layout; stops at null SDS context, interpreter does not return",
+    "resolution_scope": "strict offline export stops at missing SDS resource-directory buffer; independent explicit slice continues resource processing",
     "continued_trace_evidence": "module-sds-evidence.json",
-    "stop_reason": "uninitialized_sds_context",
+    "stop_reason": "uninitialized_sds_resource_directory",
     "context_slot_module_offset": "0xabe8",
     "fault_code_offset": "0x38d4",
     "required_member_offset": "0x48",
-    "member_callback_target": "0x102a71500",
-    "member_callback_reads": "bit 2 of context u32 at offset 0",
-    "member_business_meaning_verified": false,
+    "member_callback_target": "0x102abf384",
+    "member_business_meaning_verified": true,
     "negative_case": {
       "appkey_empty": true,
       "authcode_empty": true,
@@ -171,7 +170,9 @@
       ],
       "evidence": "module-sds-empty-appkey-evidence.json",
       "applies_to_correct_nonempty_appkey_path": false
-    }
+    },
+    "member_callback_operation": "clone 104-byte resource-directory buffer; not SDK config bit-2 callback",
+    "object_kind": "resource_directory_buffer_not_sdk_context"
   },
   "sds_initialization": {
     "native_entry": "0x102ab5a28",
@@ -195,6 +196,49 @@
     "missing_import_call_site": "0x102aa17fc",
     "runtime_gate_static_evidence": "sds-runtime-gate.asm",
     "initialization_completed": false,
-    "evidence": "sds-initialization-evidence.json"
+    "evidence": "sds-initialization-evidence.json",
+    "slot_object_kind": "resource_directory_buffer_not_sdk_context"
+  },
+  "sds_resource_slice": {
+    "evidence": "sds-slice-evidence.json",
+    "zlib_continuation_evidence": "sds-zlib-evidence.json",
+    "monitoring_side_effects_omitted": true,
+    "full_sdk_initialization_verified": false,
+    "directory_buffer_bytes": 104,
+    "constructor": "0x102abf544",
+    "copy_target": "0x102abf384",
+    "resource": "Payload/Cainiao4iPhone.app/yw_1222.jpg",
+    "resource_bytes": 133573,
+    "public_bundle_identifier": "com.cainiao.cnwireless",
+    "environment_command": {
+      "ids": [
+        1,
+        9,
+        2,
+        0
+      ],
+      "handler": "0x102aaf54c",
+      "environment_index": 0,
+      "native_query": "0x102a791f4"
+    },
+    "crypto_command": {
+      "ids": [
+        1,
+        2,
+        1,
+        0
+      ],
+      "handler": "0x102abc330"
+    },
+    "zlib_streams_reached_end": 2,
+    "decompressed_lengths_only": [
+      306065,
+      86480
+    ],
+    "stop_reason": "unresolved_runtime_state_null_read",
+    "native_pc": "0x102a2b7e4",
+    "invalid_read_address": "0x0",
+    "invalid_read_bytes": 8,
+    "signing_verified": false
   }
 }

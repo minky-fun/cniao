@@ -127,23 +127,38 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 
 1. 非空合成 appKey、空 authCode，在 SDS 之前停止：命令为 `(1,6,36,0)`，见 `module-vm-evidence.json`。
 2. 空 appKey、空 authCode，实际执行 SDS 导出项 34：VM 返回 0、业务错误 1、无输出，随后进入 `(1,14,5,0)`，见 `module-sds-empty-appkey-evidence.json`。这是参数拒绝路径，不是签名成功。
-3. 非空合成 appKey、空 authCode，实际执行 SDS：越过上述拒绝分支，读取 SDS 模块相对偏移 **`0xabe8`** 的全局上下文槽；该槽为零。代码区 **`0x38d4`** 随后读取该对象的 `+0x48` 成员，实际 ARM64 指令 `0x102a2ba18` 访问未映射地址 `0x48`，解释器未返回。见 `module-sds-evidence.json`。此时错误槽的 99 是中间值，不能当成最终业务错误。
+3. 非空合成 appKey、空 authCode，实际执行 SDS：越过上述拒绝分支，读取 SDS 模块相对偏移 **`0xabe8`** 的资源目录缓冲区槽；该槽为零。代码区 **`0x38d4`** 随后读取该对象的 `+0x48` 成员，实际 ARM64 指令 `0x102a2ba18` 访问未映射地址 `0x48`，解释器未返回。见 `module-sds-evidence.json`。此时错误槽的 99 是中间值，不能当成最终业务错误。
 
-探针同时核对当前 VM 指令位置、上下文槽的实际重定位地址和零值。它只将这一个已核对的空上下文读记录为已知停止点，其他内存错误继续抛出；不映射空页、不返回伪造输出。
+探针同时核对当前 VM 指令位置、资源目录槽的实际重定位地址和零值。它只将这一个已核对的空缓冲区读记录为已知停止点，其他内存错误继续抛出；不映射空页、不返回伪造输出。
 
 对应初始化链也已定位：
 
 - 原生 `0x102ab5a28` 装载 SDS 描述符后，在 `0x102ab5c6c` 将 SDK 上下文送给 **`(1,6,40,flag=0)`**，见 `sds-module-initialization.asm`。容器元数据明确将 **`66010640 → 导出项 38`**；真实导出表地址偏移为 **`0x8340`**。
-- 导出项 38 的代码区 **`0x847c`** 将上下文保存至上述全局槽。`probe_sds.py` 通过真实加载器展开的指令验证槽地址和 store 操作，不输出原始字节码或数据常量。
+- 导出项 38 的代码区 **`0x847c`** 将资源目录缓冲区保存至上述全局槽；该缓冲区与传入的 SDK 配置对象不是同一对象。`probe_sds.py` 通过真实加载器展开的指令验证槽地址和 store 操作，不输出原始字节码或数据常量。
 - SDK 上下文由 `0x102a71164` 分配 **240 字节**。主初始化器在 `0x102aeb30c` 调用构造器，经 `0x102ae9d14` 存入全局 `0x1068f9e78`，之后在 `0x102aea5e0` 传给 SDS 初始化器。见 `sdk-context-constructor.asm`。
 - 上下文 `+0x60/+0x68/+0x70/+0x78` 分别保存真实回调 `0x102a71530/0x102a7154c/0x102a71568/0x102a71584`，分别读取对象成员 `+0x10/+0x18/+0x20/+0x28` 并继续解码。见 `sdk-context-callbacks.asm`。尚未确认这些成员的业务名称，不把它们猜成某个设备标识或密钥。
-- 签名主路径最先读取的上下文 `+0x48` 实际是回调指针 **`0x102a71500`**。它只读取上下文首个 32 位标志的 **bit 2**；相邻 `+0x38/+0x40/+0x50/+0x58` 分别读取 bit 0/1/3/4。探针在独立合成对象上实际运行五个原生回调，用七组标志核对结果。这里还不能确认每一位的业务含义，不能把 `+0x48` 直接称作设备数据或密钥。
+- **纠正此前的对象混淆**：SDK 配置对象的 `+0x48` 确实为标志回调 `0x102a71500`，读取 bit 2，七组合成标志已核对。但 SDS 签名路径从 `0xabe8` 取到的是另一种 **104 字节资源目录缓冲区**，由 `0x102abf544` 创建，其 `+0x48` 为复制回调 **`0x102abf384`**。切片执行核对缓冲区内容等于 SDK 构造器的合成参数 2。此前将这里解释为 SDK bit-2 回调是错误的，现以原生代码及执行结果更正；见 `sds-resource-buffer.asm` 与 `sds-slice-evidence.json`。
 
 `probe_sds.py` 目前可以执行真实 SDK 构造器，并核对以上回调地址。其输入为零标志、一个公开合成字符串和其余零参数，**不是 iPhone 的完整 SDK 配置**。构造时 `(1,1,3,0)` 按真实注册转发至 `0x102aed18c`，该处理器从样本状态读取字节；不人工填充返回值。
 
 随后实际执行 SDS 导出项 38，经 `(1,37,1,flag=1)` 进入真实处理器 `0x102aa11fc`，在 `0x102aa17fc` 调用 Foundation 的 **`NSClassFromString`** 时停止。该探针没有实现 Objective-C 运行时；不返回猜测的类或消息结果。`sds-initialization-evidence.json` 明确记录初始化未返回、上下文槽尚未保存、未生成签名。这一停止点不能解释为“必须换一台设备”或“算法无法继续还原”，后续仍可继续分析相应原生路径及初始化输入来源。
 
-`sds-runtime-gate.asm` 进一步保留了该检查的控制流：`0x102aa13f8` 调用检查器，把低字节保存到全局 `0x1068f7a48`；检查器先按字符串查找类和选择子，再发送 `instancesRespondToSelector:`。若此消息结果为零，`0x102aa1828` 跳过后续实例消息。处理器在 `0x102aa1438` 再按保存的低字节跳过后续区段，最终从 `0x102aa16ec` 返回 0。这里描述两条静态分支，不假定真实设备上的类是否存在，也不把跳过区段或返回 0 当成 SDK 初始化或签名成功。
+`sds-runtime-gate.asm` 进一步保留了该检查的控制流：`0x102aa13f8` 调用检查器，把低字节保存到全局 `0x1068f7a48`；检查器先按字符串查找类和选择子，再发送 `instancesRespondToSelector:`。若此消息结果为零，`0x102aa1828` 跳过后续实例消息。处理器在 `0x102aa1438` 再按保存的低字节跳过后续区段，最终从 `0x102aa16ec` 返回 0。这里描述两条静态分支。进一步解析主程序类表后，已确认查询的 `asdu2399asd` 类真实存在，目标选择子 `adsf2332sdd` 实现为 `0x102be7b7c`；不能将类查询随意替换成 nil。该类还定义 APM、前后台监听及报告相关方法。完整运行时消息与副作用尚未模拟。
+
+
+### 独立资源切片及解压进展
+
+`probe_sds_slice.py` 必须显式传入 `--omit-monitoring`：仅省略 `(1,37,1,1)` 监控调用的副作用，使用已核对的正常返回常量 0，**不等价于完成真实 SDK 初始化**。签名、加解密和资源解压均未用伪造输出替代。配置仍为合成目录、零标志与其他零参数；签名请求仍为合成 INPUT/appKey 和空 authCode。
+
+该条件下实际执行导出项 38，得到 VM 状态 0、业务错误 0，并核对资源目录缓冲区。签名导出项 3 随后复制目录并完整读取 IPA 的 `yw_1222.jpg`（133573 字节，摘要由探针验证）。`(1,9,2,0)` 经原生处理器 `0x102aaf54c` 查询环境索引 0，最终进入 `0x102a791f4`。其查询的 `OpenSecurityGuardManager` 也真实定义于主程序；这里只建模对应的 `NSBundle bundleForClass:`、`bundleIdentifier` 及必要字符串转换，包标识直接读取 IPA 的 `Info.plist`：`com.cainiao.cnwireless`。未知类、消息、路径、编码仍中止。见 `sds-bundle-environment.asm`。
+
+`(1,2,1,0)` 的真实处理器 `0x102abc330` 已执行，按参数 `+4` 的 u32 分发加密类型；类型 22 的路径包括原生 MD5。默认切片停在 `_inflateInit_`，证据为 `sds-slice-evidence.json`。
+
+增加 `--with-zlib` 后，`guest_zlib.py` 使用系统 libz 并有界复制 guest 输入输出、指针和计数。iPhoneOS arm64 的 `z_stream`（112 字节、全部字段偏移）经 `verify_ios_zlib.c` 编译断言核对。拒绝自定义分配器；流状态由宿主库维护，宿主地址不写入 guest；`arc4random` 使用宿主系统熵，仅记录调用次数。两段流均真实到达 `Z_STREAM_END` 并关闭，解压长度分别为 **306065 / 86480 字节**，不保存或展示解码内容。见 `sds-zlib-evidence.json`。
+
+随后停在解释器原生指令 **`0x102a2b7e4`**：`ldr x1, [x1, x2]` 读取空地址 0 的 8 字节，见 `vm-null-read.asm`。当前仅定位了故障指令及所在分配块，尚未证明空操作数的上游业务来源，不能据此断言缺少某个设备字段或密钥。签名解释器没有返回；错误槽此刻为 0 也不是签名成功。下一步需追踪该操作数来源，恢复后续配置、计算与真实签名对照。
+
+纯原生计算区间 `0x102a6c000–0x102a6f000` 可关闭 Python 逐指令跟踪以加速，**所有 guest 指令照常执行**，导入和业务入口继续拦截；`--full-trace` 可保留全部跟踪用于对照。两种切片模式的加速与完整跟踪输出 JSON 均已实际对比一致。严格初始化探针的 IPA 与主程序输入也输出一致。所有执行仍有时间和指令上限。
 
 ## 代码与验证
 
@@ -153,6 +168,8 @@ MiddleTier 的 `getSign:error:` 继续构建上下文并调用 `signRequest:auth
 - `module_container.py` / `test_module_container.py`：双流容器的有界解析及损坏输入测试，仅使用标准库。
 - `probe_vm.py` / `module-vm-evidence.json` / `module-sds-evidence.json` / `module-sds-empty-appkey-evidence.json`：真实签名模块、宿主表和三种合成参数执行边界；依赖 macOS 的 `otool`、`nm` 和 `unicorn==2.1.4`，不需要 Capstone。
 - `probe_sds.py` / `sds-initialization-evidence.json`：真实 SDK 上下文构造和 SDS 初始化前缀，遇到缺失的 Objective-C 导入即中止。
+- `probe_sds_slice.py` / `sds-slice-evidence.json` / `sds-zlib-evidence.json`：明确省略监控副作用的资源切片，两种模式分别停在解压导入和后续空操作数读取；只接受归档 IPA。
+- `guest_zlib.py` / `test_guest_zlib.py` / `verify_ios_zlib.c` / `verify_ios_stat.c`：有界真实 libz 适配、公开合成流式测试及 iPhoneOS ABI 编译断言。
 - `probe_native.py` / `native-routing-evidence.json`：有限原生片段复核及明确标注合成回调的输出；仅额外依赖 `unicorn==2.1.4`。
 - `methods.json`：从 Objective-C 元数据提取的相关方法入口。
 - `*.asm` / `*-annotated.asm`：定点指令与辅助注释。注释器仅识别已知形式的字符串和 selector，不是完整反编译器；以原始指令为准。注释中的厂商构建路径缩为 `MtopSDK/`。
@@ -195,7 +212,18 @@ work/cniao-re-env/bin/python reverse-engineering/cainiao-noad-8.10.703/signature
   reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 ```
 
-所有探针都接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
+除需要 IPA 资源的 `probe_sds_slice.py` 外，所有探针都接受已解出的主程序路径；两种输入的 JSON 输出应一致。输出中的 `return_address` 是实际寄存器值，尾调用时可能是合成停止地址，不应当作原始调用点。
+
+显式运行独立切片：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_sds_slice.py --omit-monitoring \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_sds_slice.py --omit-monitoring --with-zlib \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+xcrun --sdk iphoneos clang -target arm64-apple-ios12.0 -c \
+  reverse-engineering/cainiao-noad-8.10.703/signature/verify_ios_zlib.c -o work/signature-analysis/verify-ios-zlib.o
+```
 
 如需重新补充注释，从归档 IPA 提取主程序为本目录的 `Cainiao4iPhone`，核对摘要后运行 `python3 -B annotate_sign.py`。原始反汇编可用系统 `objdump -d --start-address=... --stop-address=... Cainiao4iPhone` 按证据文件首末地址重新生成，不应对整份转储中的混淆数据盲目解释为可达代码。
 

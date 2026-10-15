@@ -40,6 +40,7 @@ class ModuleProbe(NativeProbe):
         self.observed_commands = []
         self.memory_fault = None
         self.native_routes = {}
+        self.instruction_limit = 10000000
         super().__init__(data)
         self.cpu.mem_map(self.next_address, 0x4000000)
         self.cpu.hook_add(UC_HOOK_MEM_READ_UNMAPPED, self.on_invalid_read)
@@ -81,7 +82,7 @@ class ModuleProbe(NativeProbe):
         self.cpu.reg_write(UC_ARM64_REG_SP, self.stack + 0xff000)
         self.cpu.reg_write(UC_ARM64_REG_X30, self.stop)
         end = self.stop if stop is None else stop
-        self.cpu.emu_start(entry, end, timeout=20000000, count=10000000)
+        self.cpu.emu_start(entry, end, timeout=20000000, count=self.instruction_limit)
         if self.cpu.reg_read(UC_ARM64_REG_PC) != end:
             raise RuntimeError('VM 片段超出时间或指令限制')
         return self.cpu.reg_read(ARGUMENT_REGISTERS[0])
@@ -217,8 +218,8 @@ class ModuleProbe(NativeProbe):
         cpu.reg_write(UC_ARM64_REG_PC, cpu.reg_read(UC_ARM64_REG_X30))
 
 
-def load_modules(data, with_sds=False):
-    """复核并装载固定样本，为签名边界与 SDS 初始化探针共享真实引擎。"""
+def load_modules(data, with_sds=False, probe_class=ModuleProbe):
+    """复核固定样本并装载真实引擎；独立切片探针可显式提供隔离依赖模型。"""
     if hashlib.sha256(data).hexdigest() != EXPECTED_SHA256:
         raise ValueError('主程序 SHA-256 不匹配，拒绝执行固定地址')
     # 系统工具只解析固定样本的符号，不加载或启动该 iOS 程序。
@@ -229,7 +230,7 @@ def load_modules(data, with_sds=False):
         symbol_text = subprocess.check_output(['nm', '-n', str(binary)], text=True)
     imports = {int(address, 16): name for address, name in re.findall(r'^(0x[0-9a-f]+)\s+\d+\s+(\S+)', import_text, re.M)}
     locals_by_name = {name: int(address, 16) for address, name in re.findall(r'^([0-9a-f]{16}) [Tt] (\S+)', symbol_text, re.M)}
-    probe = ModuleProbe(data, imports, locals_by_name)
+    probe = probe_class(data, imports, locals_by_name)
     probe.run(0x102a885ac, stop=0x102a88654)
     descriptor = struct.unpack('<4Q', probe.cpu.mem_read(0x105530118, 32))
     module_name = probe.cstring(descriptor[0]).decode('ascii')
@@ -348,7 +349,7 @@ def inspect(data, with_sds=False, empty_appkey=False):
     except MissingCommand:
         stop_reason = 'uninitialized_core_command'
     except UcError:
-        # 只接受已逐指令定位的空 SDS 上下文读；其他内存故障继续抛出。
+        # 只接受已逐指令定位的空 SDS 资源目录缓冲区读；其他内存故障继续抛出。
         if not with_sds or empty_appkey or probe.memory_fault != {'native_pc': '0x102a2ba18', 'address': '0x48', 'bytes': 8}:
             raise
         sds_engine = probe.module_routes[(1, 6, 36, 0)][0]
@@ -362,8 +363,8 @@ def inspect(data, with_sds=False, empty_appkey=False):
             raise RuntimeError('SDS 空上下文来源与证据不符')
         if probe.cpu.reg_read(UC_ARM64_REG_X27) != expanded + (0x38d4 // 4 - 1) * 16:
             raise RuntimeError('SDS 缺失上下文的字节码位置与证据不符')
-        context_dependency = {'context_slot_module_offset': '0xabe8', 'context_slot_value': 0, 'fault_code_offset': '0x38d4', 'required_member_offset': '0x48', 'initialization_lookup_number': 66010640, 'initialization_export_index': 38}
-        stop_reason = 'uninitialized_sds_context'
+        context_dependency = {'object_kind': 'resource_directory_buffer_not_sdk_context', 'context_slot_module_offset': '0xabe8', 'context_slot_value': 0, 'fault_code_offset': '0x38d4', 'required_member_offset': '0x48', 'initialization_lookup_number': 66010640, 'initialization_export_index': 38}
+        stop_reason = 'uninitialized_sds_resource_directory'
     else:
         raise RuntimeError('类型 19 未在预期依赖处停止')
     expected_commands = [[1, 6, 36, 0], [1, 14, 5, 0]] if empty_appkey else [[1, 6, 36, 0]]

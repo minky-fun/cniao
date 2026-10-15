@@ -417,7 +417,7 @@
     "appkey_empty": false,
     "authcode_empty": true,
     "synthetic_type": 19,
-    "stop_reason": "uninitialized_sds_context",
+    "stop_reason": "uninitialized_sds_resource_directory",
     "observed_commands": [
       [
         1,
@@ -433,6 +433,7 @@
       "bytes": 8
     },
     "context_dependency": {
+      "object_kind": "resource_directory_buffer_not_sdk_context",
       "context_slot_module_offset": "0xabe8",
       "context_slot_value": 0,
       "fault_code_offset": "0x38d4",

@@ -68,7 +68,7 @@ def inspect(data):
         raise RuntimeError('Objective-C 依赖停止地址与导入表不符')
     if probe.cpu.reg_read(UC_ARM64_REG_X30) != 0x102aa1800:
         raise RuntimeError('Objective-C 依赖返回地址与调用点不符')
-    # 首次调用会展开整个代码区；核对实际全局槽地址和保存上下文的 store 指令。
+    # 首次调用会展开整个代码区；核对实际全局槽地址和保存资源目录缓冲区的 store 指令。
     expanded = struct.unpack('<Q', probe.cpu.mem_read(sds_module + 0x30, 8))[0]
     low = struct.unpack('<Q', probe.cpu.mem_read(expanded + (0x846c // 4 - 1) * 16 + 8, 8))[0]
     high = struct.unpack('<Q', probe.cpu.mem_read(expanded + (0x8470 // 4 - 1) * 16 + 8, 8))[0]
@@ -86,12 +86,13 @@ def inspect(data):
         'selected_callbacks': callbacks,
         'flag_callback_offsets': [hex(offset) for offset, _ in flag_callbacks],
         'flag_callback_cases': flag_cases,
-        'signature_first_context_dependency': {
+        'sdk_flag_callback_example': {
             'member_offset': '0x48',
             'callback_target': '0x102a71500',
             'reads_context_offset': '0x0',
             'reads_bit': 2,
             'business_meaning_verified': False,
+            'is_sds_resource_directory_buffer': False,
         },
         'configuration_is_synthetic': True,
     }

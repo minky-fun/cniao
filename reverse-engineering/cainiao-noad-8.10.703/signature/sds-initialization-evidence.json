@@ -553,12 +553,13 @@
         ]
       }
     ],
-    "signature_first_context_dependency": {
+    "sdk_flag_callback_example": {
       "member_offset": "0x48",
       "callback_target": "0x102a71500",
       "reads_context_offset": "0x0",
       "reads_bit": 2,
-      "business_meaning_verified": false
+      "business_meaning_verified": false,
+      "is_sds_resource_directory_buffer": false
     },
     "configuration_is_synthetic": true
   },

@@ -72,7 +72,7 @@ class NativeProbe:
         self.cpu.mem_write(0x1053bb718, struct.pack('<Q', self.heap + 0x100))
         self.records = []
         self.capture_dispatcher = False
-        self.cpu.hook_add(UC_HOOK_CODE, self.on_instruction)
+        self.code_hook = self.cpu.hook_add(UC_HOOK_CODE, self.on_instruction)
 
     def on_instruction(self, cpu, address, size, context):
         """导入仅重定向至样本自身解码代码；合成回调记录参数并返回 0。"""
