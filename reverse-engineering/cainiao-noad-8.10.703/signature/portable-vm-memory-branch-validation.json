@@ -1,0 +1,20 @@
+{
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "source_sha256": {
+    "memory": "c83b6527b2e7295c49592f2b78b835fe87bceb0d2846954467b96d379e162bd9",
+    "branch": "cf84d01611ed7e8fd8737376d33b0c667ad13fb1e2af26a83179c53281751e6e"
+  },
+  "native_memory_vector_and_register_cases": 952,
+  "native_branch_target_flags_and_register_cases": 8910,
+  "synthetic_memory_cases": 18,
+  "invalid_memory_cases": 16,
+  "fixed_branch_cases": 8,
+  "invalid_branch_cases": 14,
+  "python_regression_tests": 20,
+  "memory_scalar_aes_pipeline_passed": true,
+  "branch_memory_scalar_aes_pipeline_passed": true,
+  "scripting_device_execution_verified": false,
+  "server_verified": false
+}

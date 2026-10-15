@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES 和六种高频 VM 标量运算已分别替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及六种标量、16 种内存、22 种分支操作码已联合替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -364,7 +364,7 @@ xcrun --sdk macosx clang -Werror -c \
 
 ## VM 标量迁移：六种操作码
 
-`profile_vm_dispatch.py` 在样本解释器的 `str x27,[x28,#8]` 下一指令派发点，记录到 72 种操作码。该统计只覆盖这一种派发形式，不包含初始派发，不能解读为整个解释器只有 72 种指令；证据见 `vm-dispatch-profile.json`。不输出扩展指令操作数、槽位或资源内容。
+`profile_vm_dispatch.py` 在样本解释器的 `str x27,[x28,#8]` 下一指令派发点，记录到 73 种操作码。该统计只覆盖这一种派发形式，不包含初始派发，不能解读为整个解释器只有 72 种指令；证据见 `vm-dispatch-profile.json`。不输出扩展指令操作数、槽位或资源内容。
 
 第一批 `portable_vm_scalar.ts` 实现以下确切语义，均用 `bigint` 保存 uint64，避免 Number 精度损失：
 
@@ -395,3 +395,48 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 联合替换也已通过：增加 `--portable-aes work/signature-analysis/portable-build/portable_aes.js` 后，每次同时替换 17 次 AES 和上述 VM 标量运算；两组候选仍与原生完全一致，原生 AES 包装器执行数为 0。证据见 `portable-vm-aes-combined-evidence.json`。以上过程不读取账号、不请求服务端、不修改小组件，仍不能证明签名服务端有效或 token 能持续自动续期。
+
+
+## VM 内存与条件分支迁移
+
+新增 `portable_vm_memory.ts` 与 `portable_vm_branch.ts`，在之前六种标量和 AES 实现上联合验证。只支持从实际入口核对的操作码；未知指令明确失败，不猜测相邻指令编号含义。公开的 `VmMemory` 接口要求宿主校验可访问范围和写权限；目前离线适配器仍通过 Unicorn 的已映射 guest 内存提供字节，这不是独立运行的完整 VM。
+
+内存子集覆盖 16 种操作码：60、62、63、67、68、70、71、73、75、76、78、79、81、82、83、84。包含无符号 1/4/8 字节读、有符号 1/4 字节读，以及 1/2/4/8 字节写，保留寄存器/立即数两类寻址。地址按 uint64 回绕，数据为小端；STR W1 写入低 32 位但保留完整 x1，字节/半字写则按实际汇编掩码 x1。宿主适配器只读取实际使用的槽位，检查目标范围和读写权限。源码与 `vm-memory-contract.asm` 相互对应。
+
+`verify_portable_vm_memory.py` 以 **952 组实际 ARM64 执行**核对数据、相邻字节及 x0/x1/x2/x3 暂存状态，覆盖非对齐、负偏移和读结果覆盖输入槽位。纯 TS 另外验证 18 个内存案例和 16 个无效输入/非法内存案例，包括高于 Number 精确整数范围的地址、只读、越界、回绕、错误读长度和未知指令。
+
+分支子集覆盖 22 种实际出现的操作码，见 `branchOperations` 和 `vm-branch-contract.asm`。保留 32/64 位 CMP 的 N/Z/C/V 标志和有符号溢出语义。这里条件满足时会跳过下一条位移记录，即下一地址为当前扩展指令 +32；条件不满足时才读取当前 +24 的位移，下一地址为当前 +16+位移×16，均按 uint64 回绕。不能套用普通的单记录分支规则。纯 TS 核心只在实际需要时调用位移读取回调；离线 Python 适配器为管道请求预读两条扩展记录，尚未代替模块边界验证器。
+
+`verify_portable_vm_branch.py` 通过 **8,910 组实际 ARM64 执行**比较目标地址、NZCV 与 x0/x1/x2/x3；包括 32 位截断、有符号边界、溢出、正负位移和落回当前指令。另有 8 个固定分支案例和 14 个无效输入案例，验证跳过位移时不读取回调。
+
+两阶段都做了两组合成 INPUT、相同熵的四次独立初始化：
+
+| 联合替换阶段 | 原始/改变 INPUT 的 TS 指令次数 | TS AES | 外层候选对照 |
+|---|---|---|---|
+| 内存 + 标量 | 137,946 / 137,948 次内存，109,279 / 109,280 次标量 | 每次 17 次 | 两组都与原生相等 |
+| 分支 + 内存 + 标量 | 每次 38,030 次分支，内存与标量次数同上 | 每次 17 次 | 两组都与原生相等 |
+
+候选都是 50 字节；改变 INPUT 仍改变候选；各运行使用相同的 816 次熵调用，替换运行的原生 AES 包装器执行数为 0。数据、地址状态、资源、熵和候选值只通过进程内存/父子管道比较，不写入证据。证据分别在 `portable-vm-memory-evidence.json`、`portable-vm-branch-evidence.json`，检查摘要见 `portable-vm-memory-branch-validation.json`。
+
+已观察的操作码数重新按证据统计为 **73**，更正此前文字中的 72。当前实现其中 **44** 种，仍有 **29** 种已观察指令依赖原生处理器，清单见 `remaining-vm-opcodes.json`；这不代表签名器完成比例，未观察的输入分支仍可能有更多指令。原生派发、调用栈、模块展开、SDS 资源选择及部分宿主计算仍存在。未接入小组件，未进行 iPhone 或服务端签名验证。
+
+复现本轮联合验证：
+
+```sh
+npx --package typescript tsc --strict --noUnusedLocals --noUnusedParameters \
+  --target ES2020 --module commonjs --outDir work/signature-analysis/portable-build \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_aes.ts \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_vm_scalar.ts \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_vm_memory.ts \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_vm_branch.ts
+node reverse-engineering/cainiao-noad-8.10.703/signature/test_portable_vm_memory.cjs \
+  work/signature-analysis/portable-build/portable_vm_memory.js
+node reverse-engineering/cainiao-noad-8.10.703/signature/test_portable_vm_branch.cjs \
+  work/signature-analysis/portable-build/portable_vm_branch.js
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_vm_branch.py \
+  --portable-branch work/signature-analysis/portable-build/portable_vm_branch.js \
+  --portable-memory work/signature-analysis/portable-build/portable_vm_memory.js \
+  --portable-scalar work/signature-analysis/portable-build/portable_vm_scalar.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```

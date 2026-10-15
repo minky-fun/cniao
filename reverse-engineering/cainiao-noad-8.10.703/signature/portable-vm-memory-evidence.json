@@ -1,0 +1,80 @@
+{
+  "scope": "16 memory and six scalar opcodes plus AES; native dispatch, remaining opcodes and SDS retained",
+  "public_native_vector_cases": 952,
+  "runs": [
+    {
+      "changed_input": false,
+      "mode": "native",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816
+    },
+    {
+      "changed_input": false,
+      "mode": "TS-memory-scalar-AES",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "memory_opcodes": {
+        "60": 24694,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18661,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094
+      },
+      "replaced_memory_instructions": 137946,
+      "replaced_scalar_instructions": 109279,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    },
+    {
+      "changed_input": true,
+      "mode": "native",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816
+    },
+    {
+      "changed_input": true,
+      "mode": "TS-memory-scalar-AES",
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "memory_opcodes": {
+        "60": 24695,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18662,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094
+      },
+      "replaced_memory_instructions": 137948,
+      "replaced_scalar_instructions": 109280,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    }
+  ],
+  "same_input_native_equals_ts": true,
+  "changed_input_native_equals_ts": true,
+  "changed_input_changes_candidate": true,
+  "raw_data_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}
