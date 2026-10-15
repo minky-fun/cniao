@@ -3,6 +3,7 @@
 
 # Local reverse-engineering binaries and regenerated disassembly
 reverse-engineering/**/*.ipa
+!reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
 reverse-engineering/**/Cainiao4iPhone
 reverse-engineering/**/auth-annotated.asm
 reverse-engineering/**/__pycache__/
