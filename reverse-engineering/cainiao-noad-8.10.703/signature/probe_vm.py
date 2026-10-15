@@ -94,7 +94,9 @@ class ModuleProbe(NativeProbe):
                 raise RuntimeError('关联模块解释器返回错误')
             frame = self.route_frames.pop()
             result = struct.unpack('<Q', cpu.mem_read(frame['output'], 8))[0]
-            self.completed_module_calls.append({'module': frame['module'], 'export_index': frame['export_index'], 'vm_status': 0, 'business_error': struct.unpack('<I', cpu.mem_read(frame['error_pointer'], 4))[0], 'output_present': result != 0})
+            # 实际 (1,6,23,0) 调用允许错误指针为 NULL；此时没有可读取的错误槽。
+            error = struct.unpack('<I', cpu.mem_read(frame['error_pointer'], 4))[0] if frame['error_pointer'] else None
+            self.completed_module_calls.append({'module': frame['module'], 'export_index': frame['export_index'], 'vm_status': 0, 'business_error': error, 'output_present': result != 0})
             cpu.reg_write(ARGUMENT_REGISTERS[0], result)
             cpu.reg_write(UC_ARM64_REG_X30, frame['return_address'])
             cpu.reg_write(UC_ARM64_REG_PC, frame['return_address'])
@@ -169,6 +171,9 @@ class ModuleProbe(NativeProbe):
                     first = struct.unpack('<i', cpu.mem_read(stack_pointer, 4))[0]
                     second = struct.unpack('<i', cpu.mem_read(stack_pointer + 8, 4))[0]
                     raw = (str(first) + '_' + str(second)).encode('ascii')
+                elif name == '_snprintf' and format_text == b'%03u':
+                    number = struct.unpack('<I', cpu.mem_read(stack_pointer, 4))[0]
+                    raw = str(number).zfill(3).encode('ascii')
                 else:
                     raise RuntimeError('未实现的 printf 格式')
                 if name == '_sprintf':
@@ -307,7 +312,7 @@ def load_modules(data, with_sds=False, probe_class=ModuleProbe):
     evidence = {
         'binary_sha256': EXPECTED_SHA256,
         'scope': 'offline bounded VM load and synthetic argument tracing; no valid signature generated',
-        'synthetic_dependencies': ['bounded bump allocator; free is deferred', 'single-thread locks return 0', 'single-thread TLS and thread id 1', 'gettimeofday and time return zero', 'zero stack-canary storage', 'system symbol lookup uses verified Mach-O import names only', 'printf supports only observed %d and %d_%d formats with Apple ARM64 stack varargs'] + (['SDS routing shim uses the metadata-verified export index and native wrapper ABI'] if with_sds else []),
+        'synthetic_dependencies': ['bounded bump allocator; free is deferred', 'single-thread locks return 0', 'single-thread TLS and thread id 1', 'gettimeofday and time return zero', 'zero stack-canary storage', 'system symbol lookup uses verified Mach-O import names only', 'printf supports only observed %d, %d_%d and %03u formats with Apple ARM64 stack varargs'] + (['SDS routing shim uses the metadata-verified export index and native wrapper ABI'] if with_sds else []),
         'module': {'name': module_name, 'initializer': '0x102a885ac', 'descriptor': '0x105530118', 'callback': hex(descriptor[1]), 'source': hex(source), 'container_bytes': length, 'container_sha256': hashlib.sha256(container).hexdigest(), 'compressed_code_bytes': struct.unpack_from('<I', container)[0], 'bytecode_bytes': len(code), 'bytecode_sha256': hashlib.sha256(code).hexdigest(), 'metadata': metadata, 'command_bindings': commands},
         'related_modules': related_modules,
         'host_binding_table': {'decoder_prefix': '0x102a8f424', 'stop_before_copy': '0x102a91b4c', 'source': '0x1055302d8', 'entries': 165, 'entry_bytes': 24, 'registration': '0x102a5475c', 'registration_status': 0, 'selected_bindings': host_bindings},

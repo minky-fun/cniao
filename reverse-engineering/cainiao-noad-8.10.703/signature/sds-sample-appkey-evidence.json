@@ -1,0 +1,2343 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "offline SDS slice; monitoring side effects explicitly omitted; public bundle metadata and one IPA resource only",
+  "synthetic_dependencies": [
+    "bounded bump allocator; free is deferred",
+    "single-thread locks return 0",
+    "single-thread TLS and thread id 1",
+    "gettimeofday and time return zero",
+    "zero stack-canary storage",
+    "system symbol lookup uses verified Mach-O import names only",
+    "printf supports only observed %d, %d_%d and %03u formats with Apple ARM64 stack varargs",
+    "SDS routing shim uses the metadata-verified export index and native wrapper ABI",
+    "monitor command (1,37,1,1) side effects omitted; normal return constant 0 verified at 0x102aa16ec; not full SDK initialization",
+    "SDK constructor uses zero flags, a public synthetic resource directory, and an explicit synthetic state directory only when requested; remaining parameters zero",
+    "read-only guest file and Darwin arm64 stat metadata for exact IPA asset; no host user files",
+    "real host libz with bounded guest ABI adapter; no guest custom allocators; host system entropy for arc4random",
+    "empty synthetic Documents/SGDocuments state directory; access(F_OK) returns Darwin ENOENT with carry; LP64 cerror writes errno and returns -1 in x0/x1; uncancelled single thread only",
+    "sample public appKey from real index-0 export; value not exported; real Darwin BSD random with isolated 128-byte guest state; time remains zero",
+    "NSBundle and NSString model limited to main-image class and Info.plist bundle identifier; ARC lifetime deferred"
+  ],
+  "module": {
+    "name": "lvm_sig",
+    "initializer": "0x102a885ac",
+    "descriptor": "0x105530118",
+    "callback": "0x102abfdf4",
+    "source": "0x106682a00",
+    "container_bytes": 17608,
+    "container_sha256": "4918d315c509a24712e6cac93228ce2606ef43e063692ad0676e4ea48b71f010",
+    "compressed_code_bytes": 17424,
+    "bytecode_bytes": 34236,
+    "bytecode_sha256": "6fdc009507bbbe949a9603210d2099fe12e4808e1e84ded8732d7f54e9aaf5c6",
+    "metadata": {
+      "basic": {
+        "bizid": "lvm_sig",
+        "bizver": "1",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "1.0",
+        "uvm_min_version": "1.7",
+        "libc_min_version": "3",
+        "sgmain_min_version": "6.0.0"
+      },
+      "metainfo": "[{\"index\": 3, \"destIndex\": 66010401, \"isPublic\": 0}, {\"index\": 4, \"destIndex\": 66011903, \"isPublic\": 0}, {\"index\": 5, \"destIndex\": 66011904, \"isPublic\": 0}]"
+    },
+    "command_bindings": [
+      {
+        "index": 3,
+        "destIndex": 66010401,
+        "isPublic": 0
+      },
+      {
+        "index": 4,
+        "destIndex": 66011903,
+        "isPublic": 0
+      },
+      {
+        "index": 5,
+        "destIndex": 66011904,
+        "isPublic": 0
+      }
+    ]
+  },
+  "related_modules": [
+    {
+      "name": "lvm_sds",
+      "source": "0x1066871e0",
+      "container_bytes": 26314,
+      "container_sha256": "804b0c8bc743ca5a2e3804c09af302218bf3cd224b4189168a938198c95c6627",
+      "bytecode_bytes": 48016,
+      "bytecode_sha256": "680241e3682b2b62b9bf0ba65f511a961be77be14eb770554e026f2ac5d64060",
+      "basic_metadata": {
+        "bizid": "lvm_sds",
+        "bizver": "3",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "1.6",
+        "uvm_min_version": "1.66",
+        "libc_min_version": "5",
+        "sgmain_min_version": "6.0.0",
+        "protocols": "default"
+      },
+      "selected_command_binding": {
+        "index": 34,
+        "destIndex": 66010636
+      },
+      "initialization_command_binding": {
+        "index": 38,
+        "destIndex": 66010640
+      }
+    },
+    {
+      "name": "lvm_unifiedsec",
+      "source": "0x10669a7c8",
+      "container_bytes": 34317,
+      "container_sha256": "ab3a82622c9f9f49b6ff9ba8a9b77bb99c9b341bdece26f4efa688680d9f9c30",
+      "bytecode_bytes": 68792,
+      "bytecode_sha256": "7149e192b18c9693745f85acf977f99253266a09638bcd835b98e5615568e4c0",
+      "basic_metadata": {
+        "bizid": "lvm_unifiedsec",
+        "bizver": "7",
+        "platform": "ios",
+        "os_min_version": "8",
+        "litevm_min_version": "2.4",
+        "uvm_min_version": "3.0",
+        "libc_min_version": "5",
+        "protocols": "default"
+      },
+      "selected_command_binding": {
+        "index": 1,
+        "destIndex": 66070102
+      }
+    }
+  ],
+  "host_binding_table": {
+    "decoder_prefix": "0x102a8f424",
+    "stop_before_copy": "0x102a91b4c",
+    "source": "0x1055302d8",
+    "entries": 165,
+    "entry_bytes": 24,
+    "registration": "0x102a5475c",
+    "registration_status": 0,
+    "selected_bindings": [
+      {
+        "entry": "0x105530608",
+        "name": "sendSyncRequestLVMBridge",
+        "target": "0x102a8e950",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530620",
+        "name": "invokeFuncBridgeLVMBridge",
+        "target": "0x102a8e9a0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530650",
+        "name": "getCommonFunctionPtrLVMBridge",
+        "target": "0x102a8ea08",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530668",
+        "name": "addOperationToQueueLVMBridge",
+        "target": "0x102a8f21c",
+        "flags": 256
+      },
+      {
+        "entry": "0x105530680",
+        "name": "addOperationToSpecificThreadPoolQueueLVMBridge",
+        "target": "0x102a8f2e0",
+        "flags": 256
+      },
+      {
+        "entry": "0x105530698",
+        "name": "bcOpenLVMBridge",
+        "target": "0x102a8eab8",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306b0",
+        "name": "bcCloseLVMBridge",
+        "target": "0x102a8eb14",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306c8",
+        "name": "bcSymbolLVMBridge",
+        "target": "0x102a8eb74",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306e0",
+        "name": "bcRunByIndexLVMBridge",
+        "target": "0x102a8ebdc",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055306f8",
+        "name": "bcRunBySymbolLVMBridge",
+        "target": "0x102a8ec28",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530710",
+        "name": "AlgorithmHelperHexString",
+        "target": "0x102aa3724",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530728",
+        "name": "AlgorithmHelperHexStringExt",
+        "target": "0x102aa3668",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530740",
+        "name": "AlgorithmHelperHexStringToByte",
+        "target": "0x102aa37e0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530758",
+        "name": "AlgorithmHelperMd5",
+        "target": "0x102aa3900",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530770",
+        "name": "AlgorithmHelperMd5Hex",
+        "target": "0x102aa3a20",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530788",
+        "name": "AlgorithmHelperSha1",
+        "target": "0x102aa3b68",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307a0",
+        "name": "AlgorithmHelperSha1Hex",
+        "target": "0x102aa3c7c",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307b8",
+        "name": "AlgorithmHelperHmacSha1",
+        "target": "0x102aa3dc4",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307d0",
+        "name": "AlgorithmHelperHmacSha1Hex",
+        "target": "0x102aa3ec4",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055307e8",
+        "name": "AlgorithmHelperHmacSha1Base64",
+        "target": "0x102aa4014",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530800",
+        "name": "AlgorithmHelperBase64Encode",
+        "target": "0x102aa41dc",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530818",
+        "name": "AlgorithmHelperBase64Decode",
+        "target": "0x102aa42d8",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530830",
+        "name": "AlgorithmHelperAesEncrypt",
+        "target": "0x102aa4470",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530848",
+        "name": "AlgorithmHelperAesDecrypt",
+        "target": "0x102aa45f4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530860",
+        "name": "AlgorithmHelperAes128EncryptBase64",
+        "target": "0x102aa47e0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530878",
+        "name": "AlgorithmHelperAes128DecryptBase64",
+        "target": "0x102aa49f0",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530890",
+        "name": "AlgorithmHelperAes256EncryptBase64",
+        "target": "0x102aa4ba8",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308a8",
+        "name": "AlgorithmHelperAes256DecryptBase64",
+        "target": "0x102aa4c00",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308c0",
+        "name": "AlgorithmHelperCompressData",
+        "target": "0x102aa4c64",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308d8",
+        "name": "AlgorithmHelperDecompressData",
+        "target": "0x102aa4d58",
+        "flags": 0
+      },
+      {
+        "entry": "0x1055308f0",
+        "name": "AlgorithmHelperGetRandom",
+        "target": "0x102aa4e38",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530908",
+        "name": "AlgorithmHelperGetRandomBuffer",
+        "target": "0x102aa4ea4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530920",
+        "name": "AlgorithmHelperGetRandomByte",
+        "target": "0x102aa4f44",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530938",
+        "name": "AlgorithmHelperGetRandomString",
+        "target": "0x102aa4fb4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530950",
+        "name": "AlgorithmHelperRcEncryptV1Base64",
+        "target": "0x102aa5098",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530968",
+        "name": "AlgorithmHelperRcDecryptV1Base64",
+        "target": "0x102aa51a4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530980",
+        "name": "AlgorithmHelperRcEncrypt",
+        "target": "0x102aa52a4",
+        "flags": 0
+      },
+      {
+        "entry": "0x105530998",
+        "name": "AlgorithmHelperRcDecrypt",
+        "target": "0x102aa53c0",
+        "flags": 0
+      }
+    ]
+  },
+  "native_vm_load": {
+    "constructor": "0x102a52988",
+    "loader": "0x102a516ac",
+    "load_status": 0,
+    "system_imports": [
+      "malloc",
+      "free",
+      "realloc",
+      "atoll",
+      "atoi",
+      "sprintf",
+      "snprintf",
+      "fprintf",
+      "fscanf",
+      "sscanf",
+      "pthread_mutex_lock",
+      "pthread_mutex_unlock",
+      "malloc",
+      "free",
+      "realloc",
+      "calloc",
+      "atoll",
+      "atoi",
+      "sprintf",
+      "fopen",
+      "fread",
+      "fclose",
+      "opendir",
+      "readdir",
+      "closedir",
+      "strdup",
+      "fwrite",
+      "fflush",
+      "remove",
+      "snprintf",
+      "time",
+      "sscanf",
+      "fprintf",
+      "fscanf",
+      "__error",
+      "stat",
+      "rmdir",
+      "pthread_mutex_lock",
+      "pthread_mutex_unlock"
+    ],
+    "export_code_offsets": [
+      "0x6944",
+      "0x6954",
+      "0x6964",
+      "0x5770",
+      "0xb30",
+      "0x988"
+    ],
+    "code_section_offset": "0x214",
+    "signature_export_index": 3,
+    "signature_entry_bytecode_offset": "0x5984"
+  },
+  "sds_load_status": 0,
+  "signing_verified": false,
+  "widget_integration_completed": false,
+  "sds_slice": {
+    "monitor_class_in_main_image": {
+      "name": "asdu2399asd",
+      "class_pointer": "0x106440e40",
+      "instance_method_count": 59,
+      "selected_methods": {
+        "registerAppFGBGObserver": "0x102be5bcc",
+        "getSGRootPath": "0x102be6020",
+        "appVersion": "0x102be6e80",
+        "checkApmEnabled": "0x102be6f98",
+        "adsf2332sdd": "0x102be7b7c",
+        "httpTrackReport:": "0x102be9bc0"
+      },
+      "runtime_messages_executed": false
+    },
+    "monitor_calls_with_omitted_side_effects": 6,
+    "core_export_vm_status": 0,
+    "core_export_business_error": 0,
+    "full_sdk_initialization_verified": false,
+    "resource_directory_buffer": {
+      "module_slot_offset": "0xabe8",
+      "allocated_bytes": 104,
+      "equals_sdk_context": false,
+      "contains_synthetic_argument2": true,
+      "copy_member_offset": "0x48",
+      "copy_target": "0x102abf384",
+      "constructor": "0x102abf544"
+    },
+    "resource": {
+      "archive_entry": "Payload/Cainiao4iPhone.app/yw_1222.jpg",
+      "bytes": 133573,
+      "sha256": "add1c126c9e52bdc4b16335ecfee0f463b0d97d82b98ce150754dd2a359c23dd",
+      "events": [
+        {
+          "operation": "fopen",
+          "resource": "yw_1222.jpg",
+          "mode": "rb"
+        },
+        {
+          "operation": "stat",
+          "file_bytes": 133573
+        },
+        {
+          "operation": "fread",
+          "requested_bytes": 133573,
+          "copied_bytes": 133573
+        },
+        {
+          "operation": "fclose"
+        }
+      ]
+    },
+    "bundle_identifier_from_ipa": "com.cainiao.cnwireless",
+    "class_queries": [
+      {
+        "class": "OpenSecurityGuardManager",
+        "declared_in_main_image": true
+      },
+      {
+        "class": "OpenSecurityGuardManager",
+        "declared_in_main_image": true
+      }
+    ],
+    "native_crypto_calls": [
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 17
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 18
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 17
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 20
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 23
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 17
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 18
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 17
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 20
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 22
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 16
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 21
+      },
+      {
+        "native_handler": "0x102abc330",
+        "type_u32_at_argument_offset4": 23
+      }
+    ],
+    "observed_commands": [
+      [
+        1,
+        1,
+        3,
+        0
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        9,
+        2,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        3,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        35,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        36,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        6,
+        22,
+        0
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        6,
+        26,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        6,
+        18,
+        0
+      ],
+      [
+        1,
+        6,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        23,
+        0
+      ],
+      [
+        1,
+        1,
+        3,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        21,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        20,
+        0
+      ],
+      [
+        1,
+        6,
+        18,
+        0
+      ],
+      [
+        1,
+        6,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        23,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        21,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        20,
+        0
+      ],
+      [
+        1,
+        6,
+        18,
+        0
+      ],
+      [
+        1,
+        6,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        23,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        21,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        20,
+        0
+      ],
+      [
+        1,
+        6,
+        18,
+        0
+      ],
+      [
+        1,
+        6,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        23,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        21,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        20,
+        0
+      ],
+      [
+        1,
+        6,
+        18,
+        0
+      ],
+      [
+        1,
+        6,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        23,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        21,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        19,
+        0
+      ],
+      [
+        1,
+        6,
+        20,
+        0
+      ],
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ],
+      [
+        1,
+        2,
+        1,
+        0
+      ]
+    ],
+    "native_command_routes": [
+      {
+        "ids": [
+          1,
+          1,
+          3,
+          0
+        ],
+        "handler": "0x102aed18c"
+      },
+      {
+        "ids": [
+          1,
+          9,
+          2,
+          0
+        ],
+        "handler": "0x102aaf54c"
+      },
+      {
+        "ids": [
+          1,
+          2,
+          1,
+          0
+        ],
+        "handler": "0x102abc330"
+      },
+      {
+        "ids": [
+          1,
+          14,
+          5,
+          0
+        ],
+        "handler": "0x102af24c4"
+      },
+      {
+        "ids": [
+          1,
+          35,
+          1,
+          0
+        ],
+        "handler": "0x102a72740"
+      }
+    ],
+    "zlib_enabled": true,
+    "zlib_events": [
+      {
+        "operation": "_inflateInit_",
+        "return_code": 0,
+        "total_in": 0,
+        "total_out": 0
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 8335,
+        "total_out": 16384
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 10391,
+        "total_out": 32768
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 12027,
+        "total_out": 49152
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 13502,
+        "total_out": 65536
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 14933,
+        "total_out": 81920
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 16384,
+        "total_out": 85421
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 22325,
+        "total_out": 101805
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 24137,
+        "total_out": 118189
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 25516,
+        "total_out": 134573
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 26885,
+        "total_out": 150957
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 28709,
+        "total_out": 167341
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 30345,
+        "total_out": 183725
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 32322,
+        "total_out": 200109
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 32768,
+        "total_out": 204094
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 34107,
+        "total_out": 220478
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 36293,
+        "total_out": 236862
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 41315,
+        "total_out": 253246
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 44056,
+        "total_out": 269630
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 45413,
+        "total_out": 286014
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 46962,
+        "total_out": 302398
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 1,
+        "total_in": 47308,
+        "total_out": 306065
+      },
+      {
+        "operation": "_inflateEnd",
+        "return_code": 0,
+        "total_in": 47308,
+        "total_out": 306065
+      },
+      {
+        "operation": "_inflateInit_",
+        "return_code": 0,
+        "total_in": 0,
+        "total_out": 0
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 15322,
+        "total_out": 16384
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 16384,
+        "total_out": 17450
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 32748,
+        "total_out": 33834
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 32768,
+        "total_out": 33855
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 49109,
+        "total_out": 50239
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 49152,
+        "total_out": 50283
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 65536,
+        "total_out": 66662
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 0,
+        "total_in": 81920,
+        "total_out": 83041
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 1,
+        "total_in": 85368,
+        "total_out": 86480
+      },
+      {
+        "operation": "_inflateEnd",
+        "return_code": 0,
+        "total_in": 85368,
+        "total_out": 86480
+      },
+      {
+        "operation": "_inflateInit_",
+        "return_code": 0,
+        "total_in": 0,
+        "total_out": 0
+      },
+      {
+        "operation": "_inflate",
+        "return_code": 1,
+        "total_in": 656,
+        "total_out": 1230
+      },
+      {
+        "operation": "_inflateEnd",
+        "return_code": 0,
+        "total_in": 656,
+        "total_out": 1230
+      }
+    ],
+    "host_random_u32_calls": 816,
+    "sample_appkey": {
+      "index_source": "AppConfiguration.currentAppKeyIndex",
+      "index_source_implementation": "0x1021aeeb0",
+      "index": 0,
+      "public_method": "SecurityGuardOpenStaticDataStore.getAppKey:authCode:",
+      "public_method_implementation": "0x102af03e0",
+      "native_command": 10902,
+      "native_forwarder": "0x102ae079c",
+      "module": "lvm_sds",
+      "export_index": 41,
+      "vm_status": 0,
+      "error_slot_at_return": 99,
+      "output_present": true,
+      "identifier_numeric": true,
+      "identifier_bytes": 8,
+      "identifier_value_exported": false
+    },
+    "signature_candidate": {
+      "vm_status": 0,
+      "output_present": true,
+      "bytes": 50,
+      "ascii": true,
+      "nul_terminated": true,
+      "base64_alphabet_only": true,
+      "value_exported": false,
+      "wrapper_success_branch": "0x102ab5714",
+      "wrapper_string_member_read": "0x102ab571c",
+      "wrapper_utf8_conversion": "0x102ab5730..0x102ab5740",
+      "error_slot_checked_on_nonnull_output": false,
+      "server_verified": false
+    },
+    "bsd_random_calls": {
+      "_srandom": 5,
+      "_random": 75
+    },
+    "metadata_sds_routes": [
+      {
+        "lookup": 66010601,
+        "export": 0
+      },
+      {
+        "lookup": 66010602,
+        "export": 1
+      },
+      {
+        "lookup": 66010603,
+        "export": 2
+      },
+      {
+        "lookup": 66010604,
+        "export": 3
+      },
+      {
+        "lookup": 66010605,
+        "export": 4
+      },
+      {
+        "lookup": 66010606,
+        "export": 5
+      },
+      {
+        "lookup": 66010607,
+        "export": 6
+      },
+      {
+        "lookup": 66010608,
+        "export": 7
+      },
+      {
+        "lookup": 66010609,
+        "export": 8
+      },
+      {
+        "lookup": 66010611,
+        "export": 9
+      },
+      {
+        "lookup": 66010612,
+        "export": 10
+      },
+      {
+        "lookup": 66010613,
+        "export": 11
+      },
+      {
+        "lookup": 66010614,
+        "export": 12
+      },
+      {
+        "lookup": 66010615,
+        "export": 13
+      },
+      {
+        "lookup": 66010617,
+        "export": 15
+      },
+      {
+        "lookup": 66010618,
+        "export": 16
+      },
+      {
+        "lookup": 66010619,
+        "export": 17
+      },
+      {
+        "lookup": 66010620,
+        "export": 18
+      },
+      {
+        "lookup": 66010621,
+        "export": 19
+      },
+      {
+        "lookup": 66010622,
+        "export": 20
+      },
+      {
+        "lookup": 66010623,
+        "export": 21
+      },
+      {
+        "lookup": 66010624,
+        "export": 22
+      },
+      {
+        "lookup": 66010625,
+        "export": 23
+      },
+      {
+        "lookup": 66010626,
+        "export": 24
+      },
+      {
+        "lookup": 66010627,
+        "export": 25
+      },
+      {
+        "lookup": 66010628,
+        "export": 26
+      },
+      {
+        "lookup": 66010629,
+        "export": 27
+      },
+      {
+        "lookup": 66010630,
+        "export": 28
+      },
+      {
+        "lookup": 66010631,
+        "export": 29
+      },
+      {
+        "lookup": 66010632,
+        "export": 30
+      },
+      {
+        "lookup": 66010633,
+        "export": 31
+      },
+      {
+        "lookup": 66010634,
+        "export": 32
+      },
+      {
+        "lookup": 66010635,
+        "export": 33
+      },
+      {
+        "lookup": 66010636,
+        "export": 34
+      },
+      {
+        "lookup": 66010637,
+        "export": 35
+      },
+      {
+        "lookup": 66010638,
+        "export": 36
+      },
+      {
+        "lookup": 66010639,
+        "export": 37
+      },
+      {
+        "lookup": 66010640,
+        "export": 38
+      },
+      {
+        "lookup": 66010641,
+        "export": 39
+      },
+      {
+        "lookup": 66010642,
+        "export": 40
+      },
+      {
+        "lookup": 66010643,
+        "export": 41
+      },
+      {
+        "lookup": 66010644,
+        "export": 42
+      },
+      {
+        "lookup": 66010645,
+        "export": 43
+      },
+      {
+        "lookup": 66010646,
+        "export": 44
+      },
+      {
+        "lookup": 66010647,
+        "export": 45
+      },
+      {
+        "lookup": 66010648,
+        "export": 46
+      },
+      {
+        "lookup": 66010649,
+        "export": 47
+      },
+      {
+        "lookup": 66010651,
+        "export": 48
+      },
+      {
+        "lookup": 66010653,
+        "export": 49
+      },
+      {
+        "lookup": 66010655,
+        "export": 50
+      }
+    ],
+    "stop_reason": "outer_vm_returned",
+    "sdk_state_directory_enabled": true,
+    "sdk_state_directory": {
+      "selector": "getSgRootPath",
+      "implementation": "0x102abaa04",
+      "directory_enum": 9,
+      "domain_mask": 1,
+      "appended_component": "SGDocuments",
+      "constructor_argument": "x5",
+      "sdk_field_offset": "0x20",
+      "sdk_callback_offset": "0x70",
+      "sdk_callback": "0x102a71568",
+      "synthetic_root": "/synthetic/Documents/SGDocuments"
+    },
+    "empty_state_events": [
+      {
+        "operation": "access",
+        "syscall": 33,
+        "mode": 0,
+        "state_child": true,
+        "errno": 2,
+        "carry": true
+      },
+      {
+        "operation": "cerror",
+        "errno": 2,
+        "return_x0_x1": "-1"
+      },
+      {
+        "operation": "calloc",
+        "zero_initialized": true
+      },
+      {
+        "operation": "calloc",
+        "zero_initialized": true
+      }
+    ],
+    "completed_module_calls": [
+      {
+        "module": "lvm_sds",
+        "export_index": 34,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 20,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 24,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 16,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 0,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 21,
+        "vm_status": 0,
+        "business_error": null,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 19,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 18,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 16,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 0,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 21,
+        "vm_status": 0,
+        "business_error": null,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 19,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 18,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 16,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 0,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 21,
+        "vm_status": 0,
+        "business_error": null,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 19,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 18,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 16,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 0,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 21,
+        "vm_status": 0,
+        "business_error": null,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 19,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 18,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 16,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 0,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 21,
+        "vm_status": 0,
+        "business_error": null,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 19,
+        "vm_status": 0,
+        "business_error": 99,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 17,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      },
+      {
+        "module": "lvm_sds",
+        "export_index": 18,
+        "vm_status": 0,
+        "business_error": 0,
+        "output_present": true
+      }
+    ],
+    "memory_fault": null,
+    "fault_instruction_allocation": null,
+    "missing_import": null,
+    "stop_return_address": "0x300000100",
+    "signature_vm_returned": true,
+    "business_error_at_stop": 99,
+    "business_error_is_final": false,
+    "error_slot_meaning": "nonnull output takes wrapper success branch; slot may remain 99"
+  }
+}

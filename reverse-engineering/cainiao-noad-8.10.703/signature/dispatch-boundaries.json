@@ -271,5 +271,29 @@
       "sha256": "49d3e1f7f46875b559bfcc2d932ca28923bac8bdceaabc7728b5377034c0c044",
       "limitation": "uncancelled single thread only"
     }
+  },
+  "sds_sample_appkey_continuation": {
+    "evidence": "sds-sample-appkey-evidence.json",
+    "rejection_evidence": "sds-rejection-evidence.json",
+    "controlled_comparison": "signature-input-comparison.json",
+    "appkey_source": "actual index-0 SDS export 41; identifier value not exported",
+    "previous_error11_cause": "synthetic-appkey did not match SDS record; error6 translated to11",
+    "signature_vm_returned": true,
+    "vm_status": 0,
+    "output_bytes": 50,
+    "output_value_exported": false,
+    "error_slot_at_return": 99,
+    "native_wrapper_checks_error_slot_on_nonnull_output": false,
+    "same_input_same_entropy_equal": true,
+    "changed_input_same_entropy_differs": true,
+    "full_trace_matches_accelerated": true,
+    "full_sdk_initialization_verified": false,
+    "server_verified": false,
+    "portable_scripting_signer_implemented": false,
+    "signing_verified": false,
+    "darwin_random_source": {
+      "url": "https://raw.githubusercontent.com/apple-oss-distributions/Libc/71bbe350ab79eef58113991d817ccc6165061a64/stdlib/FreeBSD/random.c",
+      "sha256": "2cb19b8025e9981b757b130e7e36e85a905f9edd10be91b988804863d348ba20"
+    }
   }
 }

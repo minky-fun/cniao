@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 层签名输入的字段顺序、两种入口的差异，以及关闭 SecurityGuard 时的 HMAC-SHA1 分支。**SecurityGuard 的完整签名计算尚未还原**；没有真实账号签名测试向量，也没有生成可替代客户端的 `x-sign`、`x-mini-wua`、`wua` 或 `x-sgext`。本目录的参考实现不接入小组件。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -260,3 +260,46 @@ python3 -B signature/probe_sds_slice.py --omit-monitoring --with-zlib --with-sdk
 ```
 
 16 项离线测试通过，其中新增 Darwin carry/errno、双寄存器返回、拒绝越界路径，以及 calloc 清零和乘积上限测试。组件及安装包未改动；真实签名生成、服务端验证和本地签名接入仍未完成。下一步应追踪 SDS 错误 11 的设置分支及真实配置输入，而不是把后续错误报告的运行完成当作签名完成。
+
+
+### 样本 appKey 路径已返回签名候选结果
+
+最新模式 `--with-sample-appkey`（同时要求 `--with-zlib --with-sdk-directory --omit-monitoring`）已越过此前错误 11，执行真实外层 `lvm_sig` 导出 3 并返回：VM 状态 0、非空字符串对象、50 字节 ASCII、NUL 结尾、无非法内存访问。完整跟踪与加速跟踪的脱敏证据完全一致。结果见 `sds-sample-appkey-evidence.json`。该路径包含真实 ARM64、VM、SDS 和加密处理器执行，没有以固定输出替代签名计算。
+
+**占位 appKey 是此前拒绝路径的输入问题。** `trace_sds_rejection.py` 使用原先的 `synthetic-appkey`，观察 SDS 遍历 26 条记录、执行 24 次长度比较，其中 2 次长度相同，但内容都不匹配。真实指令随后先写错误 6，再转换为 11，见 `sds-rejection-evidence.json`。写入点都是 `0x102a2b924`，展开指令分配相对偏移分别为 `0x15858` 与 `0x2d228`；这些不是原始压缩字节码偏移。这个结果不证明手机缺 token，也不证明合成空目录里的缺失文件直接导致错误 11。
+
+`sample_appkey.py` 没有猜测 appKey：
+
+- 执行样本 `AppConfiguration.currentAppKeyIndex`（`0x1021aeeb0`），索引为 0。
+- 沿公开 `getAppKey:authCode:`、命令 10902、转发 `(1,6,43,0)`，核对真实 SDS 元数据 `66010643 → 导出 41`，再执行该导出。
+- 按原生请求布局传入 u32 索引、填充和空 authCode 指针，读取实际返回的公开数字标识。只导出来源、类型和长度，不导出标识值。
+- 后续 `(1,6,cmd,0)` 只在真实容器有对应精确绑定时执行其导出，不为未知命令补成功返回。另一个真实处理器 `(1,35,1,0) → 0x102a72740` 的注册点为 `0x102a729f8`。
+
+**返回错误槽 99 不应当作失败码。** 原生签名包装器 `0x102ab56b8..0x102ab56bc` 先把槽置为 99；`0x102ab5714` 仅按输出是否为空分支。输出非空时，`0x102ab571c` 读取对象首成员，再在 `0x102ab5730..0x102ab5740` 按 UTF-8 C 字符串转换，不检查该槽。getAppKey 的包装也按非空结果分支。本探针保留实际 99，未改成假 0。选取指令见 `sample-appkey-output-contract.asm`。返回内容仅符合该包装器契约，不能凭长度、字符集或未清零的错误槽声称服务端签名有效；字符属于 Base64 字母表也不代表已验证其编码格式。
+
+继续执行还实际遇到：
+
+- `_snprintf("%03u")`：按 Apple arm64 栈上可变参数读取 u32，并实现截断、NUL 和未截断返回长度。测试对照宿主真实 libc，覆盖边界值和长度。
+- `_srandom` / `_random`：使用 Darwin libc 真算法，以独立 128 字节状态隔离 guest；初始种子 1，u32 截断，调用结束恢复宿主状态。不输出随机值。此模式为单线程，不能并发干预宿主 libc random。
+- SDS `(1,6,23,0)` 实际传 NULL 错误指针；回调现记录 `null`（没有错误槽），不读空地址，也不伪造错误 0。
+- 真实 zlib 完成三个流，输出长度仅记录为 `[306065,86480,1230]`，不保存解码内容；BSD random 调用为 5 次 srandom、75 次 random。
+
+Darwin 随机状态初值的来源固定为 Apple libc 源码：
+`https://raw.githubusercontent.com/apple-oss-distributions/Libc/71bbe350ab79eef58113991d817ccc6165061a64/stdlib/FreeBSD/random.c`
+源码 SHA-256：`2cb19b8025e9981b757b130e7e36e85a905f9edd10be91b988804863d348ba20`。128 字节默认状态、TYPE_3 和种子 1 来自其状态表及初始化定义。
+
+`verify_signature_candidate.py` 进行了三个独立初始化的受控运行：首次记录真实系统熵到内存；第二次使用相同 INPUT 与相同熵；第三次只改为另一组明确的合成 INPUT。相同输入结果一致、改变输入结果不同，三次候选长度均为 50。记录及重放各消耗 816 次 arc4random 依赖；熵只保留于进程内，运行后丢弃，不导出值或结果摘要哈希。该熵重放只用于对照实验，正常探针继续使用系统熵。结论见 `signature-input-comparison.json`。
+
+复现最新路径与对照：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_sds_slice.py \
+  --omit-monitoring --with-zlib --with-sdk-directory --with-sample-appkey \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/trace_sds_rejection.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_signature_candidate.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+20 项离线测试通过。原先无 zlib、只有 zlib、加状态目录的三种边界仍复现；新路径的完整跟踪/加速跟踪一致。限制仍包括：时间返回零、合成 INPUT、空 authCode、合成空状态目录、省略监控、副作用与生命周期模型不完整。没有账号或线上请求验证。**目前是 macOS Python + Unicorn 执行样本原生算法，不是可在 Scripting 中运行的 TypeScript 签名器**。下一阶段应提取计算依赖并建立可移植实现，再接入真实请求验证。小组件与安装包仍为 1.1.5，本轮未修改。

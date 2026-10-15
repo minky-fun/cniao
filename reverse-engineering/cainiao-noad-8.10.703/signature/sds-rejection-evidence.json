@@ -1,0 +1,55 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "input": "synthetic-appkey",
+  "record_count": 26,
+  "requested_kind": 6,
+  "visited_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25
+  ],
+  "length_comparisons": 24,
+  "length_matches": 2,
+  "content_comparisons": [
+    false,
+    false
+  ],
+  "error_writes": [
+    {
+      "value": 6,
+      "native_pc": "0x102a2b924",
+      "expanded_instruction_allocation_offset": "0x15858"
+    },
+    {
+      "value": 11,
+      "native_pc": "0x102a2b924",
+      "expanded_instruction_allocation_offset": "0x2d228"
+    }
+  ],
+  "offset_units": "relative to expanded instruction allocation, not original compressed bytecode",
+  "security_record_values_exported": false,
+  "conclusion": "synthetic appKey fails record lookup; error 6 is translated to 11; does not establish a missing device token"
+}

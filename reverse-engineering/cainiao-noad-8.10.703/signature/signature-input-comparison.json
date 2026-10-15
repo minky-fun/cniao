@@ -1,0 +1,23 @@
+{
+  "scope": "offline controlled comparison, not production signing or server validation",
+  "same_input_same_entropy_equal": true,
+  "changed_input_same_entropy_differs": true,
+  "candidate_bytes": [
+    50,
+    50,
+    50
+  ],
+  "arc4random_recorded_calls": 816,
+  "arc4random_replayed_calls": [
+    816,
+    816
+  ],
+  "bsd_random": {
+    "_srandom": 5,
+    "_random": 75
+  },
+  "time_dependency": "zero in all three runs",
+  "candidate_values_exported": false,
+  "entropy_values_exported": false,
+  "server_verified": false
+}

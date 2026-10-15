@@ -14,6 +14,8 @@ from unicorn.arm64_const import UC_ARM64_REG_PC, UC_ARM64_REG_X27, UC_ARM64_REG_
 from probe_native import ARGUMENT_REGISTERS, read_binary
 from probe_vm import ModuleProbe, load_modules
 from guest_zlib import GuestZlib
+from guest_bsd_random import GuestBSDRandom
+from sample_appkey import read_sample_appkey
 from guest_empty_state import EmptyState, STATE_ROOT, verify_root_component
 
 RESOURCE_SHA256 = 'add1c126c9e52bdc4b16335ecfee0f463b0d97d82b98ce150754dd2a359c23dd'
@@ -24,8 +26,11 @@ RESOURCE_PATH = DIRECTORY + b'/yw_1222.jpg'
 class SDSCoreProbe(ModuleProbe):
     """保留原生计算，只建模公开包信息、单个只读资源和明确省略的监控调用。"""
 
-    def __init__(self, data, imports, local_symbols, *, resource, bundle_id, with_zlib=False, with_sdk_directory=False):
+    def __init__(self, data, imports, local_symbols, *, resource, bundle_id, with_zlib=False, with_sdk_directory=False, with_sample_appkey=False):
         """解析主程序真实类表，建立有界文件、内存和公开包标识模型。"""
+        self.bsd_random = None
+        self.sample_sds_bindings = {}
+        self.with_sample_appkey = with_sample_appkey
         self.zlib_adapter = None
         self.with_zlib = with_zlib
         self.random_calls = 0
@@ -90,6 +95,13 @@ class SDSCoreProbe(ModuleProbe):
         if self.empty_state is not None and self.empty_state.handle(address):
             return
         name = self.imports.get(address)
+        if self.callback <= address < self.callback + 16 and self.sample_sds_bindings:
+            command = tuple(cpu.reg_read(register) for register in ARGUMENT_REGISTERS[:4])
+            # 仅使用真实容器中的精确绑定；不存在的命令仍交由父类拒绝。
+            if command[:2] == (1, 6) and command[3] == 0 and command not in self.module_routes:
+                lookup = 66010600 + command[2]
+                if lookup in self.sample_sds_bindings:
+                    self.module_routes[command] = (self.module_routes[(1, 6, 36, 0)][0], self.sample_sds_bindings[lookup], 'lvm_sds')
         if name is None and not self.callback <= address < self.callback + 16:
             if address == 0x102abc330:
                 argument = cpu.reg_read(ARGUMENT_REGISTERS[0])
@@ -102,6 +114,10 @@ class SDSCoreProbe(ModuleProbe):
             self.observed_commands.append([a, b, c, d])
             self.omitted_monitor_calls += 1
             result = 0
+        elif self.with_sample_appkey and name in ('_srandom', '_random'):
+            if self.bsd_random is None:
+                self.bsd_random = GuestBSDRandom()
+            result = self.bsd_random.call(name, a)
         elif self.with_zlib and name in ('_inflateInit_', '_inflate', '_inflateEnd'):
             if self.zlib_adapter is None:
                 self.zlib_adapter = GuestZlib(self)
@@ -186,7 +202,7 @@ class SDSCoreProbe(ModuleProbe):
         cpu.reg_write(UC_ARM64_REG_PC, cpu.reg_read(UC_ARM64_REG_X30))
 
 
-def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_sdk_directory=False):
+def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_sdk_directory=False, with_sample_appkey=False, synthetic_input='synthetic-input'):
     """运行明确省略监控的切片，按选项验证解压、目录回调和后续错误边界。"""
     if len(resource) != 133573 or hashlib.sha256(resource).hexdigest() != RESOURCE_SHA256:
         raise ValueError('IPA 资源摘要不符')
@@ -194,8 +210,12 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
         raise ValueError('样本公开包标识不符')
     if with_sdk_directory and not with_zlib:
         raise ValueError('状态目录切片必须同时启用真实 zlib')
+    if with_sample_appkey and not with_sdk_directory:
+        raise ValueError('样本 appKey 路径必须同时启用状态目录和真实 zlib')
+    if synthetic_input not in ('synthetic-input', 'synthetic-input-changed'):
+        raise ValueError('探针只接受明确的合成输入变体')
     state_directory_evidence = verify_root_component(data) if with_sdk_directory else None
-    probe, engine, evidence = load_modules(data, with_sds=True, probe_class=partial(SDSCoreProbe, resource=resource, bundle_id=bundle_id, with_zlib=with_zlib, with_sdk_directory=with_sdk_directory))
+    probe, engine, evidence = load_modules(data, with_sds=True, probe_class=partial(SDSCoreProbe, resource=resource, bundle_id=bundle_id, with_zlib=with_zlib, with_sdk_directory=with_sdk_directory, with_sample_appkey=with_sample_appkey))
     if not full_trace:
         # 此区段只有纯原生计算；所有导入、解码跳板、业务分发和宿主入口仍保留钩子。
         quiet_start, quiet_end = 0x102a6c000, 0x102a6f000
@@ -238,20 +258,25 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
     core_error = struct.unpack('<I', probe.cpu.mem_read(error, 4))[0]
     if (status, core_error, probe.omitted_monitor_calls) != (0, 0, 1):
         raise RuntimeError('切片初始化返回与已知路径不符')
+    appkey, appkey_evidence = read_sample_appkey(probe, sds_engine) if with_sample_appkey else ('synthetic-appkey', None)
     hashmap = probe.run(0x102a9abac)
-    text = probe.write_string('synthetic-input')
+    text = probe.write_string(synthetic_input)
     value = probe.run(0x102a725dc, (text,))
     probe.run(0x102a72570, (value, text))
     probe.run(0x102a9afd8, (hashmap, probe.write_string('INPUT'), value, 0))
     request = probe.allocate(128)
-    probe.cpu.mem_write(request, struct.pack('<QQQII', hashmap, probe.write_string('synthetic-appkey'), probe.write_string(''), 19, 0))
+    probe.cpu.mem_write(request, struct.pack('<QQQII', hashmap, probe.write_string(appkey), probe.write_string(''), 19, 0))
     probe.cpu.mem_write(arguments, struct.pack('<QQ', request, error))
     probe.cpu.mem_write(error, bytes(8))
     probe.cpu.mem_write(output, bytes(8))
     instruction_allocation = None
+    signature_status = None
+    signature_result = None
     try:
-        probe.run(0x102a518ec, (engine, 3, arguments, 2, output))
+        signature_status = probe.run(0x102a518ec, (engine, 3, arguments, 2, output))
     except UcError:
+        if with_sample_appkey:
+            raise
         if with_sdk_directory or not with_zlib or probe.memory_fault != {'native_pc': '0x102a2b7e4', 'address': '0x0', 'bytes': 8}:
             raise
         current_instruction = probe.cpu.reg_read(UC_ARM64_REG_X27)
@@ -260,6 +285,8 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
                 instruction_allocation = {'allocated_bytes': allocated, 'instruction_offset': hex(current_instruction - pointer), 'allocation_return_address': hex(probe.allocation_origins[pointer])}
                 break
     except RuntimeError as stopped:
+        if with_sample_appkey:
+            raise
         if with_sdk_directory:
             if str(stopped) != '消息超出主程序包标识的明确模型' or probe.imports.get(probe.cpu.reg_read(UC_ARM64_REG_PC)) != '_objc_msgSend' or probe.cpu.reg_read(UC_ARM64_REG_X30) != 0x102a69b0c or probe.cstring(probe.cpu.reg_read(ARGUMENT_REGISTERS[1])) != b'stringWithFormat:':
                 raise
@@ -268,7 +295,20 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
         elif with_zlib or str(stopped) != '不支持的原生导入：_inflateInit_':
             raise
     else:
-        raise RuntimeError('签名切片未在已知解压依赖处停止')
+        if not with_sample_appkey:
+            raise RuntimeError('签名切片未在已知解压依赖处停止')
+        returned = struct.unpack('<Q', probe.cpu.mem_read(output, 8))[0]
+        if signature_status != 0 or not returned:
+            raise RuntimeError('样本标识路径未返回签名候选对象')
+        data_pointer, byte_count = struct.unpack('<QI', probe.cpu.mem_read(returned, 12))
+        if not data_pointer or not 1 <= byte_count <= 4096:
+            raise RuntimeError('签名候选对象布局或长度超限')
+        raw = bytes(probe.cpu.mem_read(data_pointer, byte_count))
+        if not raw.isascii() or b'\0' in raw or bytes(probe.cpu.mem_read(data_pointer + byte_count, 1)) != b'\0':
+            raise RuntimeError('返回内容不符合原生包装器的 UTF-8 C 字符串要求')
+        # 只保留形状，不导出候选签名、内存、随机值或资源解码结果。
+        signature_result = {'vm_status': signature_status, 'output_present': True, 'bytes': byte_count, 'ascii': True, 'nul_terminated': True, 'base64_alphabet_only': all(value in b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=' for value in raw), 'value_exported': False, 'wrapper_success_branch': '0x102ab5714', 'wrapper_string_member_read': '0x102ab571c', 'wrapper_utf8_conversion': '0x102ab5730..0x102ab5740', 'error_slot_checked_on_nonnull_output': False, 'server_verified': False}
+
     if not with_zlib and probe.imports.get(probe.cpu.reg_read(UC_ARM64_REG_PC)) != '_inflateInit_':
         raise RuntimeError('实际停止位置不是 zlib 导入')
     if not probe.crypto_calls or sum(event.get('copied_bytes', 0) for event in probe.file_events) != len(resource) or probe.files:
@@ -276,8 +316,9 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
     zlib_events = probe.zlib_adapter.events if probe.zlib_adapter else []
     if with_zlib:
         finished = [event for event in zlib_events if event['operation'] == '_inflate' and event['return_code'] == 1]
-        if [event['total_out'] for event in finished] != [306065, 86480] or probe.zlib_adapter.streams or probe.random_calls < 1:
-            raise RuntimeError('完整解压或随机依赖执行与已知路径不符')
+        expected_lengths = [306065, 86480, 1230] if with_sample_appkey else [306065, 86480]
+        if [event['total_out'] for event in finished] != expected_lengths or probe.zlib_adapter.streams or probe.random_calls < 1:
+            raise RuntimeError(f'完整解压或随机依赖执行与已知路径不符: {[event["total_out"] for event in finished]}, streams={len(probe.zlib_adapter.streams)}, arc4random_calls={probe.random_calls}')
     evidence.update({
         'scope': 'offline SDS slice; monitoring side effects explicitly omitted; public bundle metadata and one IPA resource only',
         'synthetic_dependencies': evidence['synthetic_dependencies'] + [
@@ -286,6 +327,7 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
             'read-only guest file and Darwin arm64 stat metadata for exact IPA asset; no host user files',
             *(['real host libz with bounded guest ABI adapter; no guest custom allocators; host system entropy for arc4random'] if with_zlib else []),
             *(['empty synthetic Documents/SGDocuments state directory; access(F_OK) returns Darwin ENOENT with carry; LP64 cerror writes errno and returns -1 in x0/x1; uncancelled single thread only'] if with_sdk_directory else []),
+            *(['sample public appKey from real index-0 export; value not exported; real Darwin BSD random with isolated 128-byte guest state; time remains zero'] if with_sample_appkey else []),
             'NSBundle and NSString model limited to main-image class and Info.plist bundle identifier; ARC lifetime deferred',
         ],
         'sds_slice': {
@@ -304,7 +346,11 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
             'zlib_enabled': with_zlib,
             'zlib_events': zlib_events,
             'host_random_u32_calls': probe.random_calls,
-            'stop_reason': 'error_reporting_objc_dependency' if with_sdk_directory else 'unresolved_runtime_state_null_read' if with_zlib else 'unsupported_zlib_import',
+            'sample_appkey': appkey_evidence,
+            'signature_candidate': signature_result,
+            'bsd_random_calls': probe.bsd_random.calls if probe.bsd_random else {},
+            'metadata_sds_routes': [{'lookup': lookup, 'export': index} for lookup, index in sorted(probe.sample_sds_bindings.items())] if with_sample_appkey else [],
+            'stop_reason': 'outer_vm_returned' if with_sample_appkey else 'error_reporting_objc_dependency' if with_sdk_directory else 'unresolved_runtime_state_null_read' if with_zlib else 'unsupported_zlib_import',
             'sdk_state_directory_enabled': with_sdk_directory,
             'sdk_state_directory': state_directory_evidence,
             'empty_state_events': probe.empty_state.events if probe.empty_state else [],
@@ -313,9 +359,10 @@ def inspect(data, resource, bundle_id, full_trace=False, with_zlib=False, with_s
             'fault_instruction_allocation': instruction_allocation,
             'missing_import': None if with_zlib else '_inflateInit_',
             'stop_return_address': hex(probe.cpu.reg_read(UC_ARM64_REG_X30)),
-            'signature_vm_returned': False,
+            'signature_vm_returned': signature_status == 0,
             'business_error_at_stop': struct.unpack('<I', probe.cpu.mem_read(error, 4))[0],
             'business_error_is_final': False,
+            'error_slot_meaning': 'nonnull output takes wrapper success branch; slot may remain 99' if with_sample_appkey else 'interrupted path; not final',
         },
     })
     return evidence
@@ -328,13 +375,15 @@ def main():
     parser.add_argument('--omit-monitoring', action='store_true', required=True, help='明确省略监控副作用；结果不能视为完整 SDK 初始化')
     parser.add_argument('--with-zlib', action='store_true', help='用真实宿主 libz 完整解压；未知运行状态仍中止')
     parser.add_argument('--with-sdk-directory', action='store_true', help='传入来源已核对的合成 Documents/SGDocuments；状态文件均不存在，需要 --with-zlib')
+    parser.add_argument('--with-sample-appkey', action='store_true', help='执行真实 index-0 getAppKey；需要 --with-sdk-directory；只导出候选结果形状')
+    parser.add_argument('--changed-input', action='store_true', help='使用明确的第二组合成 INPUT，仅供输入敏感性对照')
     parser.add_argument('--full-trace', action='store_true', help='保留纯原生计算区段的逐指令钩子，用于对照')
     args = parser.parse_args()
     data = read_binary(args.sample)
     with ZipFile(args.sample) as archive:
         resource = archive.read('Payload/Cainiao4iPhone.app/yw_1222.jpg')
         bundle_id = plistlib.loads(archive.read('Payload/Cainiao4iPhone.app/Info.plist'))['CFBundleIdentifier']
-    print(json.dumps(inspect(data, resource, bundle_id, args.full_trace, args.with_zlib, args.with_sdk_directory), indent=2, ensure_ascii=False))
+    print(json.dumps(inspect(data, resource, bundle_id, args.full_trace, args.with_zlib, args.with_sdk_directory, args.with_sample_appkey, 'synthetic-input-changed' if args.changed_input else 'synthetic-input'), indent=2, ensure_ascii=False))
 
 
 if __name__ == '__main__':
