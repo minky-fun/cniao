@@ -22,6 +22,8 @@ class MissingCommand(RuntimeError):
 class ModuleProbe(NativeProbe):
     """使用真实 VM 代码及有界 C 内存依赖，不模拟加密或业务服务。"""
 
+    execution_timeout_us = 20000000
+
     def __init__(self, data, imports, local_symbols):
         """创建独立堆和单线程状态，并保存已核对的导入符号地址。"""
         self.imports = imports
@@ -76,13 +78,13 @@ class ModuleProbe(NativeProbe):
         return address
 
     def run(self, entry, arguments=(), stop=None):
-        """按原生 ABI 有界执行，只有到达指定结束地址才认为片段完成。"""
+        """按探针类声明的时间及指令上限执行，只有到达明确结束地址才算完成。"""
         for register, value in zip(ARGUMENT_REGISTERS, arguments):
             self.cpu.reg_write(register, value)
         self.cpu.reg_write(UC_ARM64_REG_SP, self.stack + 0xff000)
         self.cpu.reg_write(UC_ARM64_REG_X30, self.stop)
         end = self.stop if stop is None else stop
-        self.cpu.emu_start(entry, end, timeout=20000000, count=self.instruction_limit)
+        self.cpu.emu_start(entry, end, timeout=self.execution_timeout_us, count=self.instruction_limit)
         if self.cpu.reg_read(UC_ARM64_REG_PC) != end:
             raise RuntimeError('VM 片段超出时间或指令限制')
         return self.cpu.reg_read(ARGUMENT_REGISTERS[0])

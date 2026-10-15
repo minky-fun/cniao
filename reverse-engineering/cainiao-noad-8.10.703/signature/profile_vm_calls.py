@@ -7,7 +7,7 @@ import struct
 from unittest.mock import patch
 from zipfile import ZipFile
 
-from unicorn.arm64_const import UC_ARM64_REG_X8, UC_ARM64_REG_X9, UC_ARM64_REG_X10
+from unicorn.arm64_const import UC_ARM64_REG_SP, UC_ARM64_REG_X8, UC_ARM64_REG_X9, UC_ARM64_REG_X10, UC_ARM64_REG_X19, UC_ARM64_REG_X26
 import probe_sds_slice as slice_probe
 from probe_native import ARGUMENT_REGISTERS, read_binary
 
@@ -27,6 +27,8 @@ class CallProfile(slice_probe.SDSCoreProbe):
         self.direct_abi_flags = Counter()
         self.result_kinds = Counter()
         self.result_targets = Counter()
+        self.complex_abi_calls = []
+        self.current_abi = None
         self.descriptor_indices = set()
         self.case_targets = [hex(0x102a4db30 + value * 4) for value in self.cpu.mem_read(0x10481f20e, 4)]
         self.result_case_targets = [hex(0x102a4de70 + value * 4) for value in self.cpu.mem_read(0x10481f212, 6)]
@@ -59,6 +61,33 @@ class CallProfile(slice_probe.SDSCoreProbe):
             label = name if name is not None else hex(target) if 0x100000000 <= target < 0x107000000 else 'non-image-target'
             self.result_kinds[selector] += 1
             self.result_targets[(selector, label)] += 1
+            if selector == 0:
+                descriptor = cpu.reg_read(UC_ARM64_REG_X26)
+                self.current_abi = {'target': label, 'abi': struct.unpack('<I', cpu.mem_read(descriptor + 32, 4))[0], 'fixed_signed_byte': struct.unpack('<b', cpu.mem_read(descriptor + 18, 1))[0]}
+        elif self.current_abi is not None and address in (0x102a4e194, 0x102a4e1f0):
+            sp = cpu.reg_read(UC_ARM64_REG_SP)
+            count = struct.unpack('<I', cpu.mem_read(sp + 0x78, 4))[0]
+            if count > 256:
+                raise RuntimeError('复杂 ABI 参数数量超过原生解析器上限')
+            if address == 0x102a4e194:
+                types = []
+                for index in range(count):
+                    pointer = struct.unpack('<Q', cpu.mem_read(sp + 0x898 + index * 8, 8))[0]
+                    total, alignment, kind = struct.unpack('<QHH', cpu.mem_read(pointer, 12))
+                    types.append({'type': kind, 'bytes': total, 'alignment': alignment})
+                pointer = struct.unpack('<Q', cpu.mem_read(sp + 0x40, 8))[0]
+                total, alignment, kind = struct.unpack('<QHH', cpu.mem_read(pointer, 12))
+                self.current_abi.update(arguments=types, result={'type': kind, 'bytes': total, 'alignment': alignment})
+            else:
+                vm_context = cpu.reg_read(UC_ARM64_REG_X19)
+                offsets = []
+                for index in range(count):
+                    pointer = struct.unpack('<Q', cpu.mem_read(sp + 0x98 + index * 8, 8))[0]
+                    offset = pointer - vm_context
+                    offsets.append(offset if 0 <= offset < 0x200 else 'outside-context')
+                self.current_abi['source_offsets'] = offsets
+                self.complex_abi_calls.append(self.current_abi)
+                self.current_abi = None
         elif address == 0x102a4ea64:
             target = cpu.reg_read(ARGUMENT_REGISTERS[2])
             name = self.imports.get(target) or self.host_targets.get(target)
@@ -85,6 +114,7 @@ def main():
     evidence['descriptor_byte_17_counts'] = dict(sorted(probe.direct_abi_flags.items()))
     evidence['descriptor_word_36_counts'] = dict(sorted(probe.result_kinds.items()))
     evidence['selector_targets'] = [{'selector': selector, 'target': label, 'count': count} for (selector, label), count in sorted(probe.result_targets.items())]
+    evidence['complex_abi_calls'] = probe.complex_abi_calls
     print(json.dumps(evidence, ensure_ascii=False, indent=2))
     CallProfile.latest = None
 

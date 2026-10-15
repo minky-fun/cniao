@@ -479,5 +479,365 @@
       "target": "randomWrapper",
       "count": 75
     }
+  ],
+  "complex_abi_calls": [
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    },
+    {
+      "target": "0x102a54b64",
+      "abi": 1,
+      "fixed_signed_byte": 0,
+      "arguments": [
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        }
+      ],
+      "result": {
+        "type": 12,
+        "bytes": 8,
+        "alignment": 8
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152,
+        160,
+        "outside-context"
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 9,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    },
+    {
+      "target": "_snprintf",
+      "abi": 1,
+      "fixed_signed_byte": 3,
+      "arguments": [
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 12,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 14,
+          "bytes": 8,
+          "alignment": 8
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        },
+        {
+          "type": 10,
+          "bytes": 4,
+          "alignment": 4
+        }
+      ],
+      "result": {
+        "type": 10,
+        "bytes": 4,
+        "alignment": 4
+      },
+      "source_offsets": [
+        120,
+        128,
+        136,
+        144,
+        152
+      ]
+    }
   ]
 }

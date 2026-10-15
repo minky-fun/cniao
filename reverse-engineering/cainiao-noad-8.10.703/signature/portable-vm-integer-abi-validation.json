@@ -1,0 +1,34 @@
+{
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "source_sha256": {
+    "portable_vm_abi.ts": "069ced89daa8cd20bc9d33322b3dd26cb5ae5ffabe247053dff99b6bcd7a222d",
+    "vm_abi_worker.cjs": "480ceb984ca6f8447a4bebf6372c21df360ff2bb71e89c8aa91d5cc590dfd532",
+    "verify_portable_vm_abi.py": "82b574cf30e20fba29ef63298d59b92bec6a060adfd874b9361516bc2135110c",
+    "test_portable_vm_abi.cjs": "d497b8450f0cd04960ddc511bd7d45c53b12aaccc80bae7d7a38aa6aedbb66f4",
+    "profile_vm_calls.py": "78f6eddc1319ae6124e1fcd895f635cc871096dcdfee99a60f3cad35b4d0bf4e",
+    "probe_vm.py": "cd180c7cd9d80a13cb48ace7d23e9f322ee586d9ef8a79755dc893956be9c69e"
+  },
+  "native_integer_abi_vector_cases": 1323,
+  "node_abi_behavior_cases": 8,
+  "node_invalid_cases": 22,
+  "python_regression_tests": 20,
+  "native_run_timeout_seconds": 20,
+  "portable_run_timeout_seconds": 40,
+  "instruction_limit": 10000000,
+  "initial_20_second_portable_attempt_completed": false,
+  "combined_candidate_and_opcode_counts_match_native": true,
+  "observed_complex_abi_calls_replaced_per_input": 8,
+  "native_complex_abi_calls_retained_on_observed_path": 0,
+  "scope": "observed primitive integer and pointer ABI only; native host targets and runtime still required",
+  "unsupported": [
+    "void result with native uninitialized stack behavior",
+    "floating argument/return",
+    "aggregate types",
+    "unsupported fixed count or unpromoted variadic types"
+  ],
+  "scripting_device_execution_verified": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}

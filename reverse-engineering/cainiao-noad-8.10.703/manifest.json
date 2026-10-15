@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 56050,
-    "sha256": "27ce019f60ac66a6edd31e8154c21ee0cf76b28e0aab248485b63e698a6e8558"
+    "bytes": 59203,
+    "sha256": "ad6f7a1c2ae113b8afe5ea143348b8faa23600de4068555c9ff112a47ac0738c"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -290,6 +290,16 @@
     "sha256": "30f7243996c1a4f1f688d09774be751503debcab7ba4041ae35541a00972e83b"
   },
   {
+    "file": "signature/portable-vm-integer-abi-evidence.json",
+    "bytes": 4973,
+    "sha256": "70a07198885657b1bab6e84c33cd4afbc4eea24baf66d2a4f5585c42664aef5f"
+  },
+  {
+    "file": "signature/portable-vm-integer-abi-validation.json",
+    "bytes": 1598,
+    "sha256": "1a327992432880cac0f266d12400e80f4ff45624069db40d8f07679b79792aac"
+  },
+  {
     "file": "signature/portable-vm-memory-branch-validation.json",
     "bytes": 721,
     "sha256": "9085f5b87aafcc197d549c0c4076fc37aec7ad592e65565770d55f6c5fb6c809"
@@ -323,6 +333,11 @@
     "file": "signature/portable_aes.ts",
     "bytes": 5862,
     "sha256": "1effc62df8e706bb375ffcc124b22719e6044b7baf14bb9e0be5561e82b3ee49"
+  },
+  {
+    "file": "signature/portable_vm_abi.ts",
+    "bytes": 5239,
+    "sha256": "069ced89daa8cd20bc9d33322b3dd26cb5ae5ffabe247053dff99b6bcd7a222d"
   },
   {
     "file": "signature/portable_vm_branch.ts",
@@ -371,13 +386,13 @@
   },
   {
     "file": "signature/probe_vm.py",
-    "bytes": 24871,
-    "sha256": "43bcca903275a3a31b921ca1e277aead49944f75e9fb5772926bff3b86bf3c37"
+    "bytes": 24938,
+    "sha256": "cd180c7cd9d80a13cb48ace7d23e9f322ee586d9ef8a79755dc893956be9c69e"
   },
   {
     "file": "signature/profile_vm_calls.py",
-    "bytes": 5674,
-    "sha256": "20b35a49024da303a0c65f27f5ae7d1e1165f43b518e1ca637683c0e393bc369"
+    "bytes": 7682,
+    "sha256": "78f6eddc1319ae6124e1fcd895f635cc871096dcdfee99a60f3cad35b4d0bf4e"
   },
   {
     "file": "signature/profile_vm_dispatch.py",
@@ -570,6 +585,11 @@
     "sha256": "d1e588f223aeda74604ed6b8efedc885f872b497c1c330cefc4af5fc0c3e0a03"
   },
   {
+    "file": "signature/test_portable_vm_abi.cjs",
+    "bytes": 4404,
+    "sha256": "d497b8450f0cd04960ddc511bd7d45c53b12aaccc80bae7d7a38aa6aedbb66f4"
+  },
+  {
     "file": "signature/test_portable_vm_branch.cjs",
     "bytes": 2531,
     "sha256": "892f421b909473c9473247b2e50d25a78b055767a16f0323782d314d903c64e0"
@@ -670,6 +690,11 @@
     "sha256": "80ace4980ce0e542ef5552cc9f71f5d35b9e6cabdd69f7c53573f373465f0e03"
   },
   {
+    "file": "signature/verify_portable_vm_abi.py",
+    "bytes": 13987,
+    "sha256": "82b574cf30e20fba29ef63298d59b92bec6a060adfd874b9361516bc2135110c"
+  },
+  {
     "file": "signature/verify_portable_vm_branch.py",
     "bytes": 13569,
     "sha256": "4e94215505c20bcb974ee9c37822bc159752fb7a65d25b9096a7c4bfa3f10c89"
@@ -711,8 +736,8 @@
   },
   {
     "file": "signature/vm-call-profile.json",
-    "bytes": 8213,
-    "sha256": "d28ee5e5b85ba58908dfded7e11618f8356e427049497f64fb335b42d89310d2"
+    "bytes": 14400,
+    "sha256": "6fcfbaf4faf043f519a8d7669108e323a09d4f0b0bb174043029dc16d9bef847"
   },
   {
     "file": "signature/vm-dispatch-profile.json",
@@ -738,6 +763,16 @@
     "file": "signature/vm-host-call-contract.asm",
     "bytes": 1914,
     "sha256": "170161a637e8e89e080e7b4901b5f79bf9babbfeb62e1b809fd2cd00d9b04823"
+  },
+  {
+    "file": "signature/vm-integer-abi-contract.asm",
+    "bytes": 8005,
+    "sha256": "5b6e89bb0d366041dda236c4a1a80b236aa0922a555634548b672c5319192006"
+  },
+  {
+    "file": "signature/vm-integer-abi-type-map.json",
+    "bytes": 2785,
+    "sha256": "2d56d5cd9e9446a731f542f7374806bc956ac72df2a22311730395473d20ff9d"
   },
   {
     "file": "signature/vm-memory-contract.asm",
@@ -768,6 +803,11 @@
     "file": "signature/vm-string-decode.asm",
     "bytes": 1392,
     "sha256": "cf3ebab5cc837cfb6073ffc87049636b2a4bf74b872d37ce91815883f3643cfc"
+  },
+  {
+    "file": "signature/vm_abi_worker.cjs",
+    "bytes": 3044,
+    "sha256": "480ceb984ca6f8447a4bebf6372c21df360ff2bb71e89c8aa91d5cc590dfd532"
   },
   {
     "file": "signature/vm_branch_worker.cjs",

@@ -1,0 +1,159 @@
+{
+  "source": "fixed sample static native parser tables and primitive descriptors; no runtime argument values",
+  "types": [
+    {
+      "native_type": 6,
+      "bytes": 1,
+      "alignment": 1,
+      "tokens": [
+        1,
+        99
+      ],
+      "handler": "0x102a4d08c",
+      "type_descriptor": "0x10481f7b8"
+    },
+    {
+      "native_type": 5,
+      "bytes": 1,
+      "alignment": 1,
+      "tokens": [
+        2,
+        67
+      ],
+      "handler": "0x102a4d0a0",
+      "type_descriptor": "0x10481f7a0"
+    },
+    {
+      "native_type": 8,
+      "bytes": 2,
+      "alignment": 2,
+      "tokens": [
+        3,
+        115
+      ],
+      "handler": "0x102a4d0b4",
+      "type_descriptor": "0x10481f7e8"
+    },
+    {
+      "native_type": 7,
+      "bytes": 2,
+      "alignment": 2,
+      "tokens": [
+        4,
+        83
+      ],
+      "handler": "0x102a4d0c8",
+      "type_descriptor": "0x10481f7d0"
+    },
+    {
+      "native_type": 10,
+      "bytes": 4,
+      "alignment": 4,
+      "tokens": [
+        5,
+        105
+      ],
+      "handler": "0x102a4d0dc",
+      "type_descriptor": "0x10481f818"
+    },
+    {
+      "native_type": 9,
+      "bytes": 4,
+      "alignment": 4,
+      "tokens": [
+        6,
+        73
+      ],
+      "handler": "0x102a4d0f0",
+      "type_descriptor": "0x10481f800"
+    },
+    {
+      "native_type": 12,
+      "bytes": 8,
+      "alignment": 8,
+      "tokens": [
+        7,
+        9,
+        108,
+        120
+      ],
+      "handler": "0x102a4d104",
+      "type_descriptor": "0x10481f848"
+    },
+    {
+      "native_type": 11,
+      "bytes": 8,
+      "alignment": 8,
+      "tokens": [
+        8,
+        10,
+        76,
+        88
+      ],
+      "handler": "0x102a4d118",
+      "type_descriptor": "0x10481f830"
+    },
+    {
+      "native_type": 0,
+      "bytes": 1,
+      "alignment": 1,
+      "tokens": [
+        13,
+        118
+      ],
+      "handler": "0x102a4d078",
+      "type_descriptor": "0x10481f788"
+    },
+    {
+      "native_type": 14,
+      "bytes": 8,
+      "alignment": 8,
+      "tokens": [
+        14,
+        112
+      ],
+      "handler": "0x102a4d12c",
+      "type_descriptor": "0x10481f860"
+    },
+    {
+      "native_type": 2,
+      "bytes": 4,
+      "alignment": 4,
+      "tokens": [
+        15,
+        102
+      ],
+      "handler": "0x102a4d140",
+      "type_descriptor": "0x10481f878"
+    },
+    {
+      "native_type": 3,
+      "bytes": 8,
+      "alignment": 8,
+      "tokens": [
+        16,
+        17,
+        100,
+        113
+      ],
+      "handler": "0x102a4d064",
+      "type_descriptor": "0x10481f890"
+    }
+  ],
+  "implemented_argument_types": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    14
+  ],
+  "unimplemented": [
+    "floating argument/return",
+    "aggregate type",
+    "void result"
+  ]
+}
