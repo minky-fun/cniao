@@ -26,6 +26,7 @@ class CallProfile(slice_probe.SDSCoreProbe):
         self.descriptor_targets = Counter()
         self.direct_abi_flags = Counter()
         self.result_kinds = Counter()
+        self.result_targets = Counter()
         self.descriptor_indices = set()
         self.case_targets = [hex(0x102a4db30 + value * 4) for value in self.cpu.mem_read(0x10481f20e, 4)]
         self.result_case_targets = [hex(0x102a4de70 + value * 4) for value in self.cpu.mem_read(0x10481f212, 6)]
@@ -52,7 +53,12 @@ class CallProfile(slice_probe.SDSCoreProbe):
         elif address == 0x102a4ddf4:
             self.direct_abi_flags[cpu.reg_read(UC_ARM64_REG_X9) & 0xff] += 1
         elif address == 0x102a4de50:
-            self.result_kinds[cpu.reg_read(UC_ARM64_REG_X8) & 0xffffffff] += 1
+            selector = cpu.reg_read(UC_ARM64_REG_X8) & 0xffffffff
+            target = cpu.reg_read(UC_ARM64_REG_X10)
+            name = self.imports.get(target) or self.host_targets.get(target)
+            label = name if name is not None else hex(target) if 0x100000000 <= target < 0x107000000 else 'non-image-target'
+            self.result_kinds[selector] += 1
+            self.result_targets[(selector, label)] += 1
         elif address == 0x102a4ea64:
             target = cpu.reg_read(ARGUMENT_REGISTERS[2])
             name = self.imports.get(target) or self.host_targets.get(target)
@@ -78,6 +84,7 @@ def main():
     evidence['descriptor_result_case_targets'] = probe.result_case_targets
     evidence['descriptor_byte_17_counts'] = dict(sorted(probe.direct_abi_flags.items()))
     evidence['descriptor_word_36_counts'] = dict(sorted(probe.result_kinds.items()))
+    evidence['selector_targets'] = [{'selector': selector, 'target': label, 'count': count} for (selector, label), count in sorted(probe.result_targets.items())]
     print(json.dumps(evidence, ensure_ascii=False, indent=2))
     CallProfile.latest = None
 

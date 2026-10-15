@@ -272,5 +272,212 @@
     "0": 8,
     "1": 597,
     "2": 1494
-  }
+  },
+  "selector_targets": [
+    {
+      "selector": 0,
+      "target": "0x102a54b64",
+      "count": 1
+    },
+    {
+      "selector": 0,
+      "target": "_snprintf",
+      "count": 7
+    },
+    {
+      "selector": 1,
+      "target": "0x102abf138",
+      "count": 76
+    },
+    {
+      "selector": 1,
+      "target": "0x102abf3d8",
+      "count": 79
+    },
+    {
+      "selector": 1,
+      "target": "0x102abf454",
+      "count": 31
+    },
+    {
+      "selector": 1,
+      "target": "0x102acdc60",
+      "count": 1
+    },
+    {
+      "selector": 1,
+      "target": "_free",
+      "count": 405
+    },
+    {
+      "selector": 1,
+      "target": "srandomWrapper",
+      "count": 5
+    },
+    {
+      "selector": 2,
+      "target": "0x102a71530",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "0x102a71568",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "0x102a71584",
+      "count": 6
+    },
+    {
+      "selector": 2,
+      "target": "0x102a715d8",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "0x102a7249c",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "0x102a72570",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "0x102a726cc",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "0x102a9ad58",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "0x102abf2d8",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "0x102abf384",
+      "count": 36
+    },
+    {
+      "selector": 2,
+      "target": "0x102acdbac",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperAesDecrypt",
+      "count": 5
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperAesEncrypt",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperBase64Encode",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperDecompressData",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperGetRandomByte",
+      "count": 51
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperHmacSha1Hex",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "AlgorithmHelperMd5",
+      "count": 7
+    },
+    {
+      "selector": 2,
+      "target": "SGCrc32",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "___error",
+      "count": 4
+    },
+    {
+      "selector": 2,
+      "target": "_calloc",
+      "count": 2
+    },
+    {
+      "selector": 2,
+      "target": "_fclose",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "_fopen",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "_fread",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "_malloc",
+      "count": 202
+    },
+    {
+      "selector": 2,
+      "target": "_pthread_mutex_lock",
+      "count": 16
+    },
+    {
+      "selector": 2,
+      "target": "_pthread_mutex_unlock",
+      "count": 16
+    },
+    {
+      "selector": 2,
+      "target": "_stat",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "_time",
+      "count": 5
+    },
+    {
+      "selector": 2,
+      "target": "algorithm_zlib_decompress",
+      "count": 1
+    },
+    {
+      "selector": 2,
+      "target": "getCommonFunctionPtrLVMBridge",
+      "count": 949
+    },
+    {
+      "selector": 2,
+      "target": "invokeFuncBridgeLVMBridge",
+      "count": 93
+    },
+    {
+      "selector": 2,
+      "target": "randomWrapper",
+      "count": 75
+    }
+  ]
 }

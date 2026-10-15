@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及已观察到的 73 种操作码中的 70 种已联合替换成纯 TypeScript；两组输入的外层候选结果与逐操作码执行次数均与原生一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES，以及已观察到的 73 种操作码中的 70 种已联合替换成纯 TypeScript；两组输入的外层候选结果与逐操作码执行次数均与原生一致；进一步迁移了简单宿主 ABI、待调用描述符设置、公共函数表查询和命令桥接。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -456,3 +456,21 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 在 `0x102a4dcf8` 助手中，已核实描述符 +8 为目标地址，+17 决定是否以 engine/context 形式直接调用。+17 为零时，+36 选择参数/结果处理：观察到 selector 1 调用后不保存结果、2 将 x0 存至 context+0x78；静态 selector 3 保存 s0、4/5 保存 d0 至 context+0x138；selector 0 进入更复杂的参数封送路径，尚未迁移。实际 selector 分布和公开目标计数见 `vm-call-profile.json`；定点汇编见 `vm-host-call-contract.asm`。不推断尚未核实的完整描述符格式。
 
 完整签名器仍依赖原生分发、模块展开、SDS 和宿主桥接。没有服务端验签、没有 iPhone 执行验证，也未接入小组件；小组件及 1.1.5 安装包未改动。下一步需还原桥接目标、selector 0 参数封送和退出协议，再构建独立解释器并验证安全因子。
+
+
+## 宿主 ABI 与两类 LVM 桥接迁移（2026-10-15，后续）
+
+新增 `portable_vm_host.ts`，不依赖 Scripting API：
+
+- `vmHostPlan` 核对 engine/context/descriptor 的空值及原生 root/target 条件；支持描述符标志 +17 的双参数调用，以及 selector 1..5 的六参数调用。整数返回按八字节、s0 按四字节、d0 按八字节原始位模式写入，保留 NaN 和符号位。未知 selector 返回原生错误 22；selector 0 明确返回 `marshal` 边界，不猜测参数。
+- `vmSetCallDescriptor` 对应 `0x102a53b74`，只有 root+24 为零且 context+0x78 非空时才更新 context+16。
+- `vmCommonFunction` 对应 `getCommonFunctionPtrLVMBridge`（`0x102a8ea08`），实际为 `0x105531300 + uint32(index)*8` 查表；表数据来自现有运行时初始化，不导出表内容，不推测索引枚举。
+- `vmDispatchBridge` 对应 `invokeFuncBridgeLVMBridge`（`0x102a8e9a0` → `0x102a9271c`）。请求指针为空或前三个编号的低 32 位任一符号位为一时，返回零并在非空错误槽写入 1；有效时保留三个完整八字节编号，第四参数只取四字节，并与 payload/error 一同尾调用 `[[0x1068f5e40]+16]`。后续分发目标仍由原生执行，不伪造签名或业务结果。
+
+`verify_portable_vm_host.py` 使用有界 continuation 连接真实宿主函数，不在指令钩子里递归启动模拟器。在两组输入中，各替换 2,426 次简单 ABI、335 次描述符设置、949 次公共函数查询和 93 次命令桥接。此前 70 种操作码与 17 次 AES 同时继续用 TypeScript 执行。外层候选结果与逐操作码执行次数分别与原生一致；这些桥接数量互有包含，不能相加后当作独立 VM 指令数。
+
+独立原生对照共 1,053 组：ABI 165、待调用描述符 72、公共函数查询 128、命令桥接 688。覆盖原始浮点返回位、错误码写入、高 32 位保留/丢弃规则和空指针。Node 13 组边界行为与 25 组异常输入、严格 TypeScript 以及现有 20 项 Python 回归通过。独立 ABI 验证比较调用参数、返回值和受影响内存，不宣称所有 caller-saved 寄存器逐位一致。首次简单助手联合尝试触及既有 20 秒执行时限；后续及最终桥接联合对照完成，未放宽执行上限。
+
+剩余 8 次 selector 0 的调用已明确：`snprintf` 7 次，以及 `0x102a54b64` 1 次。后者静态可见把七个参数重排后转至 `0x102a2f3e4`，但其通用封送路径尚未移植。详见更新后的 `vm-call-profile.json`、`portable-vm-host-bridge-evidence.json` 和 `portable-vm-host-bridge-validation.json`。
+
+仍未完成整个独立解释器：操作码 3/4/18 的入口、复杂 ABI、实际宿主计算、内存分配、随机数、模块展开及初始化/SDS 仍有原生依赖。没有服务端或 iPhone 验证，未接入小组件。本轮未改查询、自动续期或安装包。下一步优先还原 selector 0 的参数类型解析与栈参数布置，再去除调用入口对原生运行时的依赖。

@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 52893,
-    "sha256": "f6680c9f52b9050536971e73603c87e710c62d639a3662d63fa707911181a07a"
+    "bytes": 56050,
+    "sha256": "27ce019f60ac66a6edd31e8154c21ee0cf76b28e0aab248485b63e698a6e8558"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -280,6 +280,16 @@
     "sha256": "b2d71b3d5576d5fb15bf84a247968dc9c55404565223f00ab0534302cab25b62"
   },
   {
+    "file": "signature/portable-vm-host-bridge-evidence.json",
+    "bytes": 4618,
+    "sha256": "1a9166e61df38b562ff9410990db1835d1e42acc4fd8fb541e242ddd1d64be72"
+  },
+  {
+    "file": "signature/portable-vm-host-bridge-validation.json",
+    "bytes": 1317,
+    "sha256": "30f7243996c1a4f1f688d09774be751503debcab7ba4041ae35541a00972e83b"
+  },
+  {
     "file": "signature/portable-vm-memory-branch-validation.json",
     "bytes": 721,
     "sha256": "9085f5b87aafcc197d549c0c4076fc37aec7ad592e65565770d55f6c5fb6c809"
@@ -325,6 +335,11 @@
     "sha256": "d935662e8642794964c56e5b9f9fffe7ffc5b75c9fc8e081713505430c516789"
   },
   {
+    "file": "signature/portable_vm_host.ts",
+    "bytes": 5239,
+    "sha256": "4c8c06f6af39d93eb5b1a88ee03618d35afd8cbe28a5aea201b769ea3fa2b486"
+  },
+  {
     "file": "signature/portable_vm_memory.ts",
     "bytes": 2693,
     "sha256": "c83b6527b2e7295c49592f2b78b835fe87bceb0d2846954467b96d379e162bd9"
@@ -361,8 +376,8 @@
   },
   {
     "file": "signature/profile_vm_calls.py",
-    "bytes": 5130,
-    "sha256": "f8921e7fb80b8e30760e163608114362dd22db9eecff806466ab996c699502f7"
+    "bytes": 5674,
+    "sha256": "20b35a49024da303a0c65f27f5ae7d1e1165f43b518e1ca637683c0e393bc369"
   },
   {
     "file": "signature/profile_vm_dispatch.py",
@@ -565,6 +580,11 @@
     "sha256": "392e435e18f92a1693a36dfdd1386f64afd78f56077ddf40eca19cf6e747dac7"
   },
   {
+    "file": "signature/test_portable_vm_host.cjs",
+    "bytes": 4637,
+    "sha256": "51f827ca11d689508eff54fda7a8021f15d10c67d5cb1af2a3acd87c6e65d71f"
+  },
+  {
     "file": "signature/test_portable_vm_memory.cjs",
     "bytes": 3569,
     "sha256": "fd743566dcc3c6f270ead0ba95985b5ab2e367604ac79a411df8c961e1392b0c"
@@ -660,6 +680,11 @@
     "sha256": "80fb8e3c1a949c6ff63dcb51b88ed3cbae98b043531eac17f93a32bd7dcf85ef"
   },
   {
+    "file": "signature/verify_portable_vm_host.py",
+    "bytes": 19861,
+    "sha256": "996d2134fb53072c11069851972ddaabf5676ef215c2390159888b49848a4657"
+  },
+  {
     "file": "signature/verify_portable_vm_memory.py",
     "bytes": 14773,
     "sha256": "d0fbb110b3f02823d1cd678065f32350d23afbaa7a2a1418d8dc720c8bf4c537"
@@ -686,8 +711,8 @@
   },
   {
     "file": "signature/vm-call-profile.json",
-    "bytes": 4687,
-    "sha256": "0d067a0cc0102502df3a2f69a3d0e65b3331526696502c77945e156f629dc216"
+    "bytes": 8213,
+    "sha256": "d28ee5e5b85ba58908dfded7e11618f8356e427049497f64fb335b42d89310d2"
   },
   {
     "file": "signature/vm-dispatch-profile.json",
@@ -705,6 +730,11 @@
     "sha256": "9d2ab65b33301ff7f70797c6bfcc42dd8069eb453da6e5ef58bac5c78ea52578"
   },
   {
+    "file": "signature/vm-host-bridge-contract.asm",
+    "bytes": 3381,
+    "sha256": "1360fe3d38e1ef5c86b27f36e166f5183c277863ef7d6a75b4f4ab0d1ae15912"
+  },
+  {
     "file": "signature/vm-host-call-contract.asm",
     "bytes": 1914,
     "sha256": "170161a637e8e89e080e7b4901b5f79bf9babbfeb62e1b809fd2cd00d9b04823"
@@ -718,6 +748,11 @@
     "file": "signature/vm-null-read.asm",
     "bytes": 612,
     "sha256": "83789c102aec07028d4342847b2fd24536376e49b9aea44f4e0e12c2cb3b2d35"
+  },
+  {
+    "file": "signature/vm-pending-descriptor-contract.asm",
+    "bytes": 714,
+    "sha256": "c4df9ebfa2373cf4c7fba071c49f566785c5d0bd65e5f9fa055f94c95fc70b6f"
   },
   {
     "file": "signature/vm-register-contract.asm",
@@ -743,6 +778,11 @@
     "file": "signature/vm_frame_worker.cjs",
     "bytes": 2616,
     "sha256": "0db177294f55ae2903073924c73b8f14a01665a253c9cb64576d9b0356f7d061"
+  },
+  {
+    "file": "signature/vm_host_worker.cjs",
+    "bytes": 3463,
+    "sha256": "cdab5bbf6bf812c1284b64a59ab3ff6f3ee1686f47edda58adbe57384116616e"
   },
   {
     "file": "signature/vm_memory_worker.cjs",
