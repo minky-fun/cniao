@@ -1,0 +1,277 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "independent shadow calculation; original ARM64/VM execution remains unchanged",
+  "aes_backend": "independent Darwin CommonCrypto",
+  "operations": [
+    {
+      "operation": 22,
+      "input_bytes": 304,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 17,
+      "input_bytes": 47360,
+      "output_bytes": 47344,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 192,
+      "algorithm": "AES-192-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 47344,
+      "output_bytes": 47328,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 128,
+      "algorithm": "AES-128-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 18,
+      "input_bytes": 47328,
+      "output_bytes": 47312,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 256,
+      "algorithm": "AES-256-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 17,
+      "input_bytes": 47312,
+      "output_bytes": 47308,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 192,
+      "algorithm": "AES-192-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 20,
+      "input_bytes": 47308,
+      "output_bytes": 306065,
+      "algorithm": "zlib-inflate",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 10,
+      "output_bytes": 16,
+      "direction": "encrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 10,
+      "output_bytes": 16,
+      "direction": "encrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 23,
+      "input_bytes": 15,
+      "output_bytes": 20,
+      "algorithm": "HMAC-SHA1",
+      "matches": true
+    },
+    {
+      "operation": 17,
+      "input_bytes": 720,
+      "output_bytes": 704,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 192,
+      "algorithm": "AES-192-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 704,
+      "output_bytes": 688,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 128,
+      "algorithm": "AES-128-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 18,
+      "input_bytes": 688,
+      "output_bytes": 672,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 256,
+      "algorithm": "AES-256-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 17,
+      "input_bytes": 672,
+      "output_bytes": 656,
+      "direction": "decrypt",
+      "mode": 2,
+      "key_bits": 192,
+      "algorithm": "AES-192-CBC-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 20,
+      "input_bytes": 656,
+      "output_bytes": 1230,
+      "algorithm": "zlib-inflate",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 22,
+      "input_bytes": 300,
+      "output_bytes": 16,
+      "algorithm": "MD5",
+      "matches": true
+    },
+    {
+      "operation": 16,
+      "input_bytes": 16,
+      "output_bytes": 10,
+      "direction": "decrypt",
+      "mode": 1,
+      "key_bits": 128,
+      "algorithm": "AES-128-ECB-PKCS7",
+      "matches": true
+    },
+    {
+      "operation": 21,
+      "input_bytes": 80,
+      "output_bytes": 108,
+      "algorithm": "Base64-encode",
+      "matches": true
+    },
+    {
+      "operation": 23,
+      "input_bytes": 108,
+      "output_bytes": 20,
+      "algorithm": "HMAC-SHA1",
+      "matches": true
+    }
+  ],
+  "operation_counts": {
+    "16": 11,
+    "17": 4,
+    "18": 2,
+    "20": 2,
+    "21": 1,
+    "22": 7,
+    "23": 2
+  },
+  "all_29_operations_match": true,
+  "aes_comparisons": 17,
+  "signature_vm_returned": true,
+  "signature_candidate_bytes": 50,
+  "raw_inputs_keys_iv_outputs_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}

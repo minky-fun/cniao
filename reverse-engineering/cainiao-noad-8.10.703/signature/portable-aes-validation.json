@@ -1,0 +1,13 @@
+{
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "typescript_strict_no_unused_passed": true,
+  "portable_aes_source_sha256": "1effc62df8e706bb375ffcc124b22719e6044b7baf14bb9e0be5561e82b3ee49",
+  "public_vector_and_node_crypto_oracle_cases": 64,
+  "invalid_input_cases": 7,
+  "python_regression_tests": 20,
+  "macos_commoncrypto_sdk_abi_compiled_with_werror": true,
+  "commoncrypto_and_portable_shadow_events_equal": true,
+  "scripting_device_execution_verified": false,
+  "sample_data_in_test_fixtures": false
+}

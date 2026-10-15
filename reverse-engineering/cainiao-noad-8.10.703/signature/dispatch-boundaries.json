@@ -295,5 +295,19 @@
       "url": "https://raw.githubusercontent.com/apple-oss-distributions/Libc/71bbe350ab79eef58113991d817ccc6165061a64/stdlib/FreeBSD/random.c",
       "sha256": "2cb19b8025e9981b757b130e7e36e85a905f9edd10be91b988804863d348ba20"
     }
+  },
+  "portable_aes_continuation": {
+    "standard_operations_evidence": "portable-crypto-evidence.json",
+    "independent_commoncrypto_evidence": "commoncrypto-evidence.json",
+    "replacement_evidence": "portable-aes-pipeline-evidence.json",
+    "validation": "portable-aes-validation.json",
+    "aes_source": "portable_aes.ts",
+    "all_standard_operations_compared": 29,
+    "portable_aes_calls_per_run": 17,
+    "native_aes_wrappers_in_replacement_runs": 0,
+    "both_synthetic_inputs_native_candidate_equals_replacement": true,
+    "full_portable_signer_implemented": false,
+    "scripting_device_verified": false,
+    "server_verified": false
   }
 }

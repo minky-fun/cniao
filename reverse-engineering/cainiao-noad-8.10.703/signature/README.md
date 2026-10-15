@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
+已还原 MTOP 输入构造，并在离线 ARM64 模拟中使真实 `lvm_sig` 类型 19 路径返回 **50 字节签名候选字符串**。相同熵下的重复性与输入变化对照通过；其中 17 次 AES 已替换成纯 TypeScript，外层候选结果保持一致。**尚未完成可移植的完整签名实现和服务端验证**；候选结果不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录的离线探针不接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
 
@@ -303,3 +303,60 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 20 项离线测试通过。原先无 zlib、只有 zlib、加状态目录的三种边界仍复现；新路径的完整跟踪/加速跟踪一致。限制仍包括：时间返回零、合成 INPUT、空 authCode、合成空状态目录、省略监控、副作用与生命周期模型不完整。没有账号或线上请求验证。**目前是 macOS Python + Unicorn 执行样本原生算法，不是可在 Scripting 中运行的 TypeScript 签名器**。下一阶段应提取计算依赖并建立可移植实现，再接入真实请求验证。小组件与安装包仍为 1.1.5，本轮未修改。
+
+
+### 纯 TypeScript AES 已替代原生计算并保持外层结果一致
+
+新增 `portable_aes.ts`，仅使用 `Uint8Array` 和标准 JavaScript 运算实现 AES-128/192/256 的 ECB/CBC 与 PKCS#7，不导入 Node crypto、CommonCrypto 或 Scripting 原生 AES。实现依据公开 FIPS 197 运算与密钥扩展规则；不嵌入样本密钥、安全资源或候选签名。它是研究模块，不提供账号请求或完整签名接口。
+
+本轮独立复算了真实路径到达的全部 29 次标准操作：
+
+| 原生类型（请求 +4 的 u32） | 已确认操作 | 次数 |
+| --- | --- | ---: |
+| 16 | AES-128，ECB/CBC，PKCS#7 | 11 |
+| 17 | AES-192-CBC，PKCS#7 | 4 |
+| 18 | AES-256-CBC，PKCS#7 | 2 |
+| 20 | zlib 解压 | 2 |
+| 21 | Base64 编码 | 1 |
+| 22 | MD5，16 字节原始摘要 | 7 |
+| 23 | HMAC-SHA1，20 字节原始摘要 | 2 |
+
+`verify_crypto_operations.py` 保留真实处理器执行，在返回点将原生输出与独立标准实现逐字节比较。AES 使用 CommonCrypto 或指定的纯 TypeScript 模块；其余操作使用 Python 标准库。两个后端的 29 项事件完全一致，且全都匹配。见 `commoncrypto-evidence.json` 与 `portable-crypto-evidence.json`。CommonCrypto 枚举、LP64 长度及函数签名经实际 macOS SDK 编译断言核对，源码为 `verify_macos_commoncrypto.c`。
+
+AES 请求布局由 `0x102abc480..0x102abc498` 与 `0x102aee414..0x102aee4cc` 核对：请求 +0 的 u32 为 1（加密）或 2（解密），+8 的 u32 为 1（ECB）或 2（CBC）；+0x10 是 IV 对象，+0x18 是 key 对象，+0x20 是输入对象。密钥只取类型要求的前 16/24/32 字节；CBC 取显式 IV 的前 16 字节，缺少时失败。以上角色只适用于已验证的 AES 路径，不将其他操作的同偏移字段猜成相同含义。选取指令见 `crypto-operation-contract.asm`。
+
+**实际替换对照也已通过，不只有旁路相等性检查。** `verify_portable_aes_pipeline.py` 在原生加密分派入口拦截这 17 次 AES，用纯 TS 计算，再调用样本自己的 `0x102abf544` 构造完整缓冲对象。该构造器分配 104 字节对象，+0 为数据指针、+8 为逻辑长度、+12 为容量，并设置原生成员回调。替换模式保留真实构造器与原生成功返回契约；不手工猜造对象成员。原生 AES 加解密包装器 `0x102aeddd4` / `0x102aee0dc` 被计数并禁止执行。
+
+同一组真实系统熵在四个独立初始化运行中仅通过内存重放：
+
+1. 原始合成 INPUT，原生 AES。
+2. 原始合成 INPUT，17 次 AES 全部替换为纯 TS。
+3. 改变合成 INPUT，原生 AES。
+4. 改变合成 INPUT，17 次 AES 全部替换为纯 TS。
+
+两组 INPUT 下，替换前后的 50 字节外层候选结果都完全相等，改变 INPUT 仍使结果改变。每次运行消耗 816 次 arc4random，两个替换运行的原生 AES 包装器执行数均为 0。见 `portable-aes-pipeline-evidence.json`。结果、密钥、IV、资源内容和熵值均不导出；Node 子进程只通过父子进程管道进行计算，不能将其原始管道内容接到日志。
+
+纯 TS AES 另通过 FIPS 197（2001）附录 C 的三种密钥长度公开向量、SP 800-38A F.2.1 的 CBC 公开向量，以及 Node crypto 独立对照，共 64 组有效案例；包含空明文、块边界与长缓冲。7 类无效输入检查涵盖 key、IV、密文长度和错误 padding。实现严格检查所有 padding 字节；尚未声称与原生实现的所有畸形输入行为一致。该表查找 JS 参考实现不提供常量时间保证。
+
+复现（需要可用的 TypeScript 编译器、Node 与原有 Python 环境）：
+
+```sh
+npx --package typescript tsc --strict --noUnusedLocals --noUnusedParameters \
+  --target ES2020 --module commonjs --outDir work/signature-analysis/portable-build \
+  reverse-engineering/cainiao-noad-8.10.703/signature/portable_aes.ts
+node reverse-engineering/cainiao-noad-8.10.703/signature/test_portable_aes.cjs \
+  work/signature-analysis/portable-build/portable_aes.js
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_crypto_operations.py \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_aes_pipeline.py \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+xcrun --sdk macosx clang -Werror -c \
+  reverse-engineering/cainiao-noad-8.10.703/signature/verify_macos_commoncrypto.c \
+  -o work/signature-analysis/verify-macos-commoncrypto.o
+```
+
+已按 Scripting 技能读取当前官方 `llms.txt`、完整 `Crypto` / `Data` 页面及本地 `dts/global.d.ts` 声明。`Crypto.md5`、`Crypto.hmacSHA1` 和 Data 字节/Base64 转换有明确接口；文档中的原生 AES 是 **GCM**，不能拿来代替本路径的 CBC/ECB。此次纯 TS AES 不调用这些 API。`Data.decompressed(CompressionAlgorithm.zlib)` 的存在不等于已验证它接受样本的具体流格式，尚未在 iPhone 上执行。
+
+**仍未完成完整 TypeScript 签名器。** 原生 VM、SDS 资源选择与配置处理、非 AES 处理器及既有合成运行环境仍然存在，候选结果也未获服务端验证。下一步需要继续拆解 VM/SDS 计算和结果封装；不能把通用 AES 实现或这次替换对照当成已接入小组件。本轮不修改组件、安装包、线上请求或版本。

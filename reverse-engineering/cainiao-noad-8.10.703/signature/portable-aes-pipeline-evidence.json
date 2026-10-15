@@ -1,0 +1,39 @@
+{
+  "scope": "controlled offline replacement; remaining VM, SDS and non-AES handlers still native",
+  "runs": [
+    {
+      "changed_input": false,
+      "mode": "native-with-shadow-comparison",
+      "arc4random_calls": 816,
+      "candidate_bytes": 50
+    },
+    {
+      "changed_input": false,
+      "mode": "replace-native-AES",
+      "arc4random_calls": 816,
+      "candidate_bytes": 50,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    },
+    {
+      "changed_input": true,
+      "mode": "native-with-shadow-comparison",
+      "arc4random_calls": 816,
+      "candidate_bytes": 50
+    },
+    {
+      "changed_input": true,
+      "mode": "replace-native-AES",
+      "arc4random_calls": 816,
+      "candidate_bytes": 50,
+      "replaced_aes_calls": 17,
+      "native_aes_wrappers_executed": 0
+    }
+  ],
+  "same_input_native_equals_portable_aes": true,
+  "changed_input_native_equals_portable_aes": true,
+  "changed_input_changes_candidate": true,
+  "raw_inputs_keys_iv_outputs_entropy_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false
+}

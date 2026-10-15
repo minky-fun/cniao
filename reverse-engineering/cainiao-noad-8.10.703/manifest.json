@@ -61,8 +61,13 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 36850,
-    "sha256": "c400c49f5dc6066fea6aec1574d3ac9ae86b77a159a938e44392aaf21ae0a450"
+    "bytes": 42512,
+    "sha256": "115823a503bf09071f2c4ea9b63455187074f6b88aba686fc5ba7cf691a5ad75"
+  },
+  {
+    "file": "signature/aes_worker.cjs",
+    "bytes": 1143,
+    "sha256": "48700cecefc37626648980e6f20b05618fb464066e658cd1cc23e6b47e015bbc"
   },
   {
     "file": "signature/algorithm-helper-md5.asm",
@@ -75,6 +80,11 @@
     "sha256": "4e2937e2378fff40cb02202cfc8d11b11bcf68e7249ece030f1b890fa0356d22"
   },
   {
+    "file": "signature/commoncrypto-evidence.json",
+    "bytes": 6059,
+    "sha256": "27abfeac238f4eac5894a8b28031bdb931e7d2a19ec7ad39636e4147a860671d"
+  },
+  {
     "file": "signature/core-command-dispatch.asm",
     "bytes": 2478,
     "sha256": "2305b351dbb858f2670f8d16132c690878b426af532111642e8760a8d7372b9c"
@@ -85,9 +95,14 @@
     "sha256": "10525d4b4b3e82c6e6ef3fcb1e3ca831b80ab923a6e0fd022dd028811a1c8295"
   },
   {
+    "file": "signature/crypto-operation-contract.asm",
+    "bytes": 6517,
+    "sha256": "5812fed0ce6c84aa8dc4034ea15158df83b40ae2446dfe84bebfb013482e201e"
+  },
+  {
     "file": "signature/dispatch-boundaries.json",
-    "bytes": 9465,
-    "sha256": "c72a25e0db113599ba9028297370a8b5f9faf7b7ef20e92851f2110b4bcdcb0a"
+    "bytes": 10116,
+    "sha256": "4b824a6527353ce93c5d4195cc1b2793c01a010c61163de63fb30f9a41f5d5e3"
   },
   {
     "file": "signature/dispatcher-install.asm",
@@ -233,6 +248,26 @@
     "file": "signature/plugin-dispatcher-install.asm",
     "bytes": 3352,
     "sha256": "9feff8b067bb7c2d44519dddbdb40ca1f5ae26133071aa1734265f5a98b8eca2"
+  },
+  {
+    "file": "signature/portable-aes-pipeline-evidence.json",
+    "bytes": 1108,
+    "sha256": "37cfebc3ec8441c3cf06a58216af4c14f8a3eb9b1fcca65f919e57259facab0e"
+  },
+  {
+    "file": "signature/portable-aes-validation.json",
+    "bytes": 529,
+    "sha256": "c1832024125e65125d314cc31a5af3ad940401f2b024152826635a1b9f140097"
+  },
+  {
+    "file": "signature/portable-crypto-evidence.json",
+    "bytes": 6082,
+    "sha256": "e5806c3432503b57ee6b337aa5763194cbbcf5a2046f8f6d8527865e8a963ffc"
+  },
+  {
+    "file": "signature/portable_aes.ts",
+    "bytes": 5862,
+    "sha256": "1effc62df8e706bb375ffcc124b22719e6044b7baf14bb9e0be5561e82b3ee49"
   },
   {
     "file": "signature/probe_native.py",
@@ -430,6 +465,11 @@
     "sha256": "628ae3512cba0c4d7a0325e6f1fa27049dbda6a6109a2f24faf705349f8544e8"
   },
   {
+    "file": "signature/test_portable_aes.cjs",
+    "bytes": 3186,
+    "sha256": "d1e588f223aeda74604ed6b8efedc885f872b497c1c330cefc4af5fc0c3e0a03"
+  },
+  {
     "file": "signature/test_sign_input.py",
     "bytes": 3136,
     "sha256": "ff3fbdeaa42c6ab676b178b7444769041a6aefb672163ca66761f20ef7c0669d"
@@ -470,6 +510,11 @@
     "sha256": "f8f7a44b4fc10c8a3faf21301267c98a4dc21a4cc88e7afa02cae45d05363563"
   },
   {
+    "file": "signature/verify_crypto_operations.py",
+    "bytes": 10345,
+    "sha256": "ded81254eb8e5bf8b7148f23d74e16010fcd23e6bb930efad5a7bfb00b9ce37a"
+  },
+  {
     "file": "signature/verify_ios_stat.c",
     "bytes": 473,
     "sha256": "bdc84095d78f5bb94f385bcae88f08d349e867b4b2b0f6f87f51c43d80a01bba"
@@ -483,6 +528,16 @@
     "file": "signature/verify_ios_zlib.c",
     "bytes": 1038,
     "sha256": "18dd2381378157ff7a0156b2a67bf289d9825881946fa8896024368d6a2a4776"
+  },
+  {
+    "file": "signature/verify_macos_commoncrypto.c",
+    "bytes": 1088,
+    "sha256": "aa64ecae1f680204fe1502a41bf4f672b27a947b795fb44395f80c8683252cd3"
+  },
+  {
+    "file": "signature/verify_portable_aes_pipeline.py",
+    "bytes": 8287,
+    "sha256": "80ace4980ce0e542ef5552cc9f71f5d35b9e6cabdd69f7c53573f373465f0e03"
   },
   {
     "file": "signature/verify_signature_candidate.py",
