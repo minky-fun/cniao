@@ -12,6 +12,7 @@ import {
   Script,
   ZStack,
   Rectangle,
+  Widget,
 } from "scripting"
 import type { Color, DynamicShapeStyle, KeywordPoint } from "scripting"
 import { ModuleSection, createModuleActions, isBoxJsAvailable } from "./moduleSection"
@@ -22,7 +23,7 @@ type CainiaoSettings = {
 }
 
 const SETTINGS_KEY = "cniaoSettings"
-const VERSION = "1.1.1"
+const VERSION = "1.1.2"
 
 const DEFAULT_SETTINGS: CainiaoSettings = {
   boxJsUrl: "http://boxjs.com",
@@ -76,6 +77,7 @@ function getGlassBackground(): DynamicShapeStyle {
   }
 }
 
+/** 绘制设置页背景，不参与点击事件。 */
 function GlassBackground() {
   return (
     <Rectangle
@@ -104,6 +106,7 @@ function SettingsView() {
 
   const [boxJsUrl, setBoxJsUrl] = useState(init.boxJsUrl)
   const [refreshInterval, setRefreshInterval] = useState(init.refreshInterval)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   // 自动检测 BoxJS 环境是否已安装
   const [boxJsDetected, setBoxJsDetected] = useState<boolean | null>(null)
@@ -111,20 +114,34 @@ function SettingsView() {
     isBoxJsAvailable(init.boxJsUrl).then(setBoxJsDetected)
   }, [])
 
+  /** 保存配置后请求更新桌面组件。 */
   const handleSave = () => {
     const newSettings: CainiaoSettings = {
       boxJsUrl: boxJsUrl.trim() || DEFAULT_SETTINGS.boxJsUrl,
       refreshInterval: refreshInterval,
     }
     Storage.set(SETTINGS_KEY, newSettings)
+    Widget.reloadUserWidgets()
     Script.exit()
   }
 
+  /** 恢复默认配置后请求更新桌面组件。 */
   const handleReset = () => {
     setBoxJsUrl(DEFAULT_SETTINGS.boxJsUrl)
     setRefreshInterval(DEFAULT_SETTINGS.refreshInterval)
     Storage.set(SETTINGS_KEY, DEFAULT_SETTINGS)
+    Widget.reloadUserWidgets()
     Script.exit()
+  }
+
+  /** 仅从设置页调用官方预览 API，预览失败时保留页面并提示。 */
+  const previewWidget = async (family: "systemSmall" | "systemMedium" | "systemLarge") => {
+    setPreviewError(null)
+    try {
+      await Widget.preview({ family })
+    } catch {
+      setPreviewError("预览未能打开，请稍后重试。")
+    }
   }
 
   return (
@@ -181,10 +198,19 @@ function SettingsView() {
           </Section>
 
           <Section
+            header={<Text>小组件预览</Text>}
+            footer={<Text font="caption2" foregroundStyle="secondaryLabel">{previewError ?? "使用已保存配置预览；桌面上的最终布局请以实际显示为准。"}</Text>}
+          >
+            <Button title="预览小号" action={() => previewWidget("systemSmall")} />
+            <Button title="预览中号" action={() => previewWidget("systemMedium")} />
+            <Button title="预览大号" action={() => previewWidget("systemLarge")} />
+          </Section>
+
+          <Section
             header={<Text>刷新设置</Text>}
             footer={
               <Text font="caption2" foregroundStyle="secondaryLabel">
-                小组件自动刷新包裹数据的时间间隔，推荐 15-30 分钟
+                请求系统在该间隔后刷新，实际更新时间由 iOS 调度；推荐 15-30 分钟，也可点击组件刷新按钮。
               </Text>
             }
           >
@@ -223,9 +249,13 @@ function SettingsView() {
   )
 }
 
-if (Script.env === "index") {
-  Navigation.present({
+/** 设置页关闭或被手势收起后结束一次性脚本。 */
+async function runSettings() {
+  await Navigation.present({
     element: <SettingsView />,
     modalPresentationStyle: "overFullScreen",
   })
+  Script.exit()
 }
+
+if (Script.env === "index") runSettings()

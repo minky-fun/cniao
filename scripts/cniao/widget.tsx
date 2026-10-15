@@ -423,6 +423,7 @@ function fmtHHmm(d: Date) { return `${String(d.getHours()).padStart(2, "0")}:${S
 
 // ========== UI ==========
 
+/** 展示组件标题、数量、更新时间和可重复触发的刷新入口。 */
 function WidgetHeader({ countText, trailingText }: { countText?: string; trailingText?: string }) {
   return (
     <HStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity }}>
@@ -430,25 +431,27 @@ function WidgetHeader({ countText, trailingText }: { countText?: string; trailin
         <Image systemName="shippingbox.fill" font={14} fontWeight="semibold" foregroundStyle={theme.icon} />
         <Text font={13} fontWeight="bold" foregroundStyle={theme.title} lineLimit={1}>菜鸟随行</Text>
       </HStack>
-      <HStack frame={{ minWidth: 0, maxWidth: Infinity }} />
+      <Spacer />
       {countText ? <Text font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>{countText}</Text> : null}
       {trailingText ? <Text font={10} fontWeight="medium" foregroundStyle={theme.tertiary} lineLimit={1}>{trailingText}</Text> : null}
-      <Button intent={RefreshCainiaoIntent({})}>
-        <Image systemName="arrow.clockwise" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} /></Button>
+      <Button intent={RefreshCainiaoIntent({})} buttonStyle="plain" accessibilityLabel="刷新包裹">
+        <Image systemName="arrow.clockwise" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} frame={{ width: 26, height: 26 }} /></Button>
     </HStack>
   )
 }
 
+/** 无进行中包裹时显示紧凑说明，刷新入口由外层标题保留。 */
 function EmptyState({ message }: { message: string }) {
   return (
-    <VStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} padding={{ top: 16, leading: 12, bottom: 16, trailing: 12 }}>
-      <ZStack frame={{ width: 42, height: 42 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
+    <VStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} padding={8}>
+      <ZStack frame={{ width: 32, height: 32 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
         <Image systemName="shippingbox" font={20} fontWeight="semibold" foregroundStyle={theme.icon} /></ZStack>
       <Text font={13} fontWeight="semibold" foregroundStyle={theme.title}>{message}</Text>
     </VStack>
   )
 }
 
+/** 大号列表展示包裹标题、取件地点和取件码。 */
 function PillRow({ item, compact }: { item: PickupItem; compact?: boolean }) {
   const is = compact ? 13 : 15; const nf = compact ? 11 : 12; const sf = compact ? 9 : 10
   const cf = compact ? 13 : 15; const py = compact ? 7 : 9; const ps = compact ? 24 : 28
@@ -457,110 +460,126 @@ function PillRow({ item, compact }: { item: PickupItem; compact?: boolean }) {
       <HStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity }}>
         {item.pic ? <Image imageUrl={item.pic} resizable frame={{ width: ps, height: ps }} /> : <Image systemName="shippingbox.fill" font={is} fontWeight="semibold" foregroundStyle={theme.icon} />}
         <VStack alignment="leading" spacing={2} frame={{ minWidth: 0, maxWidth: Infinity }}>
-          <Text font={nf} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.name}</Text>
+          <Text font={nf} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.name || getItemMeta(item)}</Text>
           <Text font={sf} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={1} frame={{ minWidth: 0, maxWidth: Infinity }}>{getItemMeta(item)}</Text>
         </VStack>
       </HStack>
-      {compact ? <Text font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
+      {compact ? <Text widgetAccentable font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
         : <VStack alignment="trailing" spacing={2} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 12, style: "continuous" } }}>
           <Text font={9} fontWeight="medium" foregroundStyle={theme.tertiary}>{item.code ? "取件码" : "状态"}</Text>
-          <Text font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
+          <Text widgetAccentable font={cf} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
         </VStack>}
     </HStack>
   )
 }
 
+/** 中号以两行文字同时保留标题和取件地点，固定行高便于计算容量。 */
 function CompactMediumRow({ item }: { item: PickupItem }) {
   return (
-    <HStack alignment="center" spacing={8} padding={{ top: 7, leading: 9, bottom: 7, trailing: 9 }} frame={{ minWidth: 0, maxWidth: Infinity }} widgetBackground={{ style: theme.pillBg, shape: { type: "rect", cornerRadius: 12, style: "continuous" } }}>
+    <HStack alignment="center" spacing={8} padding={{ top: 5, leading: 9, bottom: 5, trailing: 9 }} frame={{ minWidth: 0, maxWidth: Infinity, height: 40 }} widgetBackground={{ style: theme.pillBg, shape: { type: "rect", cornerRadius: 12, style: "continuous" } }}>
       <Image systemName="shippingbox.fill" font={12} fontWeight="semibold" foregroundStyle={theme.icon} />
-      <Text font={11} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1} minScaleFactor={0.82} frame={{ minWidth: 0, maxWidth: Infinity }}>{item.name || getItemMeta(item)}</Text>
-      <Text font={13} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.72}>{getPrimaryCode(item)}</Text>
+      <VStack alignment="leading" spacing={2} frame={{ minWidth: 0, maxWidth: Infinity }}>
+        <Text font={11} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={1}>{item.name || getItemMeta(item)}</Text>
+        <Text font={9} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
+      </VStack>
+      <Text widgetAccentable font={13} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.65}>{getPrimaryCode(item)}</Text>
     </HStack>
   )
 }
 
+/** 小号按实际高度收紧间距，空状态也保留刷新按钮。 */
 function SmallView({ items }: { items: PickupItem[] }) {
-  const t = items.length; const idx = getSmallPageIndex(t); const cur = items[idx]
-  if (!cur) return (<ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}><EmptyState message="暂无待取" /></ZStack>)
+  const total = items.length
+  const index = getSmallPageIndex(total)
+  const item = items[index]
+  const compact = Widget.displaySize.height < 170
   return (
-    <VStack alignment="leading" spacing={10} padding={{ top: 12, leading: 12, bottom: 12, trailing: 12 }} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
-      <HStack alignment="center" spacing={8} frame={{ minWidth: 0, maxWidth: Infinity }}>
-        <Button intent={ShowNextCainiaoItemIntent({})}><Image systemName="chevron.right" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} /></Button>
-        <HStack frame={{ minWidth: 0, maxWidth: Infinity }} />
-        <Button intent={RefreshCainiaoIntent({})}><Image systemName="arrow.clockwise" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} /></Button>
+    <VStack alignment="leading" spacing={compact ? 5 : 8} padding={10} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
+      <HStack alignment="center" spacing={4}>
+        <Text font={11} fontWeight="bold" foregroundStyle={theme.title} lineLimit={1}>菜鸟随行</Text>
+        <Spacer />
+        {total > 1 ? <Button intent={ShowNextCainiaoItemIntent({})} buttonStyle="plain" accessibilityLabel={`下一件包裹，当前第 ${index + 1} 件，共 ${total} 件`}>
+          <Image systemName="chevron.right" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} frame={{ width: 26, height: 26 }} />
+        </Button> : null}
+        <Button intent={RefreshCainiaoIntent({})} buttonStyle="plain" accessibilityLabel="刷新包裹">
+          <Image systemName="arrow.clockwise" font={11} fontWeight="bold" foregroundStyle={theme.badgeText} frame={{ width: 26, height: 26 }} />
+        </Button>
       </HStack>
-      <VStack alignment="leading" spacing={8} padding={{ top: 12, leading: 12, bottom: 12, trailing: 12 }} frame={{ minWidth: 0, maxWidth: Infinity }} widgetBackground={{ style: theme.panelBg, shape: { type: "rect", cornerRadius: 16, style: "continuous" } }}>
-        <Text font={13} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={2}>{cur.name}</Text>
-        <Text font={10} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(cur)}</Text>
-        <HStack alignment="center" spacing={8}>
-          <Text font={24} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.55} frame={{ minWidth: 0, maxWidth: Infinity }}>{getPrimaryCode(cur)}</Text>
-          <Text font={10} fontWeight="semibold" foregroundStyle={theme.badgeText} padding={{ top: 4, leading: 8, bottom: 4, trailing: 8 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>{idx + 1} / {t}</Text>
+      {item ? <VStack alignment="leading" spacing={compact ? 4 : 6} padding={10} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.panelBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
+        <Text font={12} fontWeight="semibold" foregroundStyle={theme.title} lineLimit={compact ? 1 : 2}>{item.name || getItemMeta(item)}</Text>
+        <Text font={10} foregroundStyle={theme.secondary} lineLimit={1}>{getItemMeta(item)}</Text>
+        <Spacer />
+        <Text font={9} foregroundStyle={theme.tertiary}>{item.code ? "取件码" : "物流状态"}</Text>
+        <HStack spacing={4}>
+          <Text widgetAccentable font={compact ? 22 : 26} fontWeight="bold" foregroundStyle={theme.code} lineLimit={1} minScaleFactor={0.5} frame={{ minWidth: 0, maxWidth: Infinity }}>{getPrimaryCode(item)}</Text>
+          <Text font={9} foregroundStyle={theme.secondary}>{index + 1}/{total}</Text>
         </HStack>
-      </VStack>
+      </VStack> : <EmptyState message="暂无进行中包裹" />}
     </VStack>
   )
 }
 
+/** 根据中号可用高度安排列表，剩余数量提供明确的 App 查看入口。 */
 function MediumView({ items }: { items: PickupItem[] }) {
-  const list = items.slice(0, 3)
+  const capacity = Math.max(1, Math.min(3, Math.floor((Widget.displaySize.height - 66) / 46)))
+  const list = items.slice(0, capacity)
+  const remaining = items.length - list.length
   return (
-    <ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
-      <VStack padding={{ top: 10, leading: 10, bottom: 10, trailing: 10 }} spacing={7}>
-        <WidgetHeader countText={`${items.length} 件`} trailingText={fmtHHmm(new Date())} />
-        {list.length === 0 ? <EmptyState message="暂无待取" /> : list.map((it) => <CompactMediumRow item={it} key={`${it.name}-${it.code}`} />)}
-        <Spacer />
-      </VStack>
-    </ZStack>
+    <VStack alignment="leading" padding={10} spacing={6} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
+      <WidgetHeader countText={`${items.length} 件`} trailingText={fmtHHmm(new Date())} />
+      {list.length === 0 ? <EmptyState message="暂无进行中包裹" /> : list.map((item, index) => <CompactMediumRow item={item} key={index} />)}
+      <Spacer />
+      {remaining > 0 ? <Link url="cainiao://"><Text font={9} foregroundStyle={theme.secondary}>另有 {remaining} 件，打开菜鸟查看</Text></Link> : null}
+    </VStack>
   )
 }
 
+/** 根据大号实际高度限制行数，避免固定六行挤出组件边界。 */
 function LargeView({ items }: { items: PickupItem[] }) {
-  const now = new Date(); const list = items.slice(0, 6)
-  if (list.length === 0) return (<ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 20, style: "continuous" } }}><EmptyState message="暂无待取" /></ZStack>)
+  const capacity = Math.max(1, Math.min(6, Math.floor((Widget.displaySize.height - 76) / 48)))
+  const list = items.slice(0, capacity)
+  const remaining = items.length - list.length
   return (
-    <ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 20, style: "continuous" } }}>
-      <VStack alignment="leading" padding={{ top: 12, leading: 12, bottom: 12, trailing: 12 }} spacing={10} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
-        <WidgetHeader countText={`${items.length} 件`} trailingText={`更新 ${fmtHHmm(now)}`} />
-        {list.map((it) => <PillRow item={it} compact key={`${it.name}-${it.code}`} />)}
-        <VStack frame={{ minHeight: 0, maxHeight: Infinity }} />
-      </VStack>
-    </ZStack>
+    <VStack alignment="leading" padding={12} spacing={6} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 20, style: "continuous" } }}>
+      <WidgetHeader countText={`${items.length} 件`} trailingText={`更新 ${fmtHHmm(new Date())}`} />
+      {list.length === 0 ? <EmptyState message="暂无进行中包裹" /> : list.map((item, index) => <PillRow item={item} compact key={index} />)}
+      <Spacer />
+      {remaining > 0 ? <Link url="cainiao://"><Text font={10} foregroundStyle={theme.secondary}>另有 {remaining} 件，打开菜鸟查看</Text></Link> : null}
+    </VStack>
   )
 }
 
+/** 使用官方 Widget.family 分配尺寸布局。 */
 function WidgetView({ items }: { items: PickupItem[] }) {
-  const f = (Widget as any).family ?? "systemSmall"
-  if (f === "systemLarge") return <LargeView items={items} />
-  if (f === "systemMedium") return <MediumView items={items} />
+  if (Widget.family === "systemLarge" || Widget.family === "systemExtraLarge") return <LargeView items={items} />
+  if (Widget.family === "systemMedium") return <MediumView items={items} />
   return <SmallView items={items} />
 }
 
+/** 失败时保留打开 App 和手动重试入口，小号采用更紧凑的布局。 */
 function ErrorView({ message }: { message: string }) {
   const isSmall = Widget.family === "systemSmall"
 
   return (
     <ZStack frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }} widgetBackground={{ style: theme.bg, shape: { type: "rect", cornerRadius: 18, style: "continuous" } }}>
-      <VStack alignment="center" spacing={10} padding={{ top: 16, leading: 16, bottom: 16, trailing: 16 }} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
-        <ZStack frame={{ width: 42, height: 42 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
+      <VStack alignment="center" spacing={isSmall ? 5 : 10} padding={isSmall ? 10 : 16} frame={{ minWidth: 0, maxWidth: Infinity, minHeight: 0, maxHeight: Infinity }}>
+        <ZStack frame={{ width: 32, height: 32 }} widgetBackground={{ style: theme.softBg, shape: { type: "rect", cornerRadius: 14, style: "continuous" } }}>
           <Image systemName="exclamationmark.triangle.fill" font={20} fontWeight="semibold" foregroundStyle={theme.icon} /></ZStack>
         <Text font={13} fontWeight="semibold" foregroundStyle={theme.title}>菜鸟连接异常</Text>
-        <Text font={11} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={3}>{message}</Text>
+        <Text font={isSmall ? 10 : 11} fontWeight="medium" foregroundStyle={theme.secondary} lineLimit={isSmall ? 2 : 3}>{message}</Text>
         <HStack alignment="center" spacing={8}>
           <Link url="cainiao://">
-            <HStack alignment="center" spacing={6} padding={{ top: 8, leading: 14, bottom: 8, trailing: 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
+            <HStack alignment="center" spacing={6} padding={{ top: 6, leading: isSmall ? 8 : 14, bottom: 6, trailing: isSmall ? 8 : 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
               <Image systemName="arrow.up.forward.app.fill" font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} />
               <Text font={12} fontWeight="semibold" foregroundStyle={theme.badgeText}>{isSmall ? "打开" : "打开菜鸟"}</Text>
             </HStack>
           </Link>
-          {!isSmall && (
-            <Button intent={RefreshCainiaoIntent({})} buttonStyle="borderless">
-              <HStack alignment="center" spacing={6} padding={{ top: 8, leading: 14, bottom: 8, trailing: 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
+          <Button intent={RefreshCainiaoIntent({})} buttonStyle="borderless">
+              <HStack alignment="center" spacing={6} padding={{ top: 6, leading: isSmall ? 8 : 14, bottom: 6, trailing: isSmall ? 8 : 14 }} widgetBackground={{ style: theme.badgeBg, shape: { type: "capsule", style: "continuous" } }}>
                 <Image systemName="arrow.clockwise" font={11} fontWeight="semibold" foregroundStyle={theme.badgeText} />
                 <Text font={12} fontWeight="semibold" foregroundStyle={theme.badgeText}>刷新</Text>
               </HStack>
-            </Button>
-          )}
+          </Button>
         </HStack>
       </VStack>
     </ZStack>
@@ -572,8 +591,8 @@ function ErrorView({ message }: { message: string }) {
 /** 查询并展示当前包裹，按用户配置安排下一次刷新。 */
 async function showWidget() {
   const s = getSettings()
-  const policy: WidgetReloadPolicy = { policy: "after", date: new Date(Date.now() + s.refreshInterval * 60 * 1000) }
   const result = await getPackages()
+  const policy: WidgetReloadPolicy = { policy: "after", date: new Date(Date.now() + s.refreshInterval * 60 * 1000) }
   if (result.items === null) { Widget.present(<ErrorView message={result.errorMessage ?? "请求失败"} />, policy); return }
   const items = result.items
   Widget.present(<WidgetView items={sortPickupItems(items)} />, policy)

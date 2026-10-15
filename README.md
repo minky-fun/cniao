@@ -2,6 +2,12 @@
 
 这是一个基于 [Scripting](https://scriptingapp.github.io/) 的个人脚本仓库，当前包含菜鸟随行小组件（目录 `cniao`） 和 Codex 重置记录小组件 `codex-reset`。
 
+## 安装包与更新约定
+
+所有安装包放在 `bao/` 下，使用固定英文文件名，不附加版本号；软件在 Scripting 中的显示名称仍使用中文。后续发布覆盖同名文件，版本号维护在包内 `script.json` 中，并保留原有脚本标识 `name`。
+
+菜鸟随行的固定安装包为 [Cainiao.scripting](bao/Cainiao.scripting)。更新时始终使用此路径。
+
 ## Codex Reset
 
 `scripts/codex-reset` 按小号、中号和大号三种桌面组件展示最近一次 Codex 用量重置、累计次数、平均间隔、最长间隔与最近 26 周记录。
