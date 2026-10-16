@@ -1,0 +1,129 @@
+{
+  "source_sha256": {
+    "portable_inflate.ts": "7faa19af49dfee0515d90d9086ce106fd81d68f54d7cca42a05a6450b7bf51f8",
+    "portable_zlib_host.ts": "1ecac86afc4f14f49eb4432b43a43aad85d246a83513138195ad1ddf13a95d02",
+    "verify_portable_inflate.py": "0f1e472025ae2a2d9ed4feda2e7e073689b95215240035c3dd72d3afecae0b78",
+    "test_portable_inflate.cjs": "16217b738c626d1e7ef1db3bcc2a0b1646aeca907dbb46d0e752f695296867b7",
+    "test_portable_zlib_host.cjs": "592ab09cc4ae7a790f4e63ec206741a04edcf8eae416c9821e142aa00f75f845",
+    "zlib-runtime-contract.asm": "dad267ec007112dd296c21aa2fa4a02ff97de4470fef82b6eef353bd7d7bd2af",
+    "buffer_worker.cjs": "4e9ec05eec549551471e871a5a50e97803adf5757a3d2c2f313331fc72d6b244",
+    "verify_portable_digest.py": "93d2b13afbb9d1c7422c4dc5e80a777569b61eb7fd64152a77ffed7f8ef16d26",
+    "verify_portable_buffer.py": "2d8442196a2c5ead2fe5219c452f8b41931b0e715e8930e3ed90a109475158e2",
+    "guest_zlib.py": "edf12d9e85a545fedc4143d5ecd39803243dab970fe2d3197968816dd1090d21",
+    "portable_crypto_host.ts": "8c1f53334a5de672eb9c56555d7e9f6dfabb63dcff5ba2722af5200dedd8d888",
+    "portable_digest.ts": "387fb31a9dc6f80076ada98efbe05b842112a2b2a452112bb05c4aa92959bff6",
+    "portable_buffer.ts": "ef9292de4ef52d25794c0c9817b5575234c8adb285293e5dca5faddfd0b29924"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_zlib_oracle": "macOS libz via GuestZlib, with complete 112-byte guest stream comparisons",
+  "host_libz_version": "1.2.12",
+  "native_zlib_vector_cases": {
+    "cases": {
+      "valid": 168,
+      "invalid": 5,
+      "truncated": 5
+    },
+    "stream_calls": 43284
+  },
+  "node_public_stream_cases": 987,
+  "node_corruption_cases": 4,
+  "node_boundary_or_unsupported_cases": 6,
+  "node_host_behavior_cases": 2,
+  "node_host_rejection_cases": 16,
+  "native_standard_vector_cases_rechecked": {
+    "md5": 25,
+    "sha1": 31,
+    "base64": 38,
+    "crc": 31,
+    "hmac": 129
+  },
+  "native_buffer_string_vectors_rechecked": 440,
+  "native_runtime_program_cases_rechecked": 5,
+  "python_regression_tests": 21,
+  "runtime_import_calls_per_input": {
+    "inflateInit_": 3,
+    "inflate": 31,
+    "inflateEnd": 3
+  },
+  "runtime_completed_stream_lengths": [
+    {
+      "compressed": 47308,
+      "decompressed": 306065
+    },
+    {
+      "compressed": 85368,
+      "decompressed": 86480
+    },
+    {
+      "compressed": 656,
+      "decompressed": 1230
+    }
+  ],
+  "native_zlib_event_sequences_equal": true,
+  "native_zlib_runtime_fallback_forbidden": true,
+  "native_libz_runtime_calls_in_ts_runs": 0,
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "ts_vm_invocations_per_input": 76,
+  "ts_vm_instructions_per_input": [
+    321675,
+    321855
+  ],
+  "observed_opcode_kinds": 73,
+  "native_abi": {
+    "stream_bytes": 112,
+    "offsets": [
+      0,
+      8,
+      16,
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      88,
+      96,
+      104
+    ],
+    "version_metadata": "1.2.11",
+    "flush": 0,
+    "custom_allocators": false,
+    "active_stream_limit": 1
+  },
+  "limits": {
+    "single_input_or_output_bytes": 16777216,
+    "cumulative_output_bytes": 16777216,
+    "history_bytes": 32768,
+    "native_wrapper_chunk_bytes": 16384,
+    "pipe_chunk_bytes": 4096,
+    "pipe_operations_per_call": 65536
+  },
+  "state_fixes_found_by_oracle": [
+    "repeat Huffman symbol is retained until its extra bits are available",
+    "TYPE is distinct from TYPEDO when recording data_type at exhausted input"
+  ],
+  "unsupported": [
+    "preset dictionaries",
+    "gzip and raw deflate formats",
+    "nonzero inflate flush modes",
+    "custom allocators and opaque allocator state",
+    "concurrent active streams",
+    "compression",
+    "requests outside explicit bounds"
+  ],
+  "remaining_dependencies": [
+    "native algorithm/object wrappers and other decoding hosts",
+    "module loading, initialization and expansion",
+    "SDS and SDK/device/platform state"
+  ],
+  "raw_candidates_keys_entropy_resources_memory_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false
+}

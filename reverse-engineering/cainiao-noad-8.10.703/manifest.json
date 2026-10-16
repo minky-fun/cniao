@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 72667,
-    "sha256": "508c30218bc634f5abecec4f92adb8103226921024554e43251e89997ba38e33"
+    "bytes": 77328,
+    "sha256": "44aecaaa1d20d1d97925cd417a4c3f90d16474763845d482c10ea732cfa88e28"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -295,6 +295,16 @@
     "sha256": "19076fa8d1f88ce4088b043ee6bbda010f39cf757e101f499a8f586f53f41ad9"
   },
   {
+    "file": "signature/portable-inflate-evidence.json",
+    "bytes": 20934,
+    "sha256": "98b1ca4afb268fce6eff799709fc645ddf057aefc415e9e176b739410fdbb463"
+  },
+  {
+    "file": "signature/portable-inflate-validation.json",
+    "bytes": 4291,
+    "sha256": "da0e964dc6e5671cbbe004bfebb2ce2f608ac9daa5e2876440d2940cfd07a9fd"
+  },
+  {
     "file": "signature/portable-vm-aes-combined-evidence.json",
     "bytes": 1523,
     "sha256": "60e7a0f8bfcfe954f7496cbe16727ee895680d95736700a8b6dd0cb8a81024df"
@@ -395,6 +405,11 @@
     "sha256": "387fb31a9dc6f80076ada98efbe05b842112a2b2a452112bb05c4aa92959bff6"
   },
   {
+    "file": "signature/portable_inflate.ts",
+    "bytes": 12758,
+    "sha256": "7faa19af49dfee0515d90d9086ce106fd81d68f54d7cca42a05a6450b7bf51f8"
+  },
+  {
     "file": "signature/portable_vm_abi.ts",
     "bytes": 5239,
     "sha256": "069ced89daa8cd20bc9d33322b3dd26cb5ae5ffabe247053dff99b6bcd7a222d"
@@ -438,6 +453,11 @@
     "file": "signature/portable_vm_scalar.ts",
     "bytes": 805,
     "sha256": "915f8c03e4d88528a531cdf364365343b8cd050f7a187adef2492ed2beeec33a"
+  },
+  {
+    "file": "signature/portable_zlib_host.ts",
+    "bytes": 3910,
+    "sha256": "1ecac86afc4f14f49eb4432b43a43aad85d246a83513138195ad1ddf13a95d02"
   },
   {
     "file": "signature/probe_native.py",
@@ -680,6 +700,11 @@
     "sha256": "6e13aa6803811c0dadd94bb1f270cb8a96fe87b594fdc3c5b8375dc7a125ec0f"
   },
   {
+    "file": "signature/test_portable_inflate.cjs",
+    "bytes": 3478,
+    "sha256": "16217b738c626d1e7ef1db3bcc2a0b1646aeca907dbb46d0e752f695296867b7"
+  },
+  {
     "file": "signature/test_portable_vm_abi.cjs",
     "bytes": 4404,
     "sha256": "d497b8450f0cd04960ddc511bd7d45c53b12aaccc80bae7d7a38aa6aedbb66f4"
@@ -718,6 +743,11 @@
     "file": "signature/test_portable_vm_scalar.cjs",
     "bytes": 1081,
     "sha256": "ff285d9812530954028ffc5c07acc393a099390065b01d3a9ace8db16631a96c"
+  },
+  {
+    "file": "signature/test_portable_zlib_host.cjs",
+    "bytes": 5359,
+    "sha256": "592ab09cc4ae7a790f4e63ec206741a04edcf8eae416c9821e142aa00f75f845"
   },
   {
     "file": "signature/test_sign_input.py",
@@ -798,6 +828,11 @@
     "file": "signature/verify_portable_digest.py",
     "bytes": 11642,
     "sha256": "93d2b13afbb9d1c7422c4dc5e80a777569b61eb7fd64152a77ffed7f8ef16d26"
+  },
+  {
+    "file": "signature/verify_portable_inflate.py",
+    "bytes": 12036,
+    "sha256": "0f1e472025ae2a2d9ed4feda2e7e073689b95215240035c3dd72d3afecae0b78"
   },
   {
     "file": "signature/verify_portable_vm_abi.py",
@@ -968,6 +1003,11 @@
     "file": "signature/vm_scalar_worker.cjs",
     "bytes": 746,
     "sha256": "c5704f19fd6834509c8dc19cea83c8954e3fa9477665eaf381abb14ccde2efdf"
+  },
+  {
+    "file": "signature/zlib-runtime-contract.asm",
+    "bytes": 7512,
+    "sha256": "dad267ec007112dd296c21aa2fa4a02ff97de4470fef82b6eef353bd7d7bd2af"
   },
   {
     "file": "原生认证分析.md",

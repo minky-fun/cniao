@@ -602,3 +602,40 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 只运行 254 组标准算法原生向量；独立算法与接口检查分别用 `test_portable_digest.cjs <compiled portable_digest.js>`、`test_portable_crypto_host.cjs <compiled portable_crypto_host.js>`。
+
+
+## 流式 zlib 解压迁移（2026-10-16）
+
+新增 `portable_inflate.ts`，用纯 TypeScript 实现签名路径实际使用的 RFC 1950/1951 解压，不依赖 Node zlib、系统 libz 或 Web 原生解压接口。支持 stored、固定 Huffman、动态 Huffman、重复码、长度/距离扩展位和重叠回溯，保留 32 KiB 历史窗口，逐步计算 Adler-32。输入不足和输出窗口用完可以续接，不以一次性解压替代流式状态。
+
+`portable_zlib_host.ts` 实现已核实的 Darwin LP64 112 字节 `z_stream` 适配器，入口分别为 `0x104431184`（inflateInit_）、`0x104431160`（inflate）、`0x10443116c`（inflateEnd）。保留输入输出指针、剩余容量、累计计数、data_type、adler、状态 token 和公开错误消息分配。原生包装器按 16 KiB 输入/输出窗口调用这些入口，仍由原生执行。TS 内部状态通过显式内存/堆接口访问 guest；实际流数据只存在于进程和有界管道。
+
+验证结果：
+
+- Node 独立公开输入 **987 组流式解压**通过，包含不同压缩等级、三种块类型、1 字节输入/输出窗口、258 字节匹配边界、跨 16/32 KiB 边界和 306,065 字节输出。另有 4 组损坏流、6 组边界/不支持条件测试；宿主 ABI 行为 2 组、拒绝条件 16 组通过。
+- 与系统 libz **178 组、43,284 次逐调用对照**通过：168 组合法流、5 组损坏流、5 组截断流。比较每次返回、全部 112 字节流结构、输入/输出字节、状态及消息分配。对照发现并修正了重复码需等待扩展位、TYPE/TYPEDO 在输入耗尽时 data_type 不同这两个状态细节。
+- 两组完整签名路径均完成 **3 次流初始化、31 次 inflate、3 次结束**；压缩/解压长度依次为 47,308→306,065、85,368→86,480、656→1,230 字节。每次返回与累计输入/输出事件序列分别与原生一致。TS 轮次禁止建立旧 GuestZlib 运行时适配器；系统/Python zlib 仅用于原生基线、公开向量和独立复算 oracle。
+- 独立 TS VM、对象、AES、摘要与解压同时替换后，仍各完成 76 次 TS VM 调用，执行 321,675 / 321,855 条指令，覆盖全部 73 种已观察操作码。候选及逐操作码次数仍与原生一致，改变输入仍改变候选。原有 440 组对象、254 组标准算法、5 组完整 VM 程序随联合对照重新通过；严格 TypeScript、21 项 Python 回归通过。
+
+支持范围是当前路径的标准 zlib 包装流、Z_NO_FLUSH、零自定义分配器、精确版本元数据和单活动流。预置字典、gzip/raw deflate、其他 flush 模式、自定义分配器及超出 16 MiB 请求/累计输出上限均不作为已支持功能。没有实现压缩端。畸形流的对照覆盖上述测试，不宣称替代 libz 的所有错误边界。
+
+证据：`portable-inflate-evidence.json`、`portable-inflate-validation.json`、`zlib-runtime-contract.asm`。未导出原始候选、密钥、随机熵、安全资源或内存。完整本地签名器尚未完成：原生算法/对象包装器、模块加载/初始化/展开、SDS 与 SDK/设备状态仍需移植。未联网验签、未做 iPhone 桌面验证；小组件和 1.1.5 安装包未改。
+
+### 复现流式解压联合对照
+
+严格编译时加入 `portable_zlib_host.ts`（自动编译 `portable_inflate.ts` 和摘要依赖），保留此前 VM、ABI、host、AES 模块。然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_inflate.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-inflate work/signature-analysis/portable-build/portable_zlib_host.js \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 可只运行 178 组 ABI 对照。Node 检查使用 `test_portable_inflate.cjs <compiled portable_inflate.js>`、`test_portable_zlib_host.cjs <compiled portable_zlib_host.js>`。协议和状态机行为参考 RFC 1950/1951 及 [zlib 1.2.11 inflate.c](https://github.com/madler/zlib/blob/v1.2.11/inflate.c)，实际 ABI 另由原生调用与公开向量确认。
