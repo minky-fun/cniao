@@ -1,0 +1,126 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "native offline type-19 path with real-format public MTOP fixtures; not a complete portable signer or server validation",
+  "runs": [
+    {
+      "scenario": "baseline",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000000,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    },
+    {
+      "scenario": "repeat",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000000,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    },
+    {
+      "scenario": "clock",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000001,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    },
+    {
+      "scenario": "session",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000000,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    },
+    {
+      "scenario": "timestamp",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000000,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    },
+    {
+      "scenario": "data",
+      "input_bytes": 214,
+      "candidate_bytes": 50,
+      "clock_seconds": 1800000000,
+      "clock_microseconds": 123456,
+      "clock_import_calls": {
+        "_gettimeofday": 2,
+        "_time": 5
+      },
+      "arc4random_calls": 816,
+      "same_entropy_replay_complete": true,
+      "vm_returned_with_output": true,
+      "error_slot_is_success_criterion": false,
+      "sdk_initialization_complete": false
+    }
+  ],
+  "equals_baseline": {
+    "repeat": true,
+    "clock": true,
+    "session": false,
+    "timestamp": false,
+    "data": false
+  },
+  "clock_only_changes_candidate": false,
+  "raw_input_exported": false,
+  "candidate_values_exported": false,
+  "entropy_values_exported": false,
+  "account_or_device_data_read": false,
+  "network_requests_sent": 0,
+  "retained_dependencies": [
+    "native module loaders and binding",
+    "native SDK/SDS/crypto object wrappers",
+    "synthetic empty state directory",
+    "single-thread and limited Objective-C model",
+    "monitoring side effects omitted"
+  ],
+  "x_mini_wua_generated": false,
+  "complete_portable_signer": false,
+  "server_verified": false,
+  "iphone_verified": false
+}

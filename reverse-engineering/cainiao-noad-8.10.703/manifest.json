@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 99173,
-    "sha256": "a76ef0f55e545b8dd547262a857932d869bbf015fb541f4ea9c8ffa782eb5d43"
+    "bytes": 103830,
+    "sha256": "3d4b19b30d51e87b8902a4aa0e108a136c118b10a56a22607650f9cc6407d944"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -143,6 +143,11 @@
     "file": "signature/guest_bsd_random.py",
     "bytes": 2019,
     "sha256": "57e5fc382d9dcb533aa60124c5974cc000d7809a495ebe72880b8ff73714266f"
+  },
+  {
+    "file": "signature/guest_clock.py",
+    "bytes": 1828,
+    "sha256": "67963a1acbcca0408dd293fc6f4194f7cf3eef12979b80b271546aa9348f1ee8"
   },
   {
     "file": "signature/guest_empty_state.py",
@@ -251,8 +256,8 @@
   },
   {
     "file": "signature/module_container.py",
-    "bytes": 2123,
-    "sha256": "0be9520c6307d3a2c8483ffef8049ffe83a011cfb30307a04b0b9bbf18a52ebc"
+    "bytes": 2293,
+    "sha256": "de6c2cbd7ec79b52948ad1a53de5d85f61a99246648f43cd1c238d859ba1afb1"
   },
   {
     "file": "signature/module_validation_host.ts",
@@ -590,6 +595,16 @@
     "sha256": "12a3836553a1abceb577b9af380de08a01e1e97d0911debd91f11af732b1bec1"
   },
   {
+    "file": "signature/probe_signing_boundary.py",
+    "bytes": 9052,
+    "sha256": "2f8588b08695073f137c88e715906e2b3d59399f36239d8033bf72e29a36f460"
+  },
+  {
+    "file": "signature/probe_unified_boundary.py",
+    "bytes": 13521,
+    "sha256": "0afb7b65f22598ea1b6255cb5e68780cd025309d8746405b640dca848cc38785"
+  },
+  {
     "file": "signature/probe_vm.py",
     "bytes": 24938,
     "sha256": "cd180c7cd9d80a13cb48ace7d23e9f322ee586d9ef8a79755dc893956be9c69e"
@@ -765,6 +780,16 @@
     "sha256": "ef5a0d1e5b334d43932827a67b08f39b1c1b93ddbc5fdd7755865003c596dd04"
   },
   {
+    "file": "signature/signing-boundary-evidence.json",
+    "bytes": 3711,
+    "sha256": "4d2e7951e89c84d213a82d13ec5874572d104b190c73c0fdcb632fc4eea3d545"
+  },
+  {
+    "file": "signature/signing-boundary-validation.json",
+    "bytes": 830,
+    "sha256": "a0152ff6800390395a88520061d17d4e6394df26df054f76b89aec91459dcabe"
+  },
+  {
     "file": "signature/standard-crypto-runtime-contract.asm",
     "bytes": 17570,
     "sha256": "88d53c847f5b76470538daf96ec8624aa876c491cfe52646c2dca486e1619142"
@@ -785,6 +810,11 @@
     "sha256": "e28e0efdc8ac5157a44df4906ae2033367981c315a2d3dfd76104cd6b8e42a93"
   },
   {
+    "file": "signature/test_guest_clock.py",
+    "bytes": 3244,
+    "sha256": "66a6e67c4d233fdd8b026ab0407758b52a651c20409de2c839e05a4ed4e8fa80"
+  },
+  {
     "file": "signature/test_guest_empty_state.py",
     "bytes": 3833,
     "sha256": "e46aaae202c4425c3c337c9bc93dca7247b88d42c3c4857980d07afcb12e27d0"
@@ -796,8 +826,8 @@
   },
   {
     "file": "signature/test_module_container.py",
-    "bytes": 3175,
-    "sha256": "8f258535c2853dbb992bbfc679808391e861659e5f3a22cb8f328d530ddb072c"
+    "bytes": 4214,
+    "sha256": "3fe4a06fccf0366b13b200aeb5be75cab3860092f148902d34de9baf3e4b7bd5"
   },
   {
     "file": "signature/test_native_printf.py",
@@ -910,6 +940,16 @@
     "sha256": "ff3fbdeaa42c6ab676b178b7444769041a6aefb672163ca66761f20ef7c0669d"
   },
   {
+    "file": "signature/test_signing_boundary.py",
+    "bytes": 2306,
+    "sha256": "71d77e198abae9993a9f7f4ab0f46f9ba27e16a9c95074f014ee6973d949cb49"
+  },
+  {
+    "file": "signature/test_unified_boundary.py",
+    "bytes": 3870,
+    "sha256": "2c35b781ee23d1f68fe05fc6ec9bd0ab953f37ec8db327031be3fdf3fbc990fb"
+  },
+  {
     "file": "signature/test_vm_callback.py",
     "bytes": 1850,
     "sha256": "7aae7ac9609db3d16dbe525384e7eeee9509ce63cd0650dea9e7ca64d41c05f8"
@@ -930,6 +970,16 @@
     "sha256": "1f72142e8c17e4ce7d09bf4836c03dbb620d98f6e7ea66b5ccf14134030f8035"
   },
   {
+    "file": "signature/unified-boundary-evidence.json",
+    "bytes": 3155,
+    "sha256": "73477934f11cb4be104616126e7ff49e8b3f86594386bf9606f493635fdfebc7"
+  },
+  {
+    "file": "signature/unified-boundary-no-route-evidence.json",
+    "bytes": 2852,
+    "sha256": "344c4c85ebee2362d088acfb63023a4acf2557057424093cd8de2d20713bd723"
+  },
+  {
     "file": "signature/unified-command-handler.asm",
     "bytes": 5301,
     "sha256": "344a33ba43e4415f40d3109d01bb595d4d3a2503a6d4b650a540c052306a7dd1"
@@ -938,6 +988,11 @@
     "file": "signature/unified-command-registration.asm",
     "bytes": 2924,
     "sha256": "6242cfea82a235babe8a7095260939f0fc44c50e40a79b4ea22b04960518fd24"
+  },
+  {
+    "file": "signature/unified-dependency-contract.asm",
+    "bytes": 3864,
+    "sha256": "106fae2c63b493dfab3d4e3be383acc488e1c4a894373708f084c8df2dedb3c6"
   },
   {
     "file": "signature/unified.asm",
@@ -958,6 +1013,11 @@
     "file": "signature/verify_ios_state.m",
     "bytes": 547,
     "sha256": "3fb7a0819cf8246d794ddb1f1dd8adc8afce9ed02945a967a08571b2901c8a64"
+  },
+  {
+    "file": "signature/verify_ios_time.c",
+    "bytes": 610,
+    "sha256": "47f4b3dd3c3df01a3a8cd43e355f8c48b3ae1b44ffbe257f5b395116aecf63ea"
   },
   {
     "file": "signature/verify_ios_zlib.c",

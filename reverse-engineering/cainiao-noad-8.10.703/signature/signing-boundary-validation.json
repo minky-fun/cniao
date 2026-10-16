@@ -1,0 +1,24 @@
+{
+  "scope": "offline native feasibility and dependency assessment; no TS or widget business changes",
+  "python_regression_tests": 38,
+  "python_regressions_passed": true,
+  "ios_time_abi_compile": {
+    "target": "arm64-apple-ios16.0",
+    "sdk": "iPhoneOS 18.4",
+    "syntax_only": true,
+    "passed": true
+  },
+  "ordinary_native_comparison_runs": 6,
+  "unified_native_route_cases": 2,
+  "missing_library_negative_case": true,
+  "library_and_unified_loaded_after_dependency": true,
+  "full_portable_signer_implemented": false,
+  "new_mtop_fixtures_compared_with_ts_runtime": false,
+  "objc_wrapper_conformance_verified": false,
+  "network_requests_sent": 0,
+  "server_verified": false,
+  "iphone_verified": false,
+  "widget_package_version": "1.1.5",
+  "widget_or_package_changed": false,
+  "private_values_exported": false
+}

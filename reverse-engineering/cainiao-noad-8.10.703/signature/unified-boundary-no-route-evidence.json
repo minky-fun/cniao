@@ -1,0 +1,117 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "native Unified dependency and raw-ABI synthetic execution boundary; not the Objective-C wrapper, portable signer, or server validation",
+  "without_library": {
+    "bizid": "lvm_unifiedsec",
+    "source": "0x10669a7c8",
+    "container_bytes": 34317,
+    "bytecode_bytes": 68792,
+    "business_bindings": 17,
+    "load_status": 42,
+    "diagnostic_fields": [
+      42,
+      2
+    ],
+    "missing_library": "lvm_minilibc"
+  },
+  "library": {
+    "bizid": "lvm_minilibc",
+    "source": "0x106672500",
+    "container_bytes": 65119,
+    "bytecode_bytes": 139708,
+    "business_bindings": 0,
+    "load_status": 0
+  },
+  "with_library": {
+    "bizid": "lvm_unifiedsec",
+    "source": "0x10669a7c8",
+    "container_bytes": 34317,
+    "bytecode_bytes": 68792,
+    "business_bindings": 17,
+    "load_status": 0
+  },
+  "native_route": {
+    "ids": [
+      2,
+      23,
+      1,
+      0
+    ],
+    "target": "0x102ba9304",
+    "registration_callsite": "0x102ba9980",
+    "synthetic_registration_table_only": true,
+    "enabled": false
+  },
+  "raw_abi": {
+    "request_bytes": 216,
+    "output_slots": 6,
+    "input_mode": "security-factors",
+    "input_fields": 22,
+    "use_wua": 0,
+    "optional_fields": "explicitly empty; no device values guessed",
+    "objc_wrapper_conformance_verified": false
+  },
+  "execution": {
+    "vm_status": null,
+    "boundary": {
+      "kind": "uninitialized_command",
+      "ids": [
+        2,
+        23,
+        1,
+        0
+      ]
+    },
+    "nonzero_output_slots": [],
+    "error_slot_at_stop": 0,
+    "error_slot_is_final": false,
+    "observed_commands": [
+      [
+        1,
+        37,
+        1,
+        1
+      ],
+      [
+        2,
+        23,
+        1,
+        0
+      ]
+    ]
+  },
+  "link_only_symbols": [
+    "fchmod",
+    "socketpair"
+  ],
+  "link_only_execution": null,
+  "loader_environment_queries": [
+    "UVM_LD_LIBRARY_PREFIX",
+    "UVM_LD_LIBRARY_SUFFIX",
+    "UVM_LD_LIBRARY_EXTENSION",
+    "UVM_LD_LIBRARY_PATH"
+  ],
+  "extra_import_calls": {
+    "_getenv": 4,
+    "_strncpy": 1
+  },
+  "execution_limits": {
+    "timeout_per_run_us": 40000000,
+    "instruction_limit_per_run": 50000000
+  },
+  "synthetic_dependencies": [
+    "explicit nonzero clock and UTC timezone",
+    "empty synthetic SDK state directory",
+    "single-thread locks/TLS and deferred frees",
+    "limited Objective-C bundle model",
+    "four loader environment variables explicitly unset without reading host environment",
+    "fchmod/socketpair link-only slots trap if executed"
+  ],
+  "monitor_calls_with_omitted_side_effects": 7,
+  "private_values_exported": false,
+  "network_requests_sent": 0,
+  "sdk_initialization_complete": false,
+  "complete_portable_signer": false,
+  "server_verified": false,
+  "iphone_verified": false
+}

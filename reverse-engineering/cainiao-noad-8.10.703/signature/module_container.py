@@ -20,8 +20,10 @@ def inflate_exact(data):
     return result
 
 
-def parse_container(data):
-    """按原生容器长度拆分代码与元数据流，并校验元数据的命令绑定。"""
+def parse_container(data, *, allow_empty_bindings=False):
+    """校验双流与命令绑定；仅显式库模块模式允许没有业务命令导出。"""
+    if type(allow_empty_bindings) is not bool:
+        raise TypeError('空绑定选项必须为布尔值')
     if len(data) < 4 or len(data) > MAX_MODULE_BYTES:
         raise ValueError('模块容器长度无效')
     code_size = struct.unpack_from('<I', data)[0]
@@ -35,7 +37,7 @@ def parse_container(data):
         bizid = metadata['basic']['bizid']
     except (ValueError, KeyError, TypeError, UnicodeDecodeError) as error:
         raise ValueError('模块元数据无效') from error
-    if not isinstance(bizid, str) or not isinstance(bindings, list) or not bindings:
+    if not isinstance(bizid, str) or not isinstance(bindings, list) or (not bindings and not allow_empty_bindings):
         raise ValueError('模块标识或绑定列表无效')
     for binding in bindings:
         if not isinstance(binding, dict) or any(type(binding.get(key)) is not int for key in ('index', 'destIndex')):

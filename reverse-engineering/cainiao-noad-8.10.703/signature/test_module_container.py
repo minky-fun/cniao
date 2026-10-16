@@ -64,6 +64,22 @@ class ModuleContainerTests(unittest.TestCase):
             with self.subTest(offset=offset), self.assertRaises(ValueError):
                 parse_container(data)
 
+    def test_explicit_library_mode(self):
+        """只在显式库模式接受空绑定；其他格式与绑定错误仍严格拒绝。"""
+        sample = sample_container({'basic': {'bizid': 'public-library'}, 'metainfo': '[]'})
+        code, metadata, bindings = parse_container(sample, allow_empty_bindings=True)
+        self.assertEqual(len(code), 112)
+        self.assertEqual(metadata['basic']['bizid'], 'public-library')
+        self.assertEqual(bindings, [])
+        with self.assertRaises(ValueError):
+            parse_container(sample)
+        for metainfo in ('{}', '[{"index":true,"destIndex":1}]', '[{"index":1}]'):
+            with self.subTest(metainfo=metainfo), self.assertRaises(ValueError):
+                parse_container(sample_container({'basic': {'bizid': 'public-library'}, 'metainfo': metainfo}), allow_empty_bindings=True)
+        for option in (1, None, 'yes'):
+            with self.subTest(option=option), self.assertRaises(TypeError):
+                parse_container(sample, allow_empty_bindings=option)
+
 
 if __name__ == '__main__':
     unittest.main()

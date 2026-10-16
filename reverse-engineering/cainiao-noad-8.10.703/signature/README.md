@@ -4,6 +4,8 @@
 
 已还原 MTOP 输入构造，并让真实 `lvm_sig` 类型 19 路径在离线环境返回 **50 字节签名候选字符串**。现在解释循环、全部 **73 类已观察操作码**、调用控制、简单/复杂整数 ABI、公共函数/命令桥接以及 17 次 AES 已迁移至 TypeScript。两组输入分别执行 321,675 / 321,855 条 TS VM 指令，逐操作码次数与原生一致；TS 对照中原生 VM 入口以下的处理器与派发循环执行次数为 **0**，候选结果与相同输入/熵下的原生结果一致。
 
+最新端到端评估：非零时间下的六组真实格式 MTOP 合成输入对照通过；统一安全模块缺少 `lvm_minilibc` 的加载错误已解决，现停在进入 `One.play:` 前的 Objective-C 依赖。详细边界和复现见文末。
+
 **仍未完成可脱离原生运行时的完整签名器和服务端验证**：实际宿主计算与对象操作、模块装载/初始化/展开、SDS/SDK 状态及平台依赖尚未全部迁移。候选不能宣称为可替代客户端的 `x-sign`，也未完成 `x-mini-wua`、`wua` 或 `x-sgext`。本目录离线探针未接入小组件。下文保留历次边界，最新进展见文末。
 
 样本为本目录上级归档的 8.10.703 去广告 IPA，主程序 SHA-256：`d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61`。地址均为该 Mach-O 的未滑移虚拟地址。本次分析未访问账号、未发送认证请求。
@@ -809,3 +811,41 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 只运行 137 组公开原生校验向量。Node 检查为 `test_portable_module_header.cjs <compiled portable_module_header.js>`；Python 回归仍使用 `python -B -m unittest discover -s reverse-engineering/cainiao-noad-8.10.703/signature -p 'test_*.py'`。
+
+
+## 真实格式输入与统一安全因子依赖评估（2026-10-16）
+
+本轮改为检查最小端到端路径。`probe_signing_boundary.py` 沿用真实原生加载器、SDS 和类型 19 导出入口，把合成 INPUT 换成已还原的 **21 个 MTOP 槽位**，显式使用非零时间（秒 1800000000、微秒 123456），仍只处理公开测试文字。六组冷启动运行均返回 50 字节候选，全部消耗相同的 816 次系统熵：
+
+| 对照 | 与基线候选的关系 |
+| --- | --- |
+| 相同输入、相同时钟、相同熵 | 相等 |
+| 仅系统时钟增加一秒，INPUT 不变 | 相等 |
+| 仅 x-sid 改变 | 不等 |
+| 仅 INPUT 内的 x-t 改变 | 不等 |
+| 仅 data JSON 改变、重新计算其 MD5 | 不等 |
+
+这些是**原生离线候选对照**，未把本轮所有新输入再与 TS 联合对照，也没有证明服务端接受候选。仅改变系统时钟时相等，结论限于这两组时钟及相同熵；不能推广为时钟始终无关。`guest_clock.py` 的 Darwin time/timeval 布局另由 iPhoneOS 18.4 SDK、arm64 编译断言和公开内存测试核对；timeval 尾部四字节 padding 保留。
+
+`probe_unified_boundary.py` 进一步执行真实 `lvm_unifiedsec` 原生加载。缺库时返回 **42**，上下文诊断为 `(42,2)`，名称为 `lvm_minilibc`。已从同一 IPA 定位库容器 **0x106672500 / 65119 字节**，代码解压后 **139708 字节**，其业务 metainfo 确实为 `[]`。容器解析器增加显式 `allow_empty_bindings=True` 库模式，原有默认拒绝空绑定的行为保留。先加载该库后，库和统一安全模块的原生加载都返回 **0**。
+
+加载模型还明确要求四个 `UVM_LD_LIBRARY_*` 变量为空，不读取宿主环境。`fchmod` 和 `socketpair` 只提供隔离链接槽；执行这些槽会中断。本轮两个槽均未执行，没有把它们当成已实现的系统调用。
+
+Unified 原始 ABI 探针使用已核对包装器偏移的 **216 字节请求、6 个输出槽、22 槽 INPUT**，useWua 为 0，可选内容显式为空；**未验证完整 Objective-C 包装器与该合成结构的等价性**。首次执行请求 `(2,23,1,0)`。独立执行注册片段核对了注册点 **0x102ba9980 → 处理器 0x102ba9304**，接入后实际执行该处理器，并继续到 Objective-C `stringWithUTF8String:`：返回地址 **0x102b9abe8**。没有强行返回字符串、类对象或业务成功值。此处后续原生指令将查询主程序中确有声明的 `One` 类和 `play:` 选择子；类/选择子查询及最终方法调用本轮尚未执行。
+
+开关该真实路由的两组独立运行分别停在缺少 `(2,23,1,0)`、上述 Objective-C 调用，六个输出槽均为空。错误槽 0 是中间状态，**不是安全因子生成成功**。监控副作用仍按既有切片明确省略，锁/TLS、空状态目录与有限对象模型仍是研究环境；单次执行上限 40 秒、5000 万条指令。
+
+证据：`signing-boundary-evidence.json`、`unified-boundary-evidence.json`、`unified-boundary-no-route-evidence.json`、`signing-boundary-validation.json`、`unified-dependency-contract.asm`。Python **38 项回归通过**。未导出输入、appKey、候选、随机熵或解码安全资源；未发送网络请求。
+
+**完整本地签名器仍未完成。** 普通签名离线一致性与统一安全模块加载已取得进展，但还需继续还原 Foundation/`One.play:` 的真实调用、核对 Unified 包装器参数及初始化状态、完成原生剩余依赖移植，最后验证安全因子和服务端验签。小组件查询、自动续期与 **1.1.5 安装包保持不变**，没有把研究探针接入生产请求。
+
+复现（macOS、已配置的研究 Python 环境）：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_signing_boundary.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_unified_boundary.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+第二条附加 `--without-native-route` 可复现尚未提供 `(2,23,1,0)` 的负例。时间 ABI 编译检查为 `xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fsyntax-only signature/verify_ios_time.c`，从归档根目录执行。未完成任何 iPhone 或服务端验证。
