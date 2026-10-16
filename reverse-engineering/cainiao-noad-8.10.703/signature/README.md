@@ -675,3 +675,50 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 只运行 230 组模块 ABI 对照。Node 检查使用 `test_portable_vm_module.cjs <compiled portable_vm_module.js>`。
+
+## 打包指令展开的 TS 迁移（2026-10-16）
+
+新增 `portable_packed_expand.ts`，替换固定样本的 `0x102a5a97c` 指令展开入口。原函数使用混淆跳转、整数位域提取及相邻指令合并；本次没有猜测人工操作码映射，而是将已核实的 **2,188 个指令位置**生成纯 TS 整数运算和控制流，保留 32/64 位截断、有符号扩展、比较条件及读写宽度。31 处固定控制常量只包含跳转偏移和混淆控制数值，已随函数代码移入 TS；执行展开函数时不再从原生函数体或原生控制表读取这些值。
+
+这是固定样本的受限指令转译，不是通用 ARM 模拟器，也不是已精简的人工语义实现。`generate_packed_expand.py` 从 `packed-expand-contract.asm` 和 `packed-expand-control.json` 重建 TS 前，会校验 IPA 主程序摘要、每条指令及控制数值；`--check` 核对生成结果与仓库源码一致。遇到未收录路径、未核实控制表访问或超出边界的输入时直接拒绝，不回退原生展开。
+
+验证结果：
+
+- **2,418 组独立原生对照通过**：空/单字流 2、主操作码与子字段 1,024、位边界 128、相邻主操作码组合 1,024、多指令混合流 240。比较返回位、完整模块元数据、全部展开输出及未写填充字节、来源不变性和堆操作。原生栈及输出填充在测试中变化，TS 使用私有 scratch。
+- 首次扩大合成对照和首次接回实际离线路径时，分别发现未收录分支；实现均拒绝执行。补入核实的代码位置和对应控制常量后，全部对照通过，没有以伪成功或原生回退掩盖缺失路径。
+- 两组完整离线签名路径各将 **2 次模块展开交给 TS**。原生基线的展开缓冲区只在同一验证进程内短暂保留，逐字节核对 TS 的完整展开结果；两次模块均一致，原生展开函数体进入次数为零。未导出这些缓冲区或其摘要。
+- 联合此前 TS VM、对象、AES、摘要、解压和模块准备替换后，两组仍各完成 76 次 VM 调用，执行 321,675 / 321,855 条指令，覆盖 73 种已观察操作码。候选及逐操作码次数与原生一致，改变输入仍改变候选。230 组模块准备、440 组对象、254 组标准算法、178 组 zlib ABI（43,284 次调用）及 5 组完整 VM 程序在本次联合对照中重新通过。另有 7 组 Node 行为、17 组拒绝条件、严格 TypeScript、生成源码一致性和 21 项 Python 回归通过。
+
+内存契约是 336 字节模块元数据、`count * 4` 字节输入、`count * 16` 字节输出及私有 528 字节 scratch；输入计数上限为 65,536。原生合并处理可能读取计数边界后的一个字，TS 只接受调用方实际映射的 4 字节，不补零。模块、输入、输出重叠或与私有 scratch 地址冲突均拒绝。计算阶段失败时不提交缓冲的输出，不声称保留原生故障发生前的部分写入行为。为兼容返回共享视图的内存适配器，元数据、来源与输出均先复制到私有缓冲区；新增共享视图用例先复现失败前改写输出的问题，修复后通过。写回阶段的底层内存故障不属于事务回滚保证。
+
+继续核对 `0x102a514ec` 后确认：进程级初始化还涉及锁、TLS/析构回调、全局分配、可选回调及三项初始化辅助函数。现有构造器仍要求已初始化状态，不能把设置标志位视为这些步骤的实现。模块加载、其余原生算法/对象包装器、SDS 与 SDK/设备状态仍有依赖，**完整本地签名器尚未完成**。未联网验签或 iPhone 桌面验证；小组件查询、自动续期及 1.1.5 安装包未改。
+
+证据：`portable-expand-evidence.json`、`portable-expand-validation.json`。没有导出候选原文、密钥、随机熵、解码字符串、安全资源或运行内存。
+
+### 复现展开函数联合对照
+
+先校验生成源码：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/generate_packed_expand.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa --check
+```
+
+严格编译时加入 `expand_validation_host.ts`，保留此前 VM、ABI、host、AES 模块。运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_expand.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-expand work/signature-analysis/portable-build/expand_validation_host.js \
+  --portable-module work/signature-analysis/portable-build/module_validation_host.js \
+  --portable-inflate work/signature-analysis/portable-build/portable_zlib_host.js \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 只运行 2,418 组公开展开函数向量。Node 检查使用 `test_portable_packed_expand.cjs <compiled portable_packed_expand.js>`。

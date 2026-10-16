@@ -1,0 +1,108 @@
+{
+  "source_sha256": {
+    "portable_packed_expand.ts": "01de0d1a3b61ee3d9a53647f8ffe606e5f6dfd977a29517776e7685928e4909b",
+    "generate_packed_expand.py": "2d590a2dc816f62b64cd1e79d7d0ecdf2183031e0062439e2dac9d48f40b2d0c",
+    "packed-expand-contract.asm": "3e7461a0381e7f5e728bbb75d0049be26cefcb94ea6f42b6b2a9186a48dea225",
+    "packed-expand-control.json": "43135406cdb7dee0ddda56656d64e28502681ec3d2620d3157394b5c46c324ca",
+    "expand_validation_host.ts": "919178522b63514067ad82a5ec9deb770e52c499ac7bbb3c662d730c5d9d1e6e",
+    "verify_portable_expand.py": "224ab35a0ae1f108c458364cd57fde804ccb86336e43efa669f3d518cff1c7f0",
+    "test_portable_packed_expand.cjs": "f27a1fd999deda84656abbe1f8c2c95d20f92a4e0b4935ef24aeba17fec8458b"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "generated_source_matches_verified_sample": true,
+  "fixed_instruction_locations": 2188,
+  "fixed_control_metadata_reads": 31,
+  "native_packed_expander_vectors": {
+    "empty": 2,
+    "primary_and_subfields": 1024,
+    "bit_boundaries": 128,
+    "adjacent_primary_pairs": 1024,
+    "mixed_streams": 240
+  },
+  "node_public_behavior_cases": 7,
+  "node_public_rejection_cases": 17,
+  "python_regression_tests": 21,
+  "public_vector_comparison_fields": [
+    "return bits",
+    "all expanded bytes and untouched padding",
+    "all module metadata",
+    "unchanged source",
+    "unchanged allocations and frees"
+  ],
+  "actual_module_expansions_per_input": 2,
+  "actual_module_bytes_equal_native": true,
+  "native_packed_expander_body_entries_in_ts_runs": 0,
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "ts_vm_invocations_per_input": [
+    76,
+    76
+  ],
+  "ts_vm_instructions_per_input": [
+    321675,
+    321855
+  ],
+  "observed_vm_opcode_kinds": [
+    73,
+    73
+  ],
+  "native_module_vectors_rechecked": {
+    "configName": 1,
+    "defaultConfig": 2,
+    "prepareCache": 14,
+    "releaseCache": 22,
+    "createEngine": 6,
+    "decodeStrings": 185
+  },
+  "native_buffer_vectors_rechecked": 440,
+  "native_standard_vectors_rechecked": {
+    "md5": 25,
+    "sha1": 31,
+    "base64": 38,
+    "crc": 31,
+    "hmac": 129
+  },
+  "native_zlib_vectors_rechecked": {
+    "cases": {
+      "valid": 168,
+      "invalid": 5,
+      "truncated": 5
+    },
+    "stream_calls": 43284
+  },
+  "native_runtime_program_cases_rechecked": 5,
+  "limits": {
+    "packed_words": 65536,
+    "private_stack_bytes": 528,
+    "step_budget": "count * 1024 + 1024",
+    "source_bytes": "count * 4",
+    "output_bytes": "count * 16",
+    "lookahead_bytes": 4
+  },
+  "unsupported": [
+    "overlapping module/input/output regions",
+    "guest regions colliding with private scratch address space",
+    "control paths outside the checked instruction set",
+    "unverified fixed control table accesses",
+    "unmapped required next-word lookahead",
+    "partial native fault side effects"
+  ],
+  "error_behavior": "Computation fails closed without native fallback or committing buffered output, including adapters returning shared views; final host write failures are outside rollback guarantees",
+  "initialization_audit": "process initialization also requires locks, TLS/destructor setup, global allocations and three initialization helpers; setting the flag is not a replacement",
+  "remaining_dependencies": [
+    "module loading",
+    "process-wide initialization and host registration",
+    "other native algorithm/object wrappers",
+    "SDS and SDK/device/platform state"
+  ],
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false,
+  "raw_candidates_keys_entropy_resources_memory_exported": false,
+  "actual_expanded_bytes_or_hashes_exported": false,
+  "shared_view_failure_regression_reproduced_and_fixed": true,
+  "final_source_full_comparison_rechecked": true
+}

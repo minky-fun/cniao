@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 81506,
-    "sha256": "0c6145c86eea8c67262a4457762f95a29f5778e63acb2f24324fa5835c6a40bd"
+    "bytes": 86945,
+    "sha256": "2262ae6e551968f4214d29bb9d957411f3e2c1d4b90e5e19b95355a9f554774d"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -128,6 +128,16 @@
     "file": "signature/dynamic-handler-execute.asm",
     "bytes": 2351,
     "sha256": "39612be020c92173585a0ac0d088b54ad85a52d3728bd6d2f194040406caa87b"
+  },
+  {
+    "file": "signature/expand_validation_host.ts",
+    "bytes": 712,
+    "sha256": "919178522b63514067ad82a5ec9deb770e52c499ac7bbb3c662d730c5d9d1e6e"
+  },
+  {
+    "file": "signature/generate_packed_expand.py",
+    "bytes": 13144,
+    "sha256": "2d590a2dc816f62b64cd1e79d7d0ecdf2183031e0062439e2dac9d48f40b2d0c"
   },
   {
     "file": "signature/guest_bsd_random.py",
@@ -265,6 +275,16 @@
     "sha256": "43cccfcd10300f459890d7016d2299aa49441df54d0d26315bee2c997faeff30"
   },
   {
+    "file": "signature/packed-expand-contract.asm",
+    "bytes": 65250,
+    "sha256": "3e7461a0381e7f5e728bbb75d0049be26cefcb94ea6f42b6b2a9186a48dea225"
+  },
+  {
+    "file": "signature/packed-expand-control.json",
+    "bytes": 2295,
+    "sha256": "43135406cdb7dee0ddda56656d64e28502681ec3d2620d3157394b5c46c324ca"
+  },
+  {
     "file": "signature/plugin-dispatcher-install.asm",
     "bytes": 3352,
     "sha256": "9feff8b067bb7c2d44519dddbdb40ca1f5ae26133071aa1734265f5a98b8eca2"
@@ -303,6 +323,16 @@
     "file": "signature/portable-digest-validation.json",
     "bytes": 4695,
     "sha256": "19076fa8d1f88ce4088b043ee6bbda010f39cf757e101f499a8f586f53f41ad9"
+  },
+  {
+    "file": "signature/portable-expand-evidence.json",
+    "bytes": 22082,
+    "sha256": "be3dda881cfb28bc277ddfb7c659c97743a17ae0cc96f515172246aca66ea0e3"
+  },
+  {
+    "file": "signature/portable-expand-validation.json",
+    "bytes": 3955,
+    "sha256": "75ba8870d53875d04d76ac7bb8acb323ab21e4aa9a4ec16c74b8be0173e3b9df"
   },
   {
     "file": "signature/portable-inflate-evidence.json",
@@ -428,6 +458,11 @@
     "file": "signature/portable_inflate.ts",
     "bytes": 12758,
     "sha256": "7faa19af49dfee0515d90d9086ce106fd81d68f54d7cca42a05a6450b7bf51f8"
+  },
+  {
+    "file": "signature/portable_packed_expand.ts",
+    "bytes": 230782,
+    "sha256": "01de0d1a3b61ee3d9a53647f8ffe606e5f6dfd977a29517776e7685928e4909b"
   },
   {
     "file": "signature/portable_vm_abi.ts",
@@ -730,6 +765,11 @@
     "sha256": "16217b738c626d1e7ef1db3bcc2a0b1646aeca907dbb46d0e752f695296867b7"
   },
   {
+    "file": "signature/test_portable_packed_expand.cjs",
+    "bytes": 5067,
+    "sha256": "f27a1fd999deda84656abbe1f8c2c95d20f92a4e0b4935ef24aeba17fec8458b"
+  },
+  {
     "file": "signature/test_portable_vm_abi.cjs",
     "bytes": 4404,
     "sha256": "d497b8450f0cd04960ddc511bd7d45c53b12aaccc80bae7d7a38aa6aedbb66f4"
@@ -858,6 +898,11 @@
     "file": "signature/verify_portable_digest.py",
     "bytes": 11642,
     "sha256": "93d2b13afbb9d1c7422c4dc5e80a777569b61eb7fd64152a77ffed7f8ef16d26"
+  },
+  {
+    "file": "signature/verify_portable_expand.py",
+    "bytes": 9646,
+    "sha256": "224ab35a0ae1f108c458364cd57fde804ccb86336e43efa669f3d518cff1c7f0"
   },
   {
     "file": "signature/verify_portable_inflate.py",
