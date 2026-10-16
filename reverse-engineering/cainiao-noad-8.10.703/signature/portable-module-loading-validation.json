@@ -1,0 +1,151 @@
+{
+  "source_sha256": {
+    "portable_module_sections.ts": "2bd68d20e68565242c26ea2b22c4bc2c7f640a1786b5cfd75ee7647d6b2c4307",
+    "portable_module_registry.ts": "2ad66907296bd0a8a87b84d061ad2e8aeb383dc442ef702a3fc35f439b7c4d0e",
+    "sections_validation_host.ts": "b9101e00b0e73f350fa169d6cfc9e336e160179eb0f0d9ab925a8ec0e138add9",
+    "registry_validation_host.ts": "fa33aac8cb4b5a2552957daa1992433ee2b65ac9d7c84a1fff8caadbfddf0101",
+    "verify_portable_sections.py": "c096d4c03fbd7067294b59a5919da529d26284654ad15a3641ba62e9dc4e28d9",
+    "verify_portable_registry.py": "3700c79fc15f628cd89790e70d704d089bf12a49dd8ab97f31c1ab296fda4a82",
+    "test_portable_module_sections.cjs": "c3d10719f0dc238580000479b9fcb864cd1af7f9830438926c3b251186dbd138",
+    "test_portable_module_registry.cjs": "92306346e064e2e5b5cb2398c59f4181f835210c808d28d30a6a86aeee63fb29",
+    "module-sections-contract.asm": "3b03f599c053e5360d81cdce8abb8e48fd2c40d0bae3bbda621c8db155ddfa82",
+    "module-registry-contract.asm": "30dc83371272473ea2a9f4e340992175ef343728fc95317ac4bcb2586ee6e29f"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_module_section_vectors": {
+    "null": 2,
+    "tags_and_values": 245,
+    "partial_rejection": 6,
+    "repeated_tags": 36,
+    "multiple_descriptors": 4,
+    "table_boundaries": 10,
+    "aggregate": 7,
+    "aggregate_from_descriptors": 7,
+    "alias": 4
+  },
+  "native_registry_vectors": {
+    "createTable": 18,
+    "destroyTable": 23,
+    "append": 84,
+    "remove": 336,
+    "get": 336
+  },
+  "new_native_vector_total": 1118,
+  "node_section_behavior_cases": 7,
+  "node_section_rejection_cases": 3,
+  "node_registry_behavior_cases": 6,
+  "node_registry_rejection_cases": 6,
+  "python_regression_tests": 21,
+  "public_comparison_fields": [
+    "native return bit patterns",
+    "all allocated bytes including padding",
+    "partial writes on invalid section tags",
+    "unchanged source except explicit aliases",
+    "allocation attempts and allocation/free order",
+    "realloc copy and failure behavior"
+  ],
+  "section_descriptor": {
+    "stride": 8,
+    "offset_header": 52,
+    "count_header": 56,
+    "total_bytes_header": 8,
+    "output_metadata_bytes": 280,
+    "accepted_tag_count": 33,
+    "native_rejected_tags_within_1_to_36": [
+      23,
+      32,
+      33
+    ]
+  },
+  "aggregate_contract": {
+    "records_pointer": 48,
+    "record_count": 56,
+    "record_stride": 8,
+    "value_offset": 4,
+    "sum_offset": 92,
+    "sum_bits": 32
+  },
+  "registry_table": {
+    "record_bytes": 48936,
+    "index_bytes": 8156,
+    "record_stride": 24,
+    "both_allocations_attempted_on_failure": true
+  },
+  "registry_list": {
+    "data_pointer": 0,
+    "capacity": 8,
+    "count": 12,
+    "lock": 16,
+    "element_bytes": 8,
+    "not_found_return": "0x00000000ffffffff"
+  },
+  "synchronization": "Read/write lock acquisition and matching unlock are injected; offline validation uses the same serial model as the native oracle; no pthread implementation is claimed",
+  "native_realloc_failure_detail": "Append still increments count and writes the original backing array when realloc fails, as native does; the explicit memory adapter must reject inaccessible storage rather than inventing capacity",
+  "actual_calls_per_input": {
+    "moduleSections": 2,
+    "registry": {
+      "createTable": 1,
+      "append": 3,
+      "get": 1
+    }
+  },
+  "native_module_section_body_entries_in_ts_runs": 0,
+  "native_registry_body_entries_in_ts_runs": 0,
+  "functions_only_covered_by_public_abi_vectors": [
+    "registry destroyTable",
+    "registry remove"
+  ],
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "actual_expanded_module_bytes_equal_native": true,
+  "ts_vm_invocations_per_input": [
+    76,
+    76
+  ],
+  "ts_vm_instructions_per_input": [
+    321675,
+    321855
+  ],
+  "observed_vm_opcode_kinds": [
+    73,
+    73
+  ],
+  "previous_native_vectors_rechecked": {
+    "module_preparation": 230,
+    "packed_expansion": 2418,
+    "buffer": 440,
+    "standard_crypto": 254,
+    "zlib": {
+      "cases": {
+        "valid": 168,
+        "invalid": 5,
+        "truncated": 5
+      },
+      "stream_calls": 43284
+    },
+    "complete_vm_programs": 5
+  },
+  "limits": {
+    "section_descriptors": 65536,
+    "aggregate_records": 65536,
+    "registry_table_records": 65536,
+    "registry_list_capacity": 65536,
+    "registry_list_count": 65536,
+    "growth_result_capacity": 65536
+  },
+  "remaining_dependencies": [
+    "module validation, allocation, reuse and dependency binding orchestration",
+    "process-wide initialization control, TLS and host registration",
+    "native object/algorithm wrappers not yet migrated",
+    "SDK/SDS/platform and actual device state",
+    "real synchronization provider"
+  ],
+  "full_portable_module_loader_implemented": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false,
+  "raw_candidates_keys_entropy_resources_memory_exported": false
+}

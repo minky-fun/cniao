@@ -722,3 +722,45 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 只运行 2,418 组公开展开函数向量。Node 检查使用 `test_portable_packed_expand.cjs <compiled portable_packed_expand.js>`。
+
+## 模块区段解析与注册表数据迁移（2026-10-16）
+
+新增 `portable_module_sections.ts`，移植加载器中的区段解析入口 `0x102a5ed74`。33 个有效区段编号与目标字段、4/8 字节写入宽度均由公开合成输入的原生实际写入确认；编号 23、32、33 以及范围外编号返回 1。描述符步长为 8 字节，指针字段加上来源基址，计数字段保留原始 uint32。解析顺序、重复编号覆盖、非法编号前已完成的部分写入及输入/输出重叠均保留。末尾按目标元数据 `+0x30/+0x38` 指定的记录表累加第二个 uint32，按 32 位回绕写入 `+0x5c`，不替换成其他求和或猜测字段。
+
+新增 `portable_module_registry.ts`，移植初始化及模块登记实际使用的五个入口：索引/记录表创建与释放（`0x102a54168` / `0x102a54228`），模块列表追加、读取、移除（`0x102a56414` / `0x102a56494` / `0x102a564f4`）。表分配保留 48,936 字节记录块与 8,156 字节索引块，先尝试两次分配再处理失败；释放记录按 24 字节步长进行。列表保留八字节元素、容量/计数原生布局、扩容、四分之一容量时的缩容、移位与尾部清零。移除未找到时返回 `0x00000000ffffffff`，没有误作 64 位全一。
+
+`RegistryLock` 明确要求调用方提供读锁、写锁与解锁边界。`registry_validation_host.ts` 只沿用现有原生离线探针的单线程/空锁模型；Node 检查另外注入可观察的锁实现，确认地址、模式和配对释放。这不等于实现 pthread 或证明真实多线程行为。追加在 realloc 失败后仍增加计数、写入旧数组，这是原生实际行为；TS 不补造容量，实际存储能否访问由显式内存适配器检查。
+
+验证结果：
+
+- **321 组区段解析原生对照通过**：所有编号与边界值、重复编号、多描述符、区段表越界、非法编号导致的部分写入、聚合溢出及别名。比较返回位和全部已分配内存，包括未写填充字节。
+- **797 组注册表原生对照通过**：表创建 18、表释放 23、追加 84、读取 336、移除 336；比较全部堆字节、分配尝试、分配/释放顺序、realloc 复制、增长/缩小失败、低 32 位索引及返回位。总计新增 **1,118 组原生对照**。
+- 两组完整离线路径各由 TS 完成 **2 次区段解析、1 次表创建、3 次列表追加、1 次读取**；这些入口后的原生函数体设有禁止执行检查，进入次数为零。表释放和列表移除仅在独立 ABI 对照中覆盖，未声称完整路径调用过它们。
+- 联合此前所有替换后，仍各完成 76 次 TS VM 调用、321,675 / 321,855 条指令，覆盖 73 种已观察操作码；候选及逐操作码次数与原生一致，改变输入仍改变候选，两个模块的展开字节仍与原生一致。原有 230 组模块准备、2,418 组展开、440 组对象、254 组标准算法、178 组 zlib ABI（43,284 次调用）及 5 组完整 VM 程序在联合对照中重新通过。Node 区段行为/拒绝条件 7/3 组、注册表行为/拒绝条件 6/6 组、严格 TypeScript 和 21 项 Python 回归通过。
+
+区段描述符、聚合记录、表记录及列表计数/容量上限均为 65,536，列表扩容结果也受此限制；超限直接拒绝。未映射、截断或不满足明确依赖的内存不被填零。原生区段解析发生未知编号时的部分写入仍保留，与上一节展开器的私有缓冲策略不同。
+
+证据：`portable-module-loading-evidence.json`、`portable-module-loading-validation.json`、`module-sections-contract.asm`、`module-registry-contract.asm`。所有运行数据、候选、密钥、随机熵及解码资源仍只在私有进程和有界管道内。本次进一步移除了加载/初始化中的数据操作依赖，**尚未完成整个模块加载器或完整本地签名器**：模块校验、分配、复用和依赖绑定的控制流程、进程级初始化/TLS/宿主注册、其他原生对象包装器，以及 SDS/SDK/设备状态仍需移植。未联网验签或 iPhone 桌面验证；现有小组件查询、自动续期及 1.1.5 安装包未改。
+
+### 复现区段与注册表联合对照
+
+严格编译时加入 `registry_validation_host.ts`，保留此前 VM、ABI、host、AES 模块，然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_registry.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-registry work/signature-analysis/portable-build/registry_validation_host.js \
+  --portable-sections work/signature-analysis/portable-build/sections_validation_host.js \
+  --portable-expand work/signature-analysis/portable-build/expand_validation_host.js \
+  --portable-module work/signature-analysis/portable-build/module_validation_host.js \
+  --portable-inflate work/signature-analysis/portable-build/portable_zlib_host.js \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 只运行 797 组注册表向量。区段向量使用 `verify_portable_sections.py` 和上述除 `--portable-registry` 外的参数，再附加 `--vectors-only`。Node 检查分别为 `test_portable_module_sections.cjs <compiled portable_module_sections.js>` 和 `test_portable_module_registry.cjs <compiled portable_module_registry.js>`。
