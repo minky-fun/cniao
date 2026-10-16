@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 77328,
-    "sha256": "44aecaaa1d20d1d97925cd417a4c3f90d16474763845d482c10ea732cfa88e28"
+    "bytes": 81506,
+    "sha256": "0c6145c86eea8c67262a4457762f95a29f5778e63acb2f24324fa5835c6a40bd"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -200,6 +200,11 @@
     "sha256": "873236ebd32fb07718990dfc664f768261670c7e108f3f2521c6c5722a6baf53"
   },
   {
+    "file": "signature/module-preparation-contract.asm",
+    "bytes": 6597,
+    "sha256": "a9eb8c03911626627dd451594e9aa5b1876254ac0e16cb3086c20c4ab19bc42f"
+  },
+  {
     "file": "signature/module-sds-empty-appkey-evidence.json",
     "bytes": 11714,
     "sha256": "39853bda3488639039f5b469076e901c31a627bb6559c35484cc459d78f31f1e"
@@ -218,6 +223,11 @@
     "file": "signature/module_container.py",
     "bytes": 2123,
     "sha256": "0be9520c6307d3a2c8483ffef8049ffe83a011cfb30307a04b0b9bbf18a52ebc"
+  },
+  {
+    "file": "signature/module_validation_host.ts",
+    "bytes": 1078,
+    "sha256": "23cd57578e0099cd7255117d87483daec6b5b1db4e1a5e9a5015ebefb6d30d6c"
   },
   {
     "file": "signature/mtop-sign-annotated.asm",
@@ -303,6 +313,16 @@
     "file": "signature/portable-inflate-validation.json",
     "bytes": 4291,
     "sha256": "da0e964dc6e5671cbbe004bfebb2ce2f608ac9daa5e2876440d2940cfd07a9fd"
+  },
+  {
+    "file": "signature/portable-module-evidence.json",
+    "bytes": 21666,
+    "sha256": "064545a9a2dddfcbbed37340b78e0293c950a96a9ea462b84818fff4d309fa2f"
+  },
+  {
+    "file": "signature/portable-module-validation.json",
+    "bytes": 3614,
+    "sha256": "1e1fd89738ae40f2499bcb7990148d09d74368edf506aaf93caaeeddd8a2a667"
   },
   {
     "file": "signature/portable-vm-aes-combined-evidence.json",
@@ -438,6 +458,11 @@
     "file": "signature/portable_vm_memory.ts",
     "bytes": 2693,
     "sha256": "c83b6527b2e7295c49592f2b78b835fe87bceb0d2846954467b96d379e162bd9"
+  },
+  {
+    "file": "signature/portable_vm_module.ts",
+    "bytes": 6651,
+    "sha256": "0e01cd7600f6862919fa441cbd93667be63921019b0184d0938cc378e0d347d0"
   },
   {
     "file": "signature/portable_vm_register.ts",
@@ -730,6 +755,11 @@
     "sha256": "fd743566dcc3c6f270ead0ba95985b5ab2e367604ac79a411df8c961e1392b0c"
   },
   {
+    "file": "signature/test_portable_vm_module.cjs",
+    "bytes": 5220,
+    "sha256": "660fead7b1eb687176d37e307c7fa937fed5269859929fd0c9322198ccd695e5"
+  },
+  {
     "file": "signature/test_portable_vm_register.cjs",
     "bytes": 2915,
     "sha256": "e9383f2f433bc7158b311b20869f4116fb5304ff7b07d6a534aae80230f56b57"
@@ -833,6 +863,11 @@
     "file": "signature/verify_portable_inflate.py",
     "bytes": 12036,
     "sha256": "0f1e472025ae2a2d9ed4feda2e7e073689b95215240035c3dd72d3afecae0b78"
+  },
+  {
+    "file": "signature/verify_portable_module.py",
+    "bytes": 9763,
+    "sha256": "90bc2bed3007653771f5c97fd0f7ff2250ff1fef501e2041302cc6545fd2ea73"
   },
   {
     "file": "signature/verify_portable_vm_abi.py",

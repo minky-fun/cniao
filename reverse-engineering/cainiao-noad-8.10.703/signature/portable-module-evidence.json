@@ -1,0 +1,937 @@
+{
+  "scope": "TS VM, object helpers, crypto, zlib and six module preparation helpers; global initialization, module loading/expansion and SDS/platform hosts remain explicit",
+  "native_runtime_vector_cases": 5,
+  "runs": [
+    {
+      "mode": "native",
+      "changed_input": false,
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "opcode_counts": {
+        "0": 847,
+        "3": 2191,
+        "4": 244,
+        "5": 412,
+        "9": 967,
+        "14": 223,
+        "15": 770,
+        "18": 76,
+        "24": 38,
+        "25": 685,
+        "26": 3144,
+        "31": 847,
+        "32": 4290,
+        "33": 654,
+        "34": 41417,
+        "37": 92,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343,
+        "44": 179,
+        "45": 2512,
+        "47": 46,
+        "54": 7224,
+        "55": 1751,
+        "56": 6605,
+        "57": 120,
+        "58": 1943,
+        "60": 24694,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18661,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094,
+        "86": 10,
+        "92": 75,
+        "93": 214,
+        "100": 94,
+        "101": 245,
+        "102": 21,
+        "103": 1,
+        "105": 4,
+        "107": 1,
+        "108": 10,
+        "109": 67,
+        "110": 281,
+        "111": 7183,
+        "112": 17,
+        "115": 145,
+        "116": 16,
+        "119": 7,
+        "121": 201,
+        "131": 41,
+        "140": 180,
+        "145": 13823,
+        "148": 2,
+        "150": 1926,
+        "151": 2359,
+        "152": 1,
+        "156": 10414,
+        "159": 1233,
+        "161": 19
+      }
+    },
+    {
+      "mode": "TS-runtime-objects-crypto-inflate-and-module-preparation",
+      "changed_input": false,
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "opcode_counts": {
+        "0": 847,
+        "3": 2191,
+        "4": 244,
+        "5": 412,
+        "9": 967,
+        "14": 223,
+        "15": 770,
+        "18": 76,
+        "24": 38,
+        "25": 685,
+        "26": 3144,
+        "31": 847,
+        "32": 4290,
+        "33": 654,
+        "34": 41417,
+        "37": 92,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343,
+        "44": 179,
+        "45": 2512,
+        "47": 46,
+        "54": 7224,
+        "55": 1751,
+        "56": 6605,
+        "57": 120,
+        "58": 1943,
+        "60": 24694,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18661,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094,
+        "86": 10,
+        "92": 75,
+        "93": 214,
+        "100": 94,
+        "101": 245,
+        "102": 21,
+        "103": 1,
+        "105": 4,
+        "107": 1,
+        "108": 10,
+        "109": 67,
+        "110": 281,
+        "111": 7183,
+        "112": 17,
+        "115": 145,
+        "116": 16,
+        "119": 7,
+        "121": 201,
+        "131": 41,
+        "140": 180,
+        "145": 13823,
+        "148": 2,
+        "150": 1926,
+        "151": 2359,
+        "152": 1,
+        "156": 10414,
+        "159": 1233,
+        "161": 19
+      },
+      "native_opcode_entries": 0,
+      "vm_invocations": 76,
+      "runtime_yields": {
+        "host": 2434
+      },
+      "replaced_aes_calls": 17,
+      "host_boundary": {
+        "simple_abi": 2426,
+        "pending_descriptor": 335,
+        "command_dispatch_bridge": 93,
+        "common_function_lookup": 949
+      },
+      "integer_abi": {
+        "integer_complex_calls": 8,
+        "calls_with_stack_arguments": 7,
+        "calls_with_seven_register_arguments": 1
+      },
+      "buffer_calls": {
+        "create": 83,
+        "append": 119,
+        "clone": 42,
+        "destroy": 8,
+        "stringCreate": 5,
+        "stringCString": 7,
+        "byte": 895,
+        "appendBuffer": 31,
+        "clear": 2,
+        "fromCString": 1,
+        "stringClear": 1,
+        "stringAppend": 2
+      },
+      "native_replaced_buffer_body_entries": 0,
+      "standard_calls": {
+        "md5": 7,
+        "crc": 1,
+        "hmac": 2,
+        "base64": 1
+      },
+      "native_replaced_standard_body_entries": 0,
+      "inflate_events": [
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 8335,
+          "total_out": 16384
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 10391,
+          "total_out": 32768
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 12027,
+          "total_out": 49152
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 13502,
+          "total_out": 65536
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 14933,
+          "total_out": 81920
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 16384,
+          "total_out": 85421
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 22325,
+          "total_out": 101805
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 24137,
+          "total_out": 118189
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 25516,
+          "total_out": 134573
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 26885,
+          "total_out": 150957
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 28709,
+          "total_out": 167341
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 30345,
+          "total_out": 183725
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32322,
+          "total_out": 200109
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32768,
+          "total_out": 204094
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 34107,
+          "total_out": 220478
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 36293,
+          "total_out": 236862
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 41315,
+          "total_out": 253246
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 44056,
+          "total_out": 269630
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 45413,
+          "total_out": 286014
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 46962,
+          "total_out": 302398
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 47308,
+          "total_out": 306065
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 47308,
+          "total_out": 306065
+        },
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 15322,
+          "total_out": 16384
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 16384,
+          "total_out": 17450
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32748,
+          "total_out": 33834
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32768,
+          "total_out": 33855
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 49109,
+          "total_out": 50239
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 49152,
+          "total_out": 50283
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 65536,
+          "total_out": 66662
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 81920,
+          "total_out": 83041
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 85368,
+          "total_out": 86480
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 85368,
+          "total_out": 86480
+        },
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 656,
+          "total_out": 1230
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 656,
+          "total_out": 1230
+        }
+      ],
+      "native_libz_calls": 0,
+      "module_calls": {
+        "createEngine": 2,
+        "decodeStrings": 2,
+        "prepareCache": 2
+      },
+      "native_replaced_module_body_entries": 0
+    },
+    {
+      "mode": "native",
+      "changed_input": true,
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "opcode_counts": {
+        "0": 847,
+        "3": 2191,
+        "4": 244,
+        "5": 412,
+        "9": 967,
+        "14": 223,
+        "15": 770,
+        "18": 76,
+        "24": 38,
+        "25": 685,
+        "26": 3226,
+        "31": 847,
+        "32": 4292,
+        "33": 654,
+        "34": 41418,
+        "37": 92,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343,
+        "44": 179,
+        "45": 2512,
+        "47": 46,
+        "54": 7224,
+        "55": 1752,
+        "56": 6695,
+        "57": 120,
+        "58": 1945,
+        "60": 24695,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18662,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094,
+        "86": 10,
+        "92": 75,
+        "93": 214,
+        "100": 94,
+        "101": 245,
+        "102": 21,
+        "103": 1,
+        "105": 4,
+        "107": 1,
+        "108": 10,
+        "109": 67,
+        "110": 281,
+        "111": 7183,
+        "112": 17,
+        "115": 145,
+        "116": 16,
+        "119": 7,
+        "121": 201,
+        "131": 41,
+        "140": 180,
+        "145": 13823,
+        "148": 2,
+        "150": 1926,
+        "151": 2359,
+        "152": 1,
+        "156": 10414,
+        "159": 1233,
+        "161": 19
+      }
+    },
+    {
+      "mode": "TS-runtime-objects-crypto-inflate-and-module-preparation",
+      "changed_input": true,
+      "candidate_bytes": 50,
+      "arc4random_calls": 816,
+      "opcode_counts": {
+        "0": 847,
+        "3": 2191,
+        "4": 244,
+        "5": 412,
+        "9": 967,
+        "14": 223,
+        "15": 770,
+        "18": 76,
+        "24": 38,
+        "25": 685,
+        "26": 3226,
+        "31": 847,
+        "32": 4292,
+        "33": 654,
+        "34": 41418,
+        "37": 92,
+        "38": 11569,
+        "39": 7404,
+        "40": 16865,
+        "42": 23681,
+        "43": 8343,
+        "44": 179,
+        "45": 2512,
+        "47": 46,
+        "54": 7224,
+        "55": 1752,
+        "56": 6695,
+        "57": 120,
+        "58": 1945,
+        "60": 24695,
+        "62": 53,
+        "63": 18013,
+        "67": 2,
+        "68": 8271,
+        "70": 1205,
+        "71": 1021,
+        "73": 14,
+        "75": 13121,
+        "76": 18662,
+        "78": 287,
+        "79": 10586,
+        "81": 5990,
+        "82": 9,
+        "83": 2925,
+        "84": 33094,
+        "86": 10,
+        "92": 75,
+        "93": 214,
+        "100": 94,
+        "101": 245,
+        "102": 21,
+        "103": 1,
+        "105": 4,
+        "107": 1,
+        "108": 10,
+        "109": 67,
+        "110": 281,
+        "111": 7183,
+        "112": 17,
+        "115": 145,
+        "116": 16,
+        "119": 7,
+        "121": 201,
+        "131": 41,
+        "140": 180,
+        "145": 13823,
+        "148": 2,
+        "150": 1926,
+        "151": 2359,
+        "152": 1,
+        "156": 10414,
+        "159": 1233,
+        "161": 19
+      },
+      "native_opcode_entries": 0,
+      "vm_invocations": 76,
+      "runtime_yields": {
+        "host": 2434
+      },
+      "replaced_aes_calls": 17,
+      "host_boundary": {
+        "simple_abi": 2426,
+        "pending_descriptor": 335,
+        "command_dispatch_bridge": 93,
+        "common_function_lookup": 949
+      },
+      "integer_abi": {
+        "integer_complex_calls": 8,
+        "calls_with_stack_arguments": 7,
+        "calls_with_seven_register_arguments": 1
+      },
+      "buffer_calls": {
+        "create": 83,
+        "append": 119,
+        "clone": 42,
+        "destroy": 8,
+        "stringCreate": 5,
+        "stringCString": 7,
+        "byte": 895,
+        "appendBuffer": 31,
+        "clear": 2,
+        "fromCString": 1,
+        "stringClear": 1,
+        "stringAppend": 2
+      },
+      "native_replaced_buffer_body_entries": 0,
+      "standard_calls": {
+        "md5": 7,
+        "crc": 1,
+        "hmac": 2,
+        "base64": 1
+      },
+      "native_replaced_standard_body_entries": 0,
+      "inflate_events": [
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 8335,
+          "total_out": 16384
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 10391,
+          "total_out": 32768
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 12027,
+          "total_out": 49152
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 13502,
+          "total_out": 65536
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 14933,
+          "total_out": 81920
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 16384,
+          "total_out": 85421
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 22325,
+          "total_out": 101805
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 24137,
+          "total_out": 118189
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 25516,
+          "total_out": 134573
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 26885,
+          "total_out": 150957
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 28709,
+          "total_out": 167341
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 30345,
+          "total_out": 183725
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32322,
+          "total_out": 200109
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32768,
+          "total_out": 204094
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 34107,
+          "total_out": 220478
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 36293,
+          "total_out": 236862
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 41315,
+          "total_out": 253246
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 44056,
+          "total_out": 269630
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 45413,
+          "total_out": 286014
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 46962,
+          "total_out": 302398
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 47308,
+          "total_out": 306065
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 47308,
+          "total_out": 306065
+        },
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 15322,
+          "total_out": 16384
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 16384,
+          "total_out": 17450
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32748,
+          "total_out": 33834
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 32768,
+          "total_out": 33855
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 49109,
+          "total_out": 50239
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 49152,
+          "total_out": 50283
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 65536,
+          "total_out": 66662
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 0,
+          "total_in": 81920,
+          "total_out": 83041
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 85368,
+          "total_out": 86480
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 85368,
+          "total_out": 86480
+        },
+        {
+          "operation": "_inflateInit_",
+          "return_code": 0,
+          "total_in": 0,
+          "total_out": 0
+        },
+        {
+          "operation": "_inflate",
+          "return_code": 1,
+          "total_in": 656,
+          "total_out": 1230
+        },
+        {
+          "operation": "_inflateEnd",
+          "return_code": 0,
+          "total_in": 656,
+          "total_out": 1230
+        }
+      ],
+      "native_libz_calls": 0,
+      "module_calls": {
+        "createEngine": 2,
+        "decodeStrings": 2,
+        "prepareCache": 2
+      },
+      "native_replaced_module_body_entries": 0
+    }
+  ],
+  "same_input_native_equals_ts": true,
+  "changed_input_native_equals_ts": true,
+  "changed_input_changes_candidate": true,
+  "same_input_opcode_counts_equal": true,
+  "changed_input_opcode_counts_equal": true,
+  "native_vm_handler_entries_in_ts_runs": 0,
+  "raw_data_exported": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "native_buffer_vector_cases": {
+    "create": 10,
+    "clear": 3,
+    "cstring": 3,
+    "clone": 4,
+    "fromCString": 4,
+    "destroy": 3,
+    "grow": 21,
+    "append": 10,
+    "fromBytes": 10,
+    "byte": 18,
+    "get": 24,
+    "set": 60,
+    "find": 60,
+    "appendBuffer": 5,
+    "stringCreate": 3,
+    "stringClear": 4,
+    "stringDestroy": 4,
+    "stringAppend": 148,
+    "stringCString": 9,
+    "stringByte": 36,
+    "stringAppendReallocFailure": 1
+  },
+  "native_replaced_buffer_body_entries_in_ts_runs": 0,
+  "native_standard_vector_cases": {
+    "md5": 25,
+    "sha1": 31,
+    "base64": 38,
+    "crc": 31,
+    "hmac": 129
+  },
+  "native_replaced_standard_body_entries_in_ts_runs": 0,
+  "native_zlib_vectors": {
+    "cases": {
+      "valid": 168,
+      "invalid": 5,
+      "truncated": 5
+    },
+    "stream_calls": 43284
+  },
+  "native_libz_calls_in_ts_runs": 0,
+  "native_zlib_event_sequences_equal": true,
+  "native_zlib_runtime_fallback_forbidden": true,
+  "native_module_vector_cases": {
+    "configName": 1,
+    "defaultConfig": 2,
+    "prepareCache": 14,
+    "releaseCache": 22,
+    "createEngine": 6,
+    "decodeStrings": 185
+  },
+  "native_replaced_module_body_entries_in_ts_runs": 0,
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "clock_scope": "explicit zero-time offline oracle only; portable module requires an injected clock",
+  "global_initialization_scope": "requires preinitialized nonzero native flag; process-wide initialization is not ported",
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false,
+  "raw_candidates_keys_entropy_resources_memory_exported": false
+}

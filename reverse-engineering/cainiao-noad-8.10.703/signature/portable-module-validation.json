@@ -1,0 +1,121 @@
+{
+  "source_sha256": {
+    "portable_vm_module.ts": "0e01cd7600f6862919fa441cbd93667be63921019b0184d0938cc378e0d347d0",
+    "module_validation_host.ts": "23cd57578e0099cd7255117d87483daec6b5b1db4e1a5e9a5015ebefb6d30d6c",
+    "verify_portable_module.py": "90bc2bed3007653771f5c97fd0f7ff2250ff1fef501e2041302cc6545fd2ea73",
+    "test_portable_vm_module.cjs": "660fead7b1eb687176d37e307c7fa937fed5269859929fd0c9322198ccd695e5",
+    "module-preparation-contract.asm": "a9eb8c03911626627dd451594e9aa5b1876254ac0e16cb3086c20c4ab19bc42f"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_module_vector_cases": {
+    "configName": 1,
+    "defaultConfig": 2,
+    "prepareCache": 14,
+    "releaseCache": 22,
+    "createEngine": 6,
+    "decodeStrings": 185
+  },
+  "node_module_behavior_cases": 2,
+  "node_module_rejection_cases": 8,
+  "python_regression_tests": 21,
+  "native_comparison_fields": [
+    "return bits",
+    "all allocated bytes",
+    "allocation attempts and order",
+    "free order",
+    "global clock fields"
+  ],
+  "runtime_module_calls_per_input": {
+    "createEngine": 2,
+    "decodeStrings": 2,
+    "prepareCache": 2
+  },
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "native_replaced_module_body_entries_in_ts_runs": 0,
+  "ts_vm_invocations_per_input": [
+    76,
+    76
+  ],
+  "ts_vm_instructions_per_input": [
+    321675,
+    321855
+  ],
+  "observed_opcode_kinds": [
+    73,
+    73
+  ],
+  "native_buffer_vectors_rechecked": {
+    "create": 10,
+    "clear": 3,
+    "cstring": 3,
+    "clone": 4,
+    "fromCString": 4,
+    "destroy": 3,
+    "grow": 21,
+    "append": 10,
+    "fromBytes": 10,
+    "byte": 18,
+    "get": 24,
+    "set": 60,
+    "find": 60,
+    "appendBuffer": 5,
+    "stringCreate": 3,
+    "stringClear": 4,
+    "stringDestroy": 4,
+    "stringAppend": 148,
+    "stringCString": 9,
+    "stringByte": 36,
+    "stringAppendReallocFailure": 1
+  },
+  "native_standard_vectors_rechecked": {
+    "md5": 25,
+    "sha1": 31,
+    "base64": 38,
+    "crc": 31,
+    "hmac": 129
+  },
+  "native_zlib_vectors_rechecked": {
+    "cases": {
+      "valid": 168,
+      "invalid": 5,
+      "truncated": 5
+    },
+    "stream_calls": 43284
+  },
+  "native_runtime_program_cases_rechecked": 5,
+  "explicit_dependencies": [
+    "preinitialized process-wide state at native global flag",
+    "caller supplied EngineClock",
+    "guest memory and bounded heap adapter",
+    "native method addresses and default config metadata"
+  ],
+  "unsupported": [
+    "missing process-wide initialization",
+    "string output aliasing descriptor table or module count",
+    "more than 65536 cache records or string descriptors",
+    "strings longer than 16 MiB",
+    "out-of-bounds guest memory"
+  ],
+  "preserved_details": [
+    "four untouched default config padding bytes",
+    "untouched engine+8 bytes",
+    "both cache allocations attempted before failure cleanup",
+    "cache release count preserved when records pointer is null",
+    "ordered decoding of overlapping data strings",
+    "low32 timeval seconds and microseconds global writes"
+  ],
+  "remaining_dependencies": [
+    "native module loader and packed instruction expander",
+    "process-wide initialization",
+    "remaining native algorithm/object wrappers",
+    "SDS and SDK/device/platform state"
+  ],
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false,
+  "raw_candidates_keys_entropy_resources_memory_exported": false
+}

@@ -639,3 +639,39 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 可只运行 178 组 ABI 对照。Node 检查使用 `test_portable_inflate.cjs <compiled portable_inflate.js>`、`test_portable_zlib_host.cjs <compiled portable_zlib_host.js>`。协议和状态机行为参考 RFC 1950/1951 及 [zlib 1.2.11 inflate.c](https://github.com/madler/zlib/blob/v1.2.11/inflate.c)，实际 ABI 另由原生调用与公开向量确认。
+
+## 模块准备函数迁移（2026-10-16）
+
+新增 `portable_vm_module.ts`，移植六个已核实入口：默认配置、配置名称、引擎构造、缓存分配、缓存释放及模块字符串解码。引擎保留 144 字节对象、232 字节上下文和 16 个方法指针的原生布局；默认配置中四字节填充以及 engine+8 的未写字节保持不变。缓存失败时仍尝试两次分配并按原顺序释放，释放时保留原生空数组指针与非零计数的特殊行为。字符串描述符步长为 44 字节，按顺序执行逐字节异或及密钥递增，支持数据字符串之间重叠。
+
+构造器明确依赖已经完成的进程级初始化：全局标志未设置时直接拒绝，未将该标志伪造为初始化实现。时间由调用方通过 `EngineClock` 注入；`module_validation_host.ts` 仅在研究验证中沿用原离线探针的零时间模型，独立行为测试另验证非零秒数、微秒和截断写入。模块方法地址及默认配置元数据仍指向样本 guest 内存，此模块尚不能独立运行签名流程。
+
+验证结果：
+
+- **230 组原生 ABI 对照通过**：配置名称 1、默认配置 2、缓存分配 14、缓存释放 22、引擎构造 6、字符串解码 185。比较返回位、全部已分配内存、分配尝试和顺序、释放顺序及全局时钟字段；覆盖自定义/默认配置、两处分配失败、空表、空串、多个描述符及重叠数据。
+- 两组完整路径均将 2 次引擎构造、2 次缓存分配、2 次字符串解码交给 TS。六个入口后的原生函数体设有禁止执行检查，进入次数为零；缓存释放和独立配置入口只在公开 ABI 向量中覆盖，未声称完整路径实际调用过它们。
+- 联合此前 TS VM、对象、AES、摘要及流式解压后，两组仍各完成 76 次 VM 调用，执行 321,675 / 321,855 条指令，覆盖 73 种已观察操作码。候选及逐操作码次数与原生一致，改变输入仍改变候选。440 组对象、254 组摘要 ABI、178 组 zlib ABI（43,284 次调用）及 5 组完整 VM 程序在联合对照中重新通过。另有 2 组模块行为、8 组拒绝条件、严格 TypeScript 和 21 项 Python 回归通过。
+
+字符串输出覆盖描述符表或计数字段时明确拒绝，因为原生会重新读取这些字段；描述符/缓存记录数上限为 65,536，单字符串上限为 16 MiB。不将这些受限行为表述为所有原生边界均已支持。
+
+证据：`portable-module-evidence.json`、`portable-module-validation.json`、`module-preparation-contract.asm`。没有导出候选原文、密钥、随机熵、解码字符串、安全资源或内存。完整本地签名器仍未完成：模块加载、打包指令展开、进程级初始化、其他原生算法/对象包装器、SDS 与 SDK/设备状态仍需移植。未联网验签或 iPhone 桌面验证；小组件查询、自动续期及 1.1.5 安装包未改。
+
+### 复现模块准备联合对照
+
+严格编译时加入 `module_validation_host.ts`，保留此前 VM、ABI、host、AES 模块。运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_module.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-module work/signature-analysis/portable-build/module_validation_host.js \
+  --portable-inflate work/signature-analysis/portable-build/portable_zlib_host.js \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 只运行 230 组模块 ABI 对照。Node 检查使用 `test_portable_vm_module.cjs <compiled portable_vm_module.js>`。
