@@ -764,3 +764,48 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 附加 `--vectors-only` 只运行 797 组注册表向量。区段向量使用 `verify_portable_sections.py` 和上述除 `--portable-registry` 外的参数，再附加 `--vectors-only`。Node 检查分别为 `test_portable_module_sections.cjs <compiled portable_module_sections.js>` 和 `test_portable_module_registry.cjs <compiled portable_module_registry.js>`。
+
+## 模块校验、容器选择与加载计划迁移（2026-10-16）
+
+新增 `portable_module_header.ts`，移植 `0x102a631e4` 的模块校验控制，不执行其后端。`planModuleLoad` 返回明确的错误状态，或包含目标、上下文、来源、长度和输出参数的 `ModuleLoadPlan`。只有版本 `0x10001` / `0x10002` 分别选择 `0x102a5e240` / `0x102a626f0`；两个后端的分配、复用和绑定主体仍由原生执行。旧格式还保留入口原有的 `+0x48 == 7` 识别分支。不是给整个加载器套上成功返回，也没有把返回计划等同于完成加载。
+
+打包容器保留 `+8` 标识 `0xba137616`、标志位筛选及最多 63 个八字节选择记录。记录高 6 位决定类型；选择首个类型零的记录，以其偏移定位子模块，低 29 位作为子模块长度。无匹配项或容器标志不符合时，继续原生的普通模块识别分支。普通输入的长度判定只使用低 32 位，实际后端参数保留原始 64 位长度；打包子模块则使用选择记录中的长度。没有额外添加原生未要求的字段或猜测入口。
+
+模块校验和与此前的 `SGCrc32` 不同：这里使用 MSB-first 多项式 `0x04c11db7`、初值 `0xffffffff`、无末尾异或，对 `source+20` 至声明总长度计算。原生只读表 `0x10481f388` 的全部 256 项均与该规则一致；TS 生成自己的表，并按最多 4 KiB 块续算，不读取原生表。独立期望由反转输入字节位及最终结果位的 Python/Node zlib 计算得到。未误用此前初值零、反射多项式的原始 CRC 实现。
+
+初始参数合法后，保留原生先清上下文 `+0x60` 的一字节和 `+0x58` 的八字节，再做内容校验的顺序；错误时不伪造事务回滚。版本选择成功后，仅写四字节 `context+0x18`，保留邻接填充。保留 1、2、7、`0x25`、`0x26`、`0x27`、`0x3e` 的错误区别。CRC 标志打开但声明长度不足 20 时，原生减法会回绕；TS 明确拒绝该不支持的范围，不猜测错误码。校验和总长度上限为 16 MiB；未映射或截断的实际来源不被补零。
+
+验证结果：
+
+- **137 组原生校验/分派对照通过**：空参数、低/高长度位、版本与旧格式标识、魔数、声明长度、CRC、容器标志、首项/末项/无匹配选择、子模块长度/版本/魔数/CRC，以及上下文与来源重叠。比较全部已分配内存、状态码、版本标志和后端参数。公开向量在后端入口停止并捕获寄存器，不假称运行了后端。
+- Node 独立 CRC 及分块续算 **81 组**通过；加载计划行为 **11 组**、不支持条件 **10 组**通过，覆盖邻接填充、错误前的清理写入、容器子模块和完整 64 位长度。新增 **6 项计划协议回归**，拒绝普通整数请求接收计划、伪装成标量成功、未知后端、改变调用方参数、额外/缺失字段以及无效寄存器编码。Python 回归共 **27 项**通过，严格 TypeScript 通过。
+- 两组完整离线路径各有 **2 次原生校验入口改由 TS 执行**，实际选择的均为旧格式后端 `0x102a5e240`。原生校验函数体设有禁止执行检查，进入次数为零；新格式后端仅确认了校验与调用计划，未声称完整路径覆盖其执行。
+- 联合此前替换后，两组仍各完成 76 次 TS VM 调用，执行 321,675 / 321,855 条指令，覆盖 73 种已观察操作码；候选及逐操作码次数与原生一致，改变输入仍改变候选，两模块展开字节仍与原生一致。原有 797 组注册表、321 组区段、230 组模块准备、2,418 组展开、440 组对象、254 组标准算法、178 组 zlib ABI（43,284 次调用）及 5 组完整 VM 程序在联合对照中重新通过。
+
+研究用 `buffer_worker.cjs` / `BufferWorker` 增加显式 `planLoad` 消息；普通整数返回协议保持独立。只有确定的入口和两个后端可用，参数必须是 uint64，调用方上下文与输出参数必须保持原值。计划不能报告尚未执行的后端已经成功。真实模块、候选、密钥、随机熵、安全资源及运行内存不导出。
+
+证据：`portable-module-header-evidence.json`、`portable-module-header-validation.json`、`module-header-contract.asm`。**完整本地签名器仍未完成**：两个加载后端主体、依赖解析/绑定、进程级初始化/TLS/宿主注册、其他原生对象包装器，以及 SDS/SDK/设备状态仍有依赖。未联网验签或 iPhone 桌面验证；小组件查询、自动续期及 1.1.5 安装包未改。
+
+### 复现模块校验联合对照
+
+严格编译时加入 `header_validation_host.ts`，保留此前 VM、ABI、host、AES 模块，然后运行：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/verify_portable_header.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa \
+  --portable-header work/signature-analysis/portable-build/header_validation_host.js \
+  --portable-registry work/signature-analysis/portable-build/registry_validation_host.js \
+  --portable-sections work/signature-analysis/portable-build/sections_validation_host.js \
+  --portable-expand work/signature-analysis/portable-build/expand_validation_host.js \
+  --portable-module work/signature-analysis/portable-build/module_validation_host.js \
+  --portable-inflate work/signature-analysis/portable-build/portable_zlib_host.js \
+  --portable-standard work/signature-analysis/portable-build/portable_crypto_host.js \
+  --portable-buffer work/signature-analysis/portable-build/portable_buffer.js \
+  --portable-runtime work/signature-analysis/portable-build/portable_vm_runtime.js \
+  --portable-call work/signature-analysis/portable-build/portable_vm_call.js \
+  --portable-abi work/signature-analysis/portable-build/portable_vm_abi.js \
+  --portable-host work/signature-analysis/portable-build/portable_vm_host.js \
+  --portable-aes work/signature-analysis/portable-build/portable_aes.js
+```
+
+附加 `--vectors-only` 只运行 137 组公开原生校验向量。Node 检查为 `test_portable_module_header.cjs <compiled portable_module_header.js>`；Python 回归仍使用 `python -B -m unittest discover -s reverse-engineering/cainiao-noad-8.10.703/signature -p 'test_*.py'`。

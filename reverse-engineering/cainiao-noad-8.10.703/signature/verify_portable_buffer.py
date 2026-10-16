@@ -43,9 +43,16 @@ class BufferWorker:
         self.process.stdin.write(json.dumps(message) + '\n')
         self.process.stdin.flush()
 
-    def calculate(self, probe, entry, arguments):
-        """执行有界内存和堆请求；分配失败、未知指针及越界均不替换成成功。"""
-        self.send({'entry': str(entry), 'arguments': [str(value) for value in arguments], 'stack': str(probe.cpu.reg_read(UC_ARM64_REG_SP))})
+    def calculate(self, probe, entry, arguments, *, operation=None):
+        """执行有界访存/堆请求，或仅接受明确的模块加载计划；不猜测缺失结果。"""
+        if operation not in (None, 'planLoad'):
+            raise ValueError('Unknown portable worker operation')
+        if operation == 'planLoad' and (entry != 0x102a631e4 or len(arguments) < 5 or any(type(value) is not int or not 0 <= value <= MASK64 for value in arguments)):
+            raise ValueError('Invalid portable module header request')
+        request = {'entry': str(entry), 'arguments': [str(value) for value in arguments], 'stack': str(probe.cpu.reg_read(UC_ARM64_REG_SP))}
+        if operation is not None:
+            request['operation'] = operation
+        self.send(request)
         for _ in range(65538):
             if not select.select([self.process.stdout], [], [], 15)[0]:
                 raise RuntimeError('TS 缓冲区计算超时')
@@ -92,7 +99,31 @@ class BufferWorker:
                 if isinstance(probe, BufferOracle):
                     probe.frees.append(address)
                 reply = {'integer': '0'}
+            elif event == 'load-plan':
+                plan = response.get('plan')
+                if operation != 'planLoad' or type(plan) is not dict:
+                    raise RuntimeError('Unexpected portable load plan response')
+                kind = plan.get('kind')
+                fields = ('status',) if kind == 'return' else ('target', 'context', 'source', 'length', 'output') if kind == 'tailCall' else ()
+                if not fields or set(plan) != {'kind', *fields}:
+                    raise RuntimeError('Invalid portable load plan shape')
+                result = {'kind': kind}
+                for field in fields:
+                    raw = plan[field]
+                    if type(raw) is not str or not raw.isascii() or not raw.isdecimal() or len(raw) > 20 or int(raw) > MASK64:
+                        raise RuntimeError('Portable load plan field exceeds uint64')
+                    result[field] = int(raw)
+                if kind == 'return' and result['status'] not in (1, 2, 7, 0x25, 0x26, 0x27, 0x3e):
+                    raise RuntimeError('Unknown portable module validation status')
+                if kind == 'tailCall':
+                    if result['target'] not in (0x102a5e240, 0x102a626f0):
+                        raise RuntimeError('Unknown portable module backend')
+                    if not result['context'] or not result['source'] or result['length'] & 0xffffffff < 113 or result['context'] != arguments[0] or result['output'] != arguments[4]:
+                        raise RuntimeError('Portable module backend arguments differ from verified contract')
+                return result
             elif event == 'result':
+                if operation is not None:
+                    raise RuntimeError('Portable load plan returned a scalar')
                 integer = int(response['integer'])
                 if not 0 <= integer <= MASK64:
                     raise RuntimeError('TS 缓冲区返回值超出 uint64')

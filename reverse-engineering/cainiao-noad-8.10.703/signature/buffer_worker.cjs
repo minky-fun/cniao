@@ -24,7 +24,7 @@ function receive() {
 /** Encode bigint pointers losslessly in the memory pipe only. */
 function encode(_key, value) { return typeof value === 'bigint' ? value.toString() : value }
 
-/** Apply bounded primitive memory and heap requests, preserving allocator failures. */
+/** Apply bounded memory/heap requests or return an explicit module load plan; preserve allocator failures. */
 function execute(request) {
   let operations = 0
   /** Request exactly one acknowledged operation; reject unknown protocol responses. */
@@ -66,6 +66,10 @@ function execute(request) {
     free(address) { return BigInt(exchange({event: 'free', address}).integer) },
   }
   const entry = BigInt(request.entry)
+  if (request.operation !== undefined) {
+    if (request.operation !== 'planLoad' || !standard || entry !== standard.planEntry || typeof standard.planLoad !== 'function') throw new Error('Unsupported buffer plan operation')
+    return standard.planLoad(request.arguments.map(BigInt), memory)
+  }
   if (standard && Object.values(standard.standardEntries).includes(entry)) return standard.standardCall(entry, request.arguments.map(BigInt), BigInt(request.stack), memory, heap)
   const operation = Object.values(stringEntries).includes(entry) ? stringCall : bufferCall
   return operation(entry, request.arguments.map(BigInt), memory, heap)
@@ -75,7 +79,9 @@ for (;;) {
   const request = receive()
   if (request === undefined) break
   try {
-    process.stdout.write(JSON.stringify({event: 'result', integer: execute(request)}, encode) + '\n')
+    const value = execute(request)
+    const result = request.operation === 'planLoad' ? {event: 'load-plan', plan: value} : {event: 'result', integer: value}
+    process.stdout.write(JSON.stringify(result, encode) + '\n')
   } catch {
     process.stdout.write('{"event":"error","message":"Buffer request rejected"}\n')
   }

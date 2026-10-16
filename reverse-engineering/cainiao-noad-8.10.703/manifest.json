@@ -61,8 +61,8 @@
   },
   {
     "file": "signature/README.md",
-    "bytes": 92867,
-    "sha256": "e99564c1a6da8bff6e0d7713a311700651f9f5c5d6773890f6ffed2bf6add09b"
+    "bytes": 99173,
+    "sha256": "a76ef0f55e545b8dd547262a857932d869bbf015fb541f4ea9c8ffa782eb5d43"
   },
   {
     "file": "signature/aes_worker.cjs",
@@ -86,8 +86,8 @@
   },
   {
     "file": "signature/buffer_worker.cjs",
-    "bytes": 4023,
-    "sha256": "4e9ec05eec549551471e871a5a50e97803adf5757a3d2c2f313331fc72d6b244"
+    "bytes": 4463,
+    "sha256": "1718e198ce7374be33e597f045baca3d7d70c1db9a06883dd9ce640f78f0e5fc"
   },
   {
     "file": "signature/commoncrypto-evidence.json",
@@ -170,6 +170,11 @@
     "sha256": "c1a6f4d6562ec32a294f5f836ca6e71fc6b413b6f3c980267aac907f943ddfa3"
   },
   {
+    "file": "signature/header_validation_host.ts",
+    "bytes": 173,
+    "sha256": "ab02f9da2921882206aff664a04b62d18879f3b10acea7ce35cfc5c16ad86802"
+  },
+  {
     "file": "signature/hmac-imports.txt",
     "bytes": 66,
     "sha256": "3946a9496d2d2e7a12bb489983c1fceb76ece7973fa0050f68e308e1b8f558ea"
@@ -208,6 +213,11 @@
     "file": "signature/module-execute.asm",
     "bytes": 1326,
     "sha256": "873236ebd32fb07718990dfc664f768261670c7e108f3f2521c6c5722a6baf53"
+  },
+  {
+    "file": "signature/module-header-contract.asm",
+    "bytes": 11188,
+    "sha256": "e14e6848100c5297a34688c1138f24d17c6c33c0f2d05b7fe647449efe1e7580"
   },
   {
     "file": "signature/module-preparation-contract.asm",
@@ -360,6 +370,16 @@
     "sha256": "064545a9a2dddfcbbed37340b78e0293c950a96a9ea462b84818fff4d309fa2f"
   },
   {
+    "file": "signature/portable-module-header-evidence.json",
+    "bytes": 23578,
+    "sha256": "83d45e2dae8b26040fa2f279505a68cbc949739fdc32f97f8d92a9357d7d8cf9"
+  },
+  {
+    "file": "signature/portable-module-header-validation.json",
+    "bytes": 4911,
+    "sha256": "7d16f7c73f6456e20f947c459a88966f215fc53630586929ec4e4838ef1b3606"
+  },
+  {
     "file": "signature/portable-module-loading-evidence.json",
     "bytes": 22966,
     "sha256": "eff9f834a7dd4c761a02c2465e7415678251c508333588f34293c39a0bab92be"
@@ -478,6 +498,11 @@
     "file": "signature/portable_inflate.ts",
     "bytes": 12758,
     "sha256": "7faa19af49dfee0515d90d9086ce106fd81d68f54d7cca42a05a6450b7bf51f8"
+  },
+  {
+    "file": "signature/portable_module_header.ts",
+    "bytes": 4593,
+    "sha256": "25f8eba0646448b9df32e1d2160e4ca4829d2d78a52488ad9a87c8e3a2958236"
   },
   {
     "file": "signature/portable_module_registry.ts",
@@ -750,6 +775,11 @@
     "sha256": "2f70d4f62175d21cb619f1a70f1de8dde435c88ffcdb67b71e03d10bf9780837"
   },
   {
+    "file": "signature/test_buffer_load_plan.py",
+    "bytes": 4077,
+    "sha256": "b0ddc79756458df353d8e5a16508720d2f50913f061a44ce9ffc8568021690ef"
+  },
+  {
     "file": "signature/test_guest_bsd_random.py",
     "bytes": 1888,
     "sha256": "e28e0efdc8ac5157a44df4906ae2033367981c315a2d3dfd76104cd6b8e42a93"
@@ -803,6 +833,11 @@
     "file": "signature/test_portable_inflate.cjs",
     "bytes": 3478,
     "sha256": "16217b738c626d1e7ef1db3bcc2a0b1646aeca907dbb46d0e752f695296867b7"
+  },
+  {
+    "file": "signature/test_portable_module_header.cjs",
+    "bytes": 5946,
+    "sha256": "50f1830eca237fe6188fd659dbdf9fe47bb692793554efb7211c0a1b51efe2ef"
   },
   {
     "file": "signature/test_portable_module_registry.cjs",
@@ -941,8 +976,8 @@
   },
   {
     "file": "signature/verify_portable_buffer.py",
-    "bytes": 18883,
-    "sha256": "2d8442196a2c5ead2fe5219c452f8b41931b0e715e8930e3ed90a109475158e2"
+    "bytes": 21112,
+    "sha256": "c5183044e8828a1d078001657511417a05ff3c336523c29298b90ebeabc9c87f"
   },
   {
     "file": "signature/verify_portable_digest.py",
@@ -953,6 +988,11 @@
     "file": "signature/verify_portable_expand.py",
     "bytes": 9646,
     "sha256": "224ab35a0ae1f108c458364cd57fde804ccb86336e43efa669f3d518cff1c7f0"
+  },
+  {
+    "file": "signature/verify_portable_header.py",
+    "bytes": 12150,
+    "sha256": "9bcbf84bb20901a978ec1fe6b605a66d26841a5767c33b370a9701de4693994f"
   },
   {
     "file": "signature/verify_portable_inflate.py",

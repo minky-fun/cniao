@@ -1,0 +1,145 @@
+{
+  "source_sha256": {
+    "portable_module_header.ts": "25f8eba0646448b9df32e1d2160e4ca4829d2d78a52488ad9a87c8e3a2958236",
+    "header_validation_host.ts": "ab02f9da2921882206aff664a04b62d18879f3b10acea7ce35cfc5c16ad86802",
+    "verify_portable_header.py": "9bcbf84bb20901a978ec1fe6b605a66d26841a5767c33b370a9701de4693994f",
+    "test_portable_module_header.cjs": "50f1830eca237fe6188fd659dbdf9fe47bb692793554efb7211c0a1b51efe2ef",
+    "test_buffer_load_plan.py": "b0ddc79756458df353d8e5a16508720d2f50913f061a44ce9ffc8568021690ef",
+    "module-header-contract.asm": "e14e6848100c5297a34688c1138f24d17c6c33c0f2d05b7fe647449efe1e7580",
+    "buffer_worker.cjs": "1718e198ce7374be33e597f045baca3d7d70c1db9a06883dd9ce640f78f0e5fc",
+    "verify_portable_buffer.py": "c5183044e8828a1d078001657511417a05ff3c336523c29298b90ebeabc9c87f"
+  },
+  "typescript_version": "5.9.3",
+  "node_version": "20.20.2",
+  "strict_no_unused_passed": true,
+  "native_module_header_vectors": {
+    "null": 2,
+    "length_bits": 10,
+    "versions": 27,
+    "magic": 4,
+    "declared_size": 10,
+    "checksum": 36,
+    "bundle_selection": 15,
+    "bundle_flags": 5,
+    "bundle_versions": 9,
+    "bundle_child_length": 6,
+    "bundle_child_magic": 3,
+    "bundle_checksum": 6,
+    "alias": 4
+  },
+  "native_module_header_vector_total": 137,
+  "native_checksum_table_entries_verified": 256,
+  "checksum_oracle": "independent Python/Node reflected zlib calculation with reversed input-byte and result bits",
+  "node_module_checksum_cases": 81,
+  "node_header_behavior_cases": 11,
+  "node_header_rejection_cases": 10,
+  "new_plan_protocol_regression_tests": 6,
+  "python_regression_tests": 27,
+  "public_vector_comparison_fields": [
+    "native failure status bits",
+    "exact selected backend and context/source/full length/output registers",
+    "all allocated bytes, reset order effects and untouched padding",
+    "no additional allocations or frees"
+  ],
+  "public_backend_scope": "Native validation vectors stop at confirmed backend entries to observe the ABI; they do not run or simulate backend loading success",
+  "checksum": {
+    "polynomial": "0x04c11db7",
+    "direction": "MSB-first",
+    "initial": "0xffffffff",
+    "final_xor": 0,
+    "native_table": "0x10481f388",
+    "source_start": 20,
+    "maximum_total_bytes": 16777216,
+    "chunk_bytes": 4096
+  },
+  "packed_selector": {
+    "marker": "0xba137616",
+    "mask": "0x03fc0000",
+    "masked_value": "0x00040000",
+    "count_shift": 26,
+    "maximum_records": 63,
+    "record_stride": 8,
+    "selected_type": 0,
+    "type_shift": 58,
+    "offset_shift": 29,
+    "length_mask": "0x1fffffff"
+  },
+  "validated_statuses": [
+    1,
+    2,
+    7,
+    37,
+    38,
+    39,
+    62
+  ],
+  "backend_targets": [
+    "0x102a5e240",
+    "0x102a626f0"
+  ],
+  "actual_backend_calls_per_input": {
+    "0x102a5e240": 2
+  },
+  "new_format_backend_complete_execution_verified": false,
+  "native_module_header_body_entries_in_ts_runs": 0,
+  "same_and_changed_input_results_equal_native": true,
+  "same_and_changed_input_opcode_counts_equal_native": true,
+  "actual_expanded_module_bytes_equal_native": true,
+  "ts_vm_invocations_per_input": [
+    76,
+    76
+  ],
+  "ts_vm_instructions_per_input": [
+    321675,
+    321855
+  ],
+  "observed_vm_opcode_kinds": [
+    73,
+    73
+  ],
+  "previous_native_vectors_rechecked": {
+    "registry": 797,
+    "sections": 321,
+    "module_preparation": 230,
+    "packed_expansion": 2418,
+    "buffer": 440,
+    "standard_crypto": 254,
+    "zlib": {
+      "cases": {
+        "valid": 168,
+        "invalid": 5,
+        "truncated": 5
+      },
+      "stream_calls": 43284
+    },
+    "complete_vm_programs": 5
+  },
+  "plan_protocol_guards": [
+    "only explicit planLoad operation and exact validator entry",
+    "uint64 ABI request fields",
+    "only two confirmed backend targets",
+    "context and output unchanged from caller",
+    "nonzero backend context/source and valid low32 length",
+    "exact packet fields and ASCII decimal register representation",
+    "ordinary integer results cannot act as plans",
+    "plans cannot claim scalar loader success"
+  ],
+  "unsupported": [
+    "CRC-enabled declared total below 20 bytes, which underflows in native code",
+    "CRC-enabled totals beyond 16 MiB",
+    "unmapped or truncated guest memory",
+    "executing either portable loader core, which is not implemented"
+  ],
+  "remaining_dependencies": [
+    "selected loader core allocation/reuse and dependency binding",
+    "global initialization/TLS/host registration control",
+    "other native object and algorithm wrappers",
+    "SDS/SDK/platform and actual device state"
+  ],
+  "full_portable_module_loader_implemented": false,
+  "full_portable_signer_implemented": false,
+  "server_verified": false,
+  "scripting_device_execution_verified": false,
+  "widget_or_package_changed": false,
+  "raw_candidates_keys_entropy_resources_memory_exported": false
+}
