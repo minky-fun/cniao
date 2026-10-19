@@ -42,6 +42,15 @@
     "synthetic_registration_table_only": true,
     "enabled": false
   },
+  "one_runtime_registration": {
+    "handler_count": 0,
+    "selected_handler": null,
+    "registration_path_executed": false,
+    "synthetic_callback_table": false,
+    "router_installed": false,
+    "gate_flag_at_stop": 0,
+    "secondary_error_router_at_stop": "0x0"
+  },
   "raw_abi": {
     "request_bytes": 216,
     "output_slots": 6,
@@ -95,6 +104,8 @@
     "_getenv": 4,
     "_strncpy": 1
   },
+  "bounded_objc_calls": {},
+  "native_stages": {},
   "execution_limits": {
     "timeout_per_run_us": 40000000,
     "instruction_limit_per_run": 50000000

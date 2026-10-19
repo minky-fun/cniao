@@ -42,6 +42,15 @@
     "synthetic_registration_table_only": true,
     "enabled": true
   },
+  "one_runtime_registration": {
+    "handler_count": 15,
+    "selected_handler": "0x102ba96b0",
+    "registration_path_executed": true,
+    "synthetic_callback_table": true,
+    "router_installed": true,
+    "gate_flag_at_stop": 0,
+    "secondary_error_router_at_stop": "0x0"
+  },
   "raw_abi": {
     "request_bytes": 216,
     "output_slots": 6,
@@ -54,10 +63,14 @@
   "execution": {
     "vm_status": null,
     "boundary": {
-      "kind": "unsupported_objc_message",
-      "native_pc": "0x104431844",
-      "return_address": "0x102b9abe8",
-      "selector": "stringWithUTF8String:"
+      "kind": "unmapped_memory",
+      "error": "Invalid memory read (UC_ERR_READ_UNMAPPED)",
+      "fault": {
+        "native_pc": "0x102b9bb6c",
+        "address": "0x8",
+        "bytes": 8
+      },
+      "return_address": "0x102b9baf4"
     },
     "nonzero_output_slots": [],
     "error_slot_at_stop": 0,
@@ -74,15 +87,14 @@
         23,
         1,
         0
+      ],
+      [
+        2,
+        23,
+        18,
+        0
       ]
     ]
-  },
-  "next_runtime_lookup": {
-    "class_name": "One",
-    "selector": "play:",
-    "declared_in_main_image": true,
-    "lookup_executed": false,
-    "source": "decoded native prefix and subsequent NSClassFromString/NSSelectorFromString instructions"
   },
   "link_only_symbols": [
     "fchmod",
@@ -98,6 +110,18 @@
   "extra_import_calls": {
     "_getenv": 4,
     "_strncpy": 1
+  },
+  "bounded_objc_calls": {
+    "_objc_msgSend": 4,
+    "_objc_retainAutoreleasedReturnValue": 2,
+    "_NSClassFromString": 1,
+    "_objc_release": 2,
+    "_NSSelectorFromString": 1
+  },
+  "native_stages": {
+    "0x102b8632c": 1,
+    "0x102b878e4": 1,
+    "0x102b879a0": 1
   },
   "execution_limits": {
     "timeout_per_run_us": 40000000,

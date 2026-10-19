@@ -21,6 +21,9 @@ class UnifiedHostTests(unittest.TestCase):
         memory.extra_imports = Counter()
         memory.loader_environment_queries = []
         memory.host_libc = ctypes.CDLL(None)
+        memory.registration_mode = False
+        memory.native_stages = Counter()
+        memory.one_play = 0x102b8632c
         memory.reg_write(UC_ARM64_REG_X30, 0x800)
         return memory
 

@@ -31,16 +31,53 @@ class UnifiedBoundaryProbe(SigningBoundaryProbe):
     execution_timeout_us = 40000000
 
     def __init__(self, *args, **kwargs):
-        """创建仅供链接的两个 Darwin 符号槽，不向 guest 写入宿主指针。"""
+        """建立已验证的 One 类方法和 NSString 类引用，不加载宿主对象。"""
         self.linked = {}
         self.linked_execution = None
         self.loader_environment_queries = []
         self.extra_imports = Counter()
         self.host_libc = ctypes.CDLL(None)
         super().__init__(*args, **kwargs)
+        self.nsstring_class = self.allocate(16)
+        self.cpu.mem_write(0x1062b3550, struct.pack('<Q', self.nsstring_class))
+        self.runtime_objects = set()
+        self.one_class = self.image_classes.get(b'One')
+        if self.one_class != 0x10643ecf8:
+            raise RuntimeError('One 类地址与主程序元数据不符')
+        metaclass = struct.unpack('<Q', self.cpu.mem_read(self.one_class, 8))[0]
+        ro = struct.unpack('<Q', self.cpu.mem_read(metaclass + 32, 8))[0] & ~7
+        methods = struct.unpack('<Q', self.cpu.mem_read(ro + 32, 8))[0]
+        entry_size, count = struct.unpack('<II', self.cpu.mem_read(methods, 8))
+        if (entry_size, count) != (24, 3):
+            raise RuntimeError('One 类方法表格式不符')
+        self.one_play = None
+        for index in range(count):
+            name, _, implementation = struct.unpack('<QQQ', self.cpu.mem_read(methods + 8 + 24 * index, 24))
+            if self.cstring(name) == b'play:':
+                self.one_play = implementation
+        if self.one_play != 0x102b8632c:
+            raise RuntimeError('One +play: 实现与主程序元数据不符')
+        self.one_selector = None
+        self.runtime_calls = Counter()
+        self.registration_mode = False
+        self.registration_records = []
+        self.native_stages = Counter()
+        if struct.unpack('<Q', self.cpu.mem_read(0x1066a3300, 8))[0] != 0x102b878e4:
+            raise RuntimeError('One 原生分发指针与主程序数据不符')
 
     def on_instruction(self, cpu, address, size, context):
         """只建模已观察的链接环境和 C 函数；未知符号与平台消息不兜底。"""
+        if self.registration_mode and self.callback <= address < self.callback + 16:
+            command = tuple(cpu.reg_read(register) for register in ARGUMENT_REGISTERS[:4])
+            target = cpu.reg_read(ARGUMENT_REGISTERS[4])
+            if command[:2] != (2, 23) or command[3] != 0 or not 0x102000000 <= target < 0x104000000:
+                raise RuntimeError('One 原生路由注册超出固定样本')
+            self.registration_records.append((command, target))
+            cpu.reg_write(ARGUMENT_REGISTERS[0], 0)
+            cpu.reg_write(UC_ARM64_REG_PC, cpu.reg_read(UC_ARM64_REG_X30))
+            return
+        if address in (self.one_play, 0x102b878e4, 0x102b879a0):
+            self.native_stages[hex(address)] += 1
         if self.callback + 0x500 <= address < self.callback + 0x508:
             for symbol, pointer in self.linked.items():
                 if address == pointer:
@@ -56,6 +93,41 @@ class UnifiedBoundaryProbe(SigningBoundaryProbe):
                 cpu.reg_write(UC_ARM64_REG_PC, cpu.reg_read(UC_ARM64_REG_X30))
                 return
         name = self.imports.get(address)
+        if name in ('_objc_msgSend', '_NSClassFromString', '_NSSelectorFromString', '_objc_retain', '_objc_release', '_objc_retainAutorelease', '_objc_retainAutoreleasedReturnValue', '_objc_autoreleaseReturnValue'):
+            a, b, c = (cpu.reg_read(register) for register in ARGUMENT_REGISTERS[:3])
+            return_address = cpu.reg_read(UC_ARM64_REG_X30)
+            result = None
+            if name == '_objc_msgSend' and a == self.nsstring_class and return_address in (0x102b9abe8, 0x102b9ac1c) and self.cstring(b) == b'stringWithUTF8String:':
+                raw = self.cstring(c)
+                if (return_address, raw) not in ((0x102b9abe8, b'One'), (0x102b9ac1c, b'play:')):
+                    raise RuntimeError('NSString 输入超出原生常量')
+                result = self.allocate(32)
+                cpu.mem_write(result + 16, struct.pack('<QQ', c, len(raw)))
+                self.runtime_objects.add(result)
+            elif name == '_NSClassFromString' and return_address == 0x102b9abf8:
+                if a not in self.runtime_objects:
+                    raise RuntimeError('One 类查询收到未知字符串对象：' + hex(a))
+                if struct.unpack('<QQ', cpu.mem_read(a + 16, 16)) != (0x1068fe6b7, 3):
+                    raise RuntimeError('One 类查询参数与原生字符串不符')
+                result = self.one_class
+            elif name == '_NSSelectorFromString' and return_address == 0x102b9ac2c:
+                if a not in self.runtime_objects or struct.unpack('<QQ', cpu.mem_read(a + 16, 16)) != (0x1068fe6b0, 5):
+                    raise RuntimeError('play: 选择子查询参数与原生字符串不符')
+                self.one_selector = 0x1068fe6b0
+                result = self.one_selector
+            elif name == '_objc_msgSend' and a == self.one_class and c == self.one_selector and self.one_selector is not None:
+                selector = self.cstring(b)
+                if return_address == 0x102b9ac4c and selector == b'respondsToSelector:':
+                    result = 1
+                elif return_address == 0x102b9ac64 and selector == b'methodForSelector:':
+                    result = self.one_play
+            elif name in ('_objc_retain', '_objc_release', '_objc_retainAutorelease', '_objc_retainAutoreleasedReturnValue', '_objc_autoreleaseReturnValue') and a in self.runtime_objects:
+                result = a
+            if result is not None:
+                self.runtime_calls[name] += 1
+                cpu.reg_write(ARGUMENT_REGISTERS[0], result)
+                cpu.reg_write(UC_ARM64_REG_PC, return_address)
+                return
         if name not in ('_getenv', '_strncpy'):
             super().on_instruction(cpu, address, size, context)
             return
@@ -151,7 +223,17 @@ def inspect(sample, with_native_route=True):
         if library['load_status'] or loaded['load_status']:
             raise RuntimeError('补齐库后仍未完成原生模块加载')
         if with_native_route:
-            probe.native_routes[(2, 23, 1, 0)] = 0x102ba9304
+            probe.cpu.mem_write(probe.heap + 0x200, struct.pack('<Q', probe.heap))
+            probe.cpu.reg_write(UC_ARM64_REG_X22, probe.heap)
+            probe.registration_mode = True
+            try:
+                probe.run(0x102ba9958, stop=0x102ba9bc4)
+            finally:
+                probe.registration_mode = False
+            routes = dict(probe.registration_records)
+            if len(routes) != 15 or routes.get((2, 23, 1, 0)) != 0x102ba9304 or routes.get((2, 23, 18, 0)) != 0x102ba96b0 or struct.unpack('<Q', probe.cpu.mem_read(0x1068fdff0, 8))[0] != probe.heap:
+                raise RuntimeError('One 注册或分发表安装与原生代码不符')
+            probe.native_routes.update(routes)
         if not probe.signing_engine:
             raise RuntimeError('尚无已验证的普通签名引擎')
         probe.module_routes[(1, 4, 1, 0)] = (probe.signing_engine, 3, 'lvm_sig')
@@ -174,31 +256,45 @@ def inspect(sample, with_native_route=True):
             boundary = {'kind': 'uninitialized_command', 'ids': probe.missing_command}
         except MissingLinkedFunction:
             boundary = {'kind': 'unimplemented_linked_function', 'symbol': probe.linked_execution}
+        except slice_probe.UcError as stopped:
+            if probe.memory_fault is None:
+                raise
+            boundary = {'kind': 'unmapped_memory', 'error': str(stopped), 'fault': probe.memory_fault, 'return_address': hex(probe.cpu.reg_read(UC_ARM64_REG_X30))}
         except RuntimeError as stopped:
             pc = probe.cpu.reg_read(UC_ARM64_REG_PC)
-            if str(stopped) != '消息超出主程序包标识的明确模型' or probe.imports.get(pc) != '_objc_msgSend':
-                raise
-            selector = probe.cstring(probe.cpu.reg_read(ARGUMENT_REGISTERS[1]))
-            if not selector or any(value not in b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_:' for value in selector) or len(selector) > 100:
-                raise RuntimeError('不能安全导出平台选择子名称') from None
-            boundary = {'kind': 'unsupported_objc_message', 'native_pc': hex(pc), 'return_address': hex(probe.cpu.reg_read(UC_ARM64_REG_X30)), 'selector': selector.decode('ascii')}
+            if str(stopped) == '类查询超出已验证的主程序类' and probe.imports.get(pc) == '_NSClassFromString':
+                queried = probe.cpu.reg_read(ARGUMENT_REGISTERS[0])
+                string_pointer, length = struct.unpack('<QQ', probe.cpu.mem_read(queried + 16, 16))
+                boundary = {'kind': 'unmodeled_class_query', 'native_pc': hex(pc), 'return_address': hex(probe.cpu.reg_read(UC_ARM64_REG_X30)), 'string_length': length, 'is_one': probe.cstring(string_pointer) == b'One'}
+            else:
+                if str(stopped) != '消息超出主程序包标识的明确模型' or probe.imports.get(pc) != '_objc_msgSend':
+                    raise
+                selector = probe.cstring(probe.cpu.reg_read(ARGUMENT_REGISTERS[1]))
+                if not selector or any(value not in b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_:' for value in selector) or len(selector) > 100:
+                    raise RuntimeError('不能安全导出平台选择子名称') from None
+                boundary = {'kind': 'unsupported_objc_message', 'native_pc': hex(pc), 'return_address': hex(probe.cpu.reg_read(UC_ARM64_REG_X30)), 'selector': selector.decode('ascii')}
         slots = [index for index in range(6) if struct.unpack('<Q', probe.cpu.mem_read(outputs + 8 * index, 8))[0]]
-        next_lookup = None
-        if boundary.get('return_address') == '0x102b9abe8':
-            if probe.cstring(0x1068fe6b7) != b'One' or probe.cstring(0x1068fe6b0) != b'play:':
-                raise RuntimeError('后续平台常量与原生前缀不符')
-            next_lookup = {'class_name': 'One', 'selector': 'play:', 'declared_in_main_image': b'One' in probe.image_classes, 'lookup_executed': False, 'source': 'decoded native prefix and subsequent NSClassFromString/NSSelectorFromString instructions'}
         return {
             'binary_sha256': EXPECTED_SHA256,
             'scope': 'native Unified dependency and raw-ABI synthetic execution boundary; not the Objective-C wrapper, portable signer, or server validation',
             'without_library': missing, 'library': library, 'with_library': loaded,
             'native_route': {**route, 'enabled': with_native_route},
+            'one_runtime_registration': {
+                'handler_count': len(probe.registration_records),
+                'selected_handler': hex(dict(probe.registration_records)[(2, 23, 18, 0)]) if with_native_route else None,
+                'registration_path_executed': with_native_route,
+                'synthetic_callback_table': with_native_route,
+                'router_installed': struct.unpack('<Q', probe.cpu.mem_read(0x1068fdff0, 8))[0] == probe.heap,
+                'gate_flag_at_stop': bytes(probe.cpu.mem_read(0x1069c15b8, 1))[0],
+                'secondary_error_router_at_stop': hex(struct.unpack('<Q', probe.cpu.mem_read(0x1068fe200, 8))[0]),
+            },
             'raw_abi': {'request_bytes': 216, 'output_slots': 6, 'input_mode': 'security-factors', 'input_fields': 22, 'use_wua': 0, 'optional_fields': 'explicitly empty; no device values guessed', 'objc_wrapper_conformance_verified': False},
             'execution': {'vm_status': status, 'boundary': boundary, 'nonzero_output_slots': slots, 'error_slot_at_stop': struct.unpack('<I', probe.cpu.mem_read(error, 4))[0], 'error_slot_is_final': False, 'observed_commands': probe.observed_commands[before:]},
-            'next_runtime_lookup': next_lookup,
             'link_only_symbols': sorted(probe.linked), 'link_only_execution': probe.linked_execution,
             'loader_environment_queries': probe.loader_environment_queries,
             'extra_import_calls': dict(probe.extra_imports),
+            'bounded_objc_calls': dict(probe.runtime_calls),
+            'native_stages': dict(probe.native_stages),
             'execution_limits': {'timeout_per_run_us': probe.execution_timeout_us, 'instruction_limit_per_run': probe.instruction_limit},
             'synthetic_dependencies': ['explicit nonzero clock and UTC timezone', 'empty synthetic SDK state directory', 'single-thread locks/TLS and deferred frees', 'limited Objective-C bundle model', 'four loader environment variables explicitly unset without reading host environment', 'fchmod/socketpair link-only slots trap if executed'],
             'monitor_calls_with_omitted_side_effects': probe.omitted_monitor_calls,
