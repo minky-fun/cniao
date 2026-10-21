@@ -7,6 +7,7 @@ import {
   Spacer,
   Text,
   VStack,
+  ZStack,
   useEffect,
   useCallback,
   useMemo,
@@ -45,7 +46,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 管理集数加载与系统播放器生命周期，并显示本地播放错误。 */
+/** 管理集数与播放器生命周期，在视频上覆盖黑色准备进度蒙版。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -473,35 +474,42 @@ export function PlayerView({
       }}
     >
 
-      <VStack
+      <ZStack
         onAppear={handlePlayerContainerAppear}
-        spacing={0}
         frame={isFullScreen
           ? { maxWidth: "infinity", maxHeight: "infinity" }
           : { maxWidth: "infinity", height: PLAYER_HEIGHT }}
         background="black"
       >
         {playerSurface}
-      </VStack>
 
-      <HStack
-        spacing={8}
-        padding={{ horizontal: 16 }}
-        frame={{ maxWidth: "infinity", height: 32, alignment: "leading" }}
-      >
-        <ProgressView
-          progressViewStyle="circular"
-          controlSize="small"
-          frame={{ width: 18, height: 18 }}
-          hidden={!isPlayerBusy}
-        />
-        <Text font="caption" foregroundStyle={isFullScreen ? "white" : "secondaryLabel"} lineLimit={1}>
-          {isPlayerBusy
-            ? (prepareLabel ? `${prepareLabel} ${Math.round(preparePercent * 100)}%`
-              : switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…"))
-            : (isFullScreen ? errorMessage : "")}
+        {isPlayerBusy ? (
+          <VStack
+            spacing={12}
+            alignment="center"
+            frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+            background="black"
+          >
+            <ProgressView
+              value={prepareLabel ? preparePercent : undefined}
+              total={1}
+              progressViewStyle="circular"
+              tint="white"
+              controlSize="regular"
+            />
+            <Text font="footnote" foregroundStyle="white">
+              {prepareLabel ? `${prepareLabel} ${Math.round(preparePercent * 100)}%`
+                : switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…")}
+            </Text>
+          </VStack>
+        ) : null}
+      </ZStack>
+
+      {isFullScreen && errorMessage ? (
+        <Text font="caption" foregroundStyle="systemOrange" padding={{ horizontal: 16 }}>
+          {errorMessage}
         </Text>
-      </HStack>
+      ) : null}
 
       <HStack
         padding={{ horizontal: 16, bottom: 8 }}

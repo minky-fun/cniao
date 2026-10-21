@@ -132,7 +132,7 @@ function playerRuntime({ deferred = false } = {}) {
       /** 遍历节点而不执行额外的子组件。 */
       function find(node) {
         if (!node || typeof node !== 'object') return
-        if (container ? node.type === 'VStack' && node.props?.onAppear : node.type === 'VideoPlayer') return node
+        if (container ? node.type === 'ZStack' && node.props?.onAppear : node.type === 'VideoPlayer') return node
         for (const child of node.children ?? []) {
           const found = find(child)
           if (found) return found
@@ -148,8 +148,8 @@ function playerRuntime({ deferred = false } = {}) {
         task.callback()
       }
     },
-    /** 读取固定状态行，检查启动提示不会盖在视频上。 */
-    statusRow() { return tree.children.find(node => node?.type === 'HStack' && node.props?.frame?.height === 32) },
+    /** 读取视频上方的进度蒙版，检查就绪与错误后会撤下。 */
+    progressOverlay() { return this.view(true).children[1] },
     /** 模拟系统媒体就绪通知。 */
     ready() { events.onReady() },
     /** 模拟系统播放状态事件。 */
@@ -221,25 +221,24 @@ test('播放器退出时取消容器回调中的待执行任务', async () => {
 })
 
 
-/** 就绪事件须先撤销启动提示，后续任务才能调用 play，且原生节点保持同一对象。 */
-test('媒体就绪先提交界面再播放，进度不会覆盖 VideoPlayer', async () => {
+/** 就绪事件须先撤下进度蒙版，后续任务才能调用 play，且原生节点保持同一对象。 */
+test('媒体就绪先撤下黑色进度蒙版再播放，保持 VideoPlayer 节点', async () => {
   const run = playerRuntime()
   await run.flush()
   const surface = run.view()
   const container = run.view(true)
-  assert.equal(container.children.length, 1, '原生视频容器内不能放置遮罩或进度视图')
   assert.equal(container.props.frame.height, 220)
   container.props.onAppear()
   run.tick()
   await run.flush()
-  assert.equal(run.statusRow().children[0].props.hidden, false)
-  assert.equal(run.statusRow().children[1].children[0], '正在启动系统播放器')
+  assert.ok(run.progressOverlay())
+  assert.equal(run.progressOverlay().props.background, 'black')
+  assert.equal(run.progressOverlay().children[1].children[0], '正在启动系统播放器')
   assert.equal(run.pendingTimeouts(), 1)
   run.ready()
   assert.equal(run.plays(), 0, '就绪回调中不能同步启动播放')
   await run.flush()
-  assert.equal(run.statusRow().children[0].props.hidden, true)
-  assert.equal(run.statusRow().children[1].children[0], '')
+  assert.equal(run.progressOverlay(), null)
   assert.equal(run.pendingTimeouts(), 0)
   assert.equal(run.plays(), 0, '启动必须放在提交后的下一轮任务')
   assert.equal(run.view(), surface, '更新进度时不能重新创建原生视图节点')
@@ -249,7 +248,7 @@ test('媒体就绪先提交界面再播放，进度不会覆盖 VideoPlayer', as
   run.status(2)
   await run.flush()
   assert.equal(run.view(), surface)
-  assert.equal(run.statusRow().children[0].props.hidden, true)
+  assert.equal(run.progressOverlay(), null)
   run.dispose()
 })
 
@@ -286,7 +285,7 @@ test('系统播放错误取消等待超时，保持原生视频节点', async ()
   run.error()
   await run.flush()
   assert.equal(run.pendingTimeouts(), 0)
-  assert.equal(run.statusRow().children[0].props.hidden, true)
+  assert.equal(run.progressOverlay(), null)
   assert.equal(run.view(), surface)
   run.dispose()
 })
