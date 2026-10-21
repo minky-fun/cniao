@@ -166,6 +166,12 @@ function playerRuntime({ deferred = false } = {}) {
     progressOverlay() { return this.view(true).children[1] },
     /** 读取图层模式中由脚本提供的播放及进度控制。 */
     controls() { return this.view(true).children[2] },
+    /** 使用实际容器宽度执行进度条布局回调，验证触点到播放时间的映射。 */
+    seekBar(width = 212) {
+      const geometry = this.controls().children[2]
+      assert.equal(geometry.type, 'GeometryReader')
+      return geometry.children[0]({ size: { width, height: 44 } })
+    },
     /** 模拟系统已经播放到指定时间，不经过用户跳转入口。 */
     advancePlaybackTo(value) { position = value },
     /** 读取原生暂停次数，验证控制栏操作实际到达播放器。 */
@@ -392,19 +398,16 @@ test('图层进度在就绪后刷新，拖动完成才跳转，退出后停止�
   run.advancePlaybackTo(20)
   run.tick(500)
   await run.flush()
-  const slider = run.controls().children[2]
-  assert.equal(slider.type, 'Slider')
-  assert.equal(slider.props.value, 20)
-  assert.equal(slider.props.max, 80)
-  slider.props.onEditingChanged(true)
-  slider.props.onChanged(45)
+  const bar = run.seekBar()
+  assert.equal(bar.children[1].props.frame.width, 50, '200 点轨道上的 20/80 秒应填充 50 点')
+  bar.props.onDragGesture.onChanged({ location: { x: 118.5, y: 22 } })
   await run.flush()
   assert.deepEqual(run.seeks, [])
   run.tick(500)
   await run.flush()
-  assert.equal(run.controls().children[2].props.value, 45)
+  assert.equal(run.seekBar().children[1].props.frame.width, 112.5)
   assert.equal(run.timeReads(), 1)
-  slider.props.onEditingChanged(false)
+  bar.props.onDragGesture.onEnded({ location: { x: 118.5, y: 22 } })
   assert.deepEqual(run.seeks, [45])
   run.error()
   await run.flush()
@@ -413,5 +416,28 @@ test('图层进度在就绪后刷新，拖动完成才跳转，退出后停止�
   run.dispose()
   run.tick(500)
   assert.equal(run.timeReads(), 1)
+  assert.equal(run.staleUpdates(), 0)
+})
+
+/** 轨道支持轻点和拖到边缘，超出容器的触点必须限制在有效时长内。 */
+test('自绘进度条限制跳转范围，并忽略页面退出后的手势', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  run.ready()
+  await run.flush()
+  const bar = run.seekBar()
+  assert.equal(bar.props.onDragGesture.minDistance, 0)
+  bar.props.onDragGesture.onEnded({ location: { x: -20, y: 22 } })
+  bar.props.onDragGesture.onEnded({ location: { x: 300, y: 22 } })
+  bar.props.onDragGesture.onEnded({ location: { x: 106, y: 22 } })
+  assert.deepEqual(run.seeks, [0, 80, 40])
+  assert.equal(run.seekBar(0).props?.onDragGesture, undefined)
+  run.dispose()
+  bar.props.onDragGesture.onChanged({ location: { x: 60, y: 22 } })
+  bar.props.onDragGesture.onEnded({ location: { x: 60, y: 22 } })
+  assert.deepEqual(run.seeks, [0, 80, 40])
   assert.equal(run.staleUpdates(), 0)
 })

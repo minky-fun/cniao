@@ -1,10 +1,12 @@
 import {
   AVPlayerView,
   Button,
+  Capsule,
+  Circle,
+  GeometryReader,
   HStack,
   ProgressView,
   ScrollView,
-  Slider,
   Text,
   VStack,
   ZStack,
@@ -109,7 +111,6 @@ export function PlayerView({
   const playerReadyRef = useRef(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackPosition, setPlaybackPosition] = useState(0)
-  const seekPositionRef = useRef(0)
   const isSeekingRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
@@ -337,7 +338,6 @@ export function PlayerView({
     playerReadyRef.current = false
     setIsPlaying(false)
     setPlaybackPosition(0)
-    seekPositionRef.current = 0
     isSeekingRef.current = false
     setReadySource("")
     setHasPlaybackStarted(false)
@@ -392,7 +392,6 @@ export function PlayerView({
         const position = player.currentTime
         if (Number.isFinite(position) && position >= 0) {
           setPlaybackPosition(position)
-          seekPositionRef.current = position
         }
       }
       timer = setTimeout(updatePosition, 500)
@@ -414,18 +413,16 @@ export function PlayerView({
     }
   }
 
-  /** 拖动时只更新预览进度，结束后再向原生播放器提交一次跳转。 */
-  const changePlaybackPosition = (position: number) => {
-    seekPositionRef.current = position
+  /** 将触点映射到单条轨道，拖动仅预览，松手时才提交一次原生跳转。 */
+  const seekPlaybackAt = (x: number, width: number, commit: boolean) => {
+    if (commit) isSeekingRef.current = false
+    if (!aliveRef.current || !playerReadyRef.current || loadedSourceRef.current !== source
+      || !Number.isFinite(x) || !Number.isFinite(width) || width <= 12 || activeDuration <= 0) return
+    const ratio = Math.min(1, Math.max(0, (x - 6) / (width - 12)))
+    const position = ratio * activeDuration
+    isSeekingRef.current = !commit
     setPlaybackPosition(position)
-  }
-
-  /** 阻止定时进度覆盖拖动值，媒体仍就绪时才应用最终跳转位置。 */
-  const finishSeeking = (editing: boolean) => {
-    isSeekingRef.current = editing
-    if (!editing && aliveRef.current && playerReadyRef.current) {
-      player.currentTime = seekPositionRef.current
-    }
+    if (commit) player.currentTime = position
   }
 
   useEffect(() => {
@@ -591,17 +588,44 @@ export function PlayerView({
               action={togglePlayback}
             />
             <Text font="caption2" monospacedDigit>{formatDuration(playbackPosition)}</Text>
-            {activeDuration > 0 ? <Slider
-              min={0}
-              max={activeDuration}
-              value={Math.min(playbackPosition, activeDuration)}
-              onChanged={changePlaybackPosition}
-              onEditingChanged={finishSeeking}
-              label={<Text>播放进度</Text>}
-              labelsHidden={true}
-              frame={{ maxWidth: "infinity", height: 28 }}
-              tint="white"
-            /> : null}
+            {activeDuration > 0 ? <GeometryReader frame={{ maxWidth: "infinity", height: 44 }}>
+              {/** 共用同一中心线绘制底轨、已播段和圆点，不使用系统 Slider。 */
+              proxy => {
+                const width = proxy.size.width
+                if (width <= 12) return <ZStack />
+                const trackWidth = width - 12
+                const progress = Math.min(1, Math.max(0, playbackPosition / activeDuration))
+                return <ZStack
+                  alignment="leading"
+                  frame={{ width, height: 44 }}
+                  contentShape="rect"
+                  onDragGesture={{
+                    minDistance: 0,
+                    coordinateSpace: "local",
+                    /** 保留拖动预览，定时读取不能覆盖手指选择的位置。 */
+                    onChanged: details => seekPlaybackAt(details.location.x, width, false),
+                    /** 使用最终触点提交跳转，同时支持轻点轨道定位。 */
+                    onEnded: details => seekPlaybackAt(details.location.x, width, true),
+                  }}
+                >
+                  <Capsule
+                    fill="rgba(255, 255, 255, 0.35)"
+                    frame={{ width: trackWidth, height: 4 }}
+                    offset={{ x: 6, y: 0 }}
+                  />
+                  <Capsule
+                    fill="white"
+                    frame={{ width: trackWidth * progress, height: 4 }}
+                    offset={{ x: 6, y: 0 }}
+                  />
+                  <Circle
+                    fill="white"
+                    frame={{ width: 12, height: 12 }}
+                    offset={{ x: trackWidth * progress, y: 0 }}
+                  />
+                </ZStack>
+              }}
+            </GeometryReader> : null}
             <Text font="caption2" monospacedDigit>{formatDuration(activeDuration)}</Text>
           </HStack>
         ) : null}
