@@ -1,5 +1,6 @@
 import {
-  VideoPlayer,
+  AVPlayerView,
+  type PIPStatus,
   Button,
   HStack,
   Image,
@@ -12,6 +13,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useObservable,
   useRef,
   useState,
 } from "scripting"
@@ -33,6 +35,7 @@ import type { PlayerData } from "../core/types"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
 import { bindPlayerEvents } from "../core/playerEvents"
+import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 
 const PLAYER_HEIGHT = 220
 
@@ -65,11 +68,21 @@ export function PlayerView({
   const [data, setData] = useState<PlayerData | null>(null)
   const [currentVid, setCurrentVid] = useState(initialVid ?? "")
   const [isLoading, setIsLoading] = useState(true)
-  // 全屏仅改变布局，保持同一播放器和播放源，避免切换时重新装载媒体。
-  const [isFullScreen, setIsFullScreen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
   const player = useMemo(() => new AVPlayer(), [])
+  const pipStatus = useObservable<PIPStatus>(null)
+  const pipValue = pipStatus.value
+  const isPipActiveRef = useRef(false)
+
+  // willStop 期间系统仍持有播放器，收到 didStop 后才允许释放。
+  if (pipValue === "willStart" || pipValue === "didStart") isPipActiveRef.current = true
+  else if (pipValue === "didStop") isPipActiveRef.current = false
+
+  useEffect(() => {
+    if (pipValue === "willStart" || pipValue === "didStart") setPipPlaybackActive(true)
+    else if (pipValue === "didStop") setPipPlaybackActive(false)
+  }, [pipValue])
 
   const loadedSourceRef = useRef("")
 
@@ -236,7 +249,7 @@ export function PlayerView({
 
     return () => {
       cancelled = true
-      SharedAudioSession.setActive(false).catch(() => {})
+      if (!isPipActiveRef.current) SharedAudioSession.setActive(false).catch(() => {})
     }
   }, [])
 
@@ -367,9 +380,15 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, seriesId])
 
-  // 基础播放器由当前页面持有，关闭页面后释放，不保留画中画控制器。
+  // 画中画仍在播放时保留播放器，其余情况在页面关闭后释放。
   useEffect(() => {
-    return () => player.dispose()
+    return () => {
+      if (isPipActiveRef.current) retainPipPlayer(player)
+      else {
+        setPipPlaybackActive(false)
+        player.dispose()
+      }
+    }
   }, [player])
 
   const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
@@ -381,15 +400,8 @@ export function PlayerView({
       frame={PAGE_FRAME}
       navigationTitle="红果剧场"
       navigationBarTitleDisplayMode="inline"
-      navigationBarVisibility={isFullScreen ? "hidden" : "visible"}
-      tabBarVisibility={isFullScreen ? "hidden" : "automatic"}
-      background={isFullScreen ? "black" : undefined}
-      ignoresSafeArea={isFullScreen}
       toolbar={{
         topBarTrailing: [
-          <Button title="全屏" systemImage="arrow.up.left.and.arrow.down.right"
-            disabled={!isPlayerLoaded || isPlayerBusy}
-            action={() => setIsFullScreen(true)} />,
           ...(onOpenHistory
             ? [
                 <Button
@@ -406,14 +418,17 @@ export function PlayerView({
     >
 
       <ZStack
-        frame={isFullScreen
-          ? { maxWidth: "infinity", maxHeight: "infinity" }
-          : { maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
+        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
         {isPlayerLoaded ? (
-          <VideoPlayer
+          <AVPlayerView
             player={player}
+            pipStatus={pipStatus}
+            allowsPictureInPicturePlayback={true}
+            canStartPictureInPictureAutomaticallyFromInline={false}
+            updatesNowPlayingInfoCenter={true}
+            videoGravity="resizeAspect"
             frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
           />
         ) : null}
@@ -447,15 +462,7 @@ export function PlayerView({
         ) : null}
       </ZStack>
 
-      {isFullScreen ? (
-        <HStack padding={{ horizontal: 16, top: 8, bottom: 32 }} foregroundStyle="white">
-          <Spacer />
-          <Button title="退出全屏" systemImage="arrow.down.right.and.arrow.up.left"
-            action={() => setIsFullScreen(false)} />
-        </HStack>
-      ) : null}
-
-      {!isFullScreen ? <ScrollView>
+      <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -469,7 +476,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView> : null}
+      </ScrollView>
     </VStack>
   )
 }
