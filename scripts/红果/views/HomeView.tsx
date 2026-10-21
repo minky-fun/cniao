@@ -1,0 +1,359 @@
+import {
+  Button,
+  GeometryReader,
+  HStack,
+  Image,
+  ScrollView,
+  Spacer,
+  TabView,
+  Text,
+  VStack,
+  ZStack,
+  gradient,
+  useEffect,
+  useObservable,
+  useState,
+} from "scripting"
+import { fetchHome } from "../core/api"
+import { loadCachedHome, saveCachedHome } from "../core/feedCache"
+import type { HomeBanner, HomeData, HomeSection, SeriesCard } from "../core/types"
+import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, SkeletonHome } from "./Common"
+
+const CARD_WIDTH = 112
+const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
+
+const HOME_BACKGROUND = "#101011"
+const BANNER_SHADE = gradient("linear", {
+  stops: [
+    { color: "rgba(16,16,17,0.6)", location: 0 },
+    { color: "rgba(16,16,17,0.05)", location: 0.3 },
+    { color: "rgba(16,16,17,0.6)", location: 0.55 },
+    { color: HOME_BACKGROUND, location: 1 },
+  ],
+  startPoint: "top",
+  endPoint: "bottom",
+})
+
+/** 展示首页推荐海报，保持单行剧名和现有选剧入口。 */
+function LandscapeCard({
+  series,
+  onSelect,
+}: {
+  series: SeriesCard
+  onSelect: (series: SeriesCard) => void
+}) {
+  return (
+    <VStack
+      alignment="leading"
+      spacing={6}
+      frame={{ width: CARD_WIDTH }}
+      onTapGesture={() => onSelect(series)}
+    >
+      <ZStack frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
+        <CoverImage url={series.series_cover} width={CARD_WIDTH} height={CARD_COVER_HEIGHT} />
+
+        {series.rank !== undefined && series.rank <= 3 ? (
+          <VStack spacing={0} frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
+            <HStack
+              alignment="center"
+              frame={{ width: CARD_WIDTH }}
+              padding={{ horizontal: 5, vertical: 5 }}
+            >
+              <Spacer />
+              <Text
+                font="caption"
+                bold
+                foregroundStyle="white"
+                padding={{ horizontal: 6, vertical: 2 }}
+                background={{
+                  style: BRAND_COLOR,
+                  shape: { type: "rect", cornerRadius: 4 },
+                }}
+              >
+                {`TOP ${series.rank}`}
+              </Text>
+            </HStack>
+            <Spacer />
+          </VStack>
+        ) : null}
+
+        <VStack spacing={0} frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
+          <Spacer />
+          <HStack
+            alignment="center"
+            frame={{ width: CARD_WIDTH }}
+            padding={{ horizontal: 6, vertical: 4 }}
+          >
+            <Text
+              font="caption2"
+              foregroundStyle="white"
+              padding={{ horizontal: 5, vertical: 2 }}
+              background={{ style: "rgba(0,0,0,0.6)", shape: { type: "rect", cornerRadius: 4 } }}
+            >
+              {series.episode_right_text ?? `全${series.episode_cnt}集`}
+            </Text>
+            <Spacer />
+          </HStack>
+        </VStack>
+      </ZStack>
+
+      <Text font="caption" foregroundStyle="white" lineLimit={1} frame={FILL_LEADING}>
+        {series.series_title}
+      </Text>
+    </VStack>
+  )
+}
+
+/** 将推荐海报铺满轮播页，用渐变遮罩承托剧名、简介和剧集入口。 */
+function BannerView({
+  banner,
+  width,
+  height,
+  onSelect,
+}: {
+  banner: HomeBanner
+  width: number
+  height: number
+  onSelect: (seriesId: string) => void
+}) {
+  const cover = banner.background_cover ?? banner.series_cover ?? ""
+
+  return (
+    <ZStack frame={{ width, height }} clipped>
+      {cover ? (
+        <Image
+          imageUrl={cover}
+          resizable
+          scaleToFill
+          frame={{ width, height }}
+          clipped
+        />
+      ) : null}
+      <VStack frame={{ width, height }} background={BANNER_SHADE} />
+      <VStack spacing={0} frame={{ width, height }}>
+        <Spacer />
+        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 78 }}>
+          <HStack spacing={7}>
+            <Image systemName="sparkles" foregroundStyle={BRAND_COLOR} font="caption" />
+            <Text font="caption" bold foregroundStyle="rgba(255,255,255,0.85)">
+              精选推荐
+            </Text>
+          </HStack>
+          <Text font={30} bold foregroundStyle="white" lineLimit={1} minScaleFactor={0.65}>
+            {banner.series_name}
+          </Text>
+          {banner.tags?.length ? (
+            <Text font="caption" foregroundStyle="rgba(255,255,255,0.75)" lineLimit={1}>
+              {banner.tags.slice(0, 3).join(" · ")}
+            </Text>
+          ) : null}
+          {banner.series_intro ? (
+            <Text font="footnote" foregroundStyle="rgba(255,255,255,0.75)" lineLimit={2}>
+              {banner.series_intro}
+            </Text>
+          ) : null}
+          <Button action={() => onSelect(banner.series_id)} buttonStyle="plain">
+            <HStack spacing={9} padding={{ horizontal: 18, vertical: 12 }}
+              background={{ style: "white", shape: { type: "rect", cornerRadius: 24 } }}>
+              <Text font="subheadline" bold foregroundStyle={HOME_BACKGROUND}>查看剧集</Text>
+              <Image systemName="arrow.right" font="footnote" foregroundStyle={HOME_BACKGROUND} />
+            </HStack>
+          </Button>
+        </VStack>
+      </VStack>
+    </ZStack>
+  )
+}
+
+/** 使用原生分页轮播，支持滑动、点选和暂停；离开首页后清除自动切换计时。 */
+function HeroCarousel({
+  banners,
+  width,
+  onSelect,
+}: {
+  banners: HomeBanner[]
+  width: number
+  onSelect: (seriesId: string) => void
+}) {
+  const selection = useObservable(0)
+  const [paused, setPaused] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const height = Math.min(560, Math.max(440, width * 1.35))
+  const index = selection.value
+
+  useEffect(() => {
+    if (!visible || paused || banners.length < 2) return
+    const timer = setTimeout(() => selection.setValue((index + 1) % banners.length), 8000)
+    return () => clearTimeout(timer)
+  }, [visible, paused, index, banners.length])
+
+  return (
+    <ZStack
+      frame={{ width, height }}
+      background={HOME_BACKGROUND}
+      clipped
+      onAppear={() => setVisible(true)}
+      onDisappear={() => setVisible(false)}
+    >
+      <TabView selection={selection} tabViewStyle="pageNeverDisplayIndex" frame={{ width, height }}>
+        {banners.map((banner, page) => (
+          <BannerView
+            key={banner.series_id}
+            tag={page}
+            banner={banner}
+            width={width}
+            height={height}
+            onSelect={onSelect}
+          />
+        ))}
+      </TabView>
+      <VStack spacing={0} frame={{ width, height }}>
+        <Spacer />
+        <HStack spacing={6} frame={{ width: width - 48, height: 44 }} padding={{ bottom: 16 }}>
+          {banners.map((banner, page) => (
+            <Button key={banner.series_id} action={() => selection.setValue(page)} buttonStyle="plain"
+              accessibilityLabel={`第 ${page + 1} 部：${banner.series_name}`}>
+              <VStack frame={{ width: 24, height: 44 }}>
+                <VStack frame={{ width: page === index ? 24 : 8, height: 3 }}
+                  background={page === index ? "white" : "rgba(255,255,255,0.3)"}
+                  clipShape={{ type: "rect", cornerRadius: 2 }} />
+              </VStack>
+            </Button>
+          ))}
+          <Spacer minLength={8} />
+          <Text font="caption" foregroundStyle="rgba(255,255,255,0.65)" lineLimit={1} minScaleFactor={0.8}>
+            {`${String(index + 1).padStart(2, "0")} / ${String(banners.length).padStart(2, "0")}`}
+          </Text>
+          {banners.length > 1 ? (
+            <Button action={() => setPaused(value => !value)} buttonStyle="plain"
+              accessibilityLabel={paused ? "开启自动轮播" : "暂停自动轮播"}>
+              <Image systemName={paused ? "play.fill" : "pause.fill"} font="caption"
+                foregroundStyle="white" frame={{ width: 36, height: 44 }} />
+            </Button>
+          ) : null}
+        </HStack>
+      </VStack>
+    </ZStack>
+  )
+}
+
+/** 在深色首页展示现有横向推荐分区，隐藏横向滚动指示条。 */
+function SectionRow({
+  section,
+  onSelect,
+}: {
+  section: HomeSection
+  onSelect: (series: SeriesCard) => void
+}) {
+  return (
+    <VStack alignment="leading" spacing={10} frame={FILL_LEADING}>
+      <Text font="title3" bold foregroundStyle="white" padding={{ horizontal: 16 }}>
+        {section.tab_name}
+      </Text>
+
+      <ScrollView axes="horizontal" scrollIndicator="hidden">
+        <HStack spacing={12} alignment="top" padding={{ horizontal: 16 }}>
+          {section.video_list.map(series => (
+            <LandscapeCard key={series.series_id} series={series} onSelect={onSelect} />
+          ))}
+        </HStack>
+      </ScrollView>
+    </VStack>
+  )
+}
+
+/** 加载原有首页数据，以通栏海报轮播衔接推荐内容，并保留离线快照与重试。 */
+export function HomeView({
+  onSelectSeries,
+}: {
+  onSelectSeries: (seriesId: string) => void
+}) {
+
+  const [cachedHome] = useState(loadCachedHome)
+  const [sections, setSections] = useState<HomeSection[]>(cachedHome?.homeSections ?? [])
+  const [banners, setBanners] = useState<HomeBanner[]>(cachedHome?.bannerList ?? [])
+  const [isLoading, setIsLoading] = useState(!cachedHome)
+  const [errorMessage, setErrorMessage] = useState("")
+  const hasContent = sections.length > 0 || banners.length > 0
+
+  /** 更新首页列表，并保存现有离线快照。 */
+  const applyHome = (data: HomeData) => {
+    setSections(data.homeSections)
+    setBanners(data.bannerList)
+    saveCachedHome(data)
+  }
+
+  /** 刷新原有首页数据，网络异常时继续显示已缓存内容。 */
+  const load = () => {
+    if (!hasContent) setIsLoading(true)
+    setErrorMessage("")
+
+    fetchHome()
+      .then(applyHome)
+      .catch(error => {
+        setErrorMessage(error instanceof Error ? error.message : String(error))
+      })
+      .finally(() => setIsLoading(false))
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  if (isLoading && !hasContent) {
+    return <ScrollView><SkeletonHome /></ScrollView>
+  }
+  if (errorMessage && !hasContent) return <ErrorView message={errorMessage} onRetry={load} />
+  if (!hasContent) return <EmptyView text="暂无内容" />
+
+  const featured = banners.slice(0, 5)
+
+  return (
+    <GeometryReader
+      background={HOME_BACKGROUND}
+      foregroundStyle="white"
+      ignoresSafeArea={featured.length > 0 ? { regions: "container", edges: "top" } : false}
+      toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar"] }}
+      toolbarBackgroundVisibility={{
+        visibility: featured.length > 0 ? "hidden" : "visible",
+        bars: ["navigationBar"],
+      }}
+      toolbarColorScheme={{ colorScheme: "dark", bars: ["navigationBar"] }}
+    >
+      {({ size }) => (
+        <ScrollView scrollIndicator="hidden" frame={{ width: size.width, height: size.height }}>
+          <VStack alignment="leading" spacing={0} frame={{ width: size.width }} padding={{ bottom: 28 }}>
+            {featured.length > 0 ? (
+              <HeroCarousel
+                key={featured.map(banner => banner.series_id).join(":")}
+                banners={featured}
+                width={size.width}
+                onSelect={onSelectSeries}
+              />
+            ) : null}
+            <VStack alignment="leading" spacing={26} frame={{ width: size.width }} padding={{ top: 8 }}>
+              {errorMessage ? (
+                <Text
+                  font="caption"
+                  foregroundStyle="systemOrange"
+                  padding={{ horizontal: 16 }}
+                  frame={FILL_LEADING}
+                  onTapGesture={load}
+                >
+                  网络不可用，正在显示上次内容，点此重试
+                </Text>
+              ) : null}
+              {sections.map(section => (
+                <SectionRow
+                  key={section.tab_type}
+                  section={section}
+                  onSelect={series => onSelectSeries(series.series_id)}
+                />
+              ))}
+            </VStack>
+          </VStack>
+        </ScrollView>
+      )}
+    </GeometryReader>
+  )
+}
