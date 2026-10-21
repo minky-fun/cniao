@@ -2,6 +2,7 @@ import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./a
 import { decryptToPlayableAsync } from "./mp4"
 import { PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
 import { HttpError } from "./http"
+import type { VideoPlayerInfo } from "./types"
 
 const CACHE_FILE_EXTENSION = ".mp4"
 
@@ -308,10 +309,11 @@ async function validateCachedVideo(path: string): Promise<void> {
 
 const inflightPrepares = new Map<string, Promise<string>>()
 
-/** 复用或生成本地缓存，并在系统确认可播放后返回文件路径。 */
+/** 复用缓存或下载公开、加密视频，系统确认可播放后才写入缓存索引。 */
 export async function prepareOfflineVideo(
   videoId: string,
-  options: PrepareOptions = {}
+  options: PrepareOptions = {},
+  publicVideo?: VideoPlayerInfo
 ): Promise<string> {
   const { label, onProgress, protectedVideoIds } = options
   ensureCacheDirectory()
@@ -337,21 +339,26 @@ export async function prepareOfflineVideo(
     try {
       onProgress?.({ stage: "fetching", progress: 0 })
 
-      const streams = await fetchEncryptedStreams(videoId)
-      if (streams.length === 0) {
-        throw new HttpError("该集暂无可用清晰度，或均为设备不支持的编码", 404)
+      let stream: EncryptedStream | undefined
+      if (!publicVideo) {
+        const streams = await fetchEncryptedStreams(videoId)
+        if (streams.length === 0) {
+          throw new HttpError("该集暂无可用清晰度，或均为设备不支持的编码", 404)
+        }
+        stream = streams[0]
       }
 
-      const stream: EncryptedStream = streams[0]
-
       onProgress?.({ stage: "downloading", progress: 0 })
-      const encrypted = await downloadStream(stream.url)
+      const downloaded = await downloadStream(publicVideo ? publicVideo.main_url : stream!.url)
       onProgress?.({ stage: "downloading", progress: 1 })
 
-      onProgress?.({ stage: "decrypting", progress: 0 })
-      const playable = await decryptToPlayableAsync(encrypted, stream.contentKey, ratio => {
-        onProgress?.({ stage: "decrypting", progress: ratio })
-      })
+      let playable = downloaded
+      if (stream) {
+        onProgress?.({ stage: "decrypting", progress: 0 })
+        playable = await decryptToPlayableAsync(downloaded, stream.contentKey, ratio => {
+          onProgress?.({ stage: "decrypting", progress: ratio })
+        })
+      }
 
       FileManager.writeAsBytesSync(target, playable)
       onProgress?.({ stage: "validating", progress: 0 })
@@ -363,9 +370,9 @@ export async function prepareOfflineVideo(
       }
 
       markUsed(videoId, label, {
-        duration: stream.duration,
-        width: stream.width,
-        height: stream.height,
+        duration: publicVideo ? Number(publicVideo.duration) : stream!.duration,
+        width: publicVideo ? publicVideo.width : stream!.width,
+        height: publicVideo ? publicVideo.height : stream!.height,
       })
 
       const protectList = [videoId, ...(protectedVideoIds ?? [])]

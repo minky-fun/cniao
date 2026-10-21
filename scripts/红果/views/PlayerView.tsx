@@ -18,7 +18,6 @@ import {
 import { fetchDetail } from "../core/api"
 import {
   isOfflineVideoCached,
-  preloadOfflineVideo,
   type PrepareProgress,
 } from "../core/mediaCache"
 import { savePlayHistoryItem } from "../core/history"
@@ -327,7 +326,7 @@ export function PlayerView({
 
   useEffect(() => {
     const detail = data?.seriesDetail
-    if (!detail || !currentVid || !isPlayerLoaded || !hasPlaybackStarted || source.startsWith("https://")) return
+    if (!detail || !currentVid || !isPlayerLoaded || !hasPlaybackStarted) return
 
     const currentIndex = detail.vid_list.indexOf(currentVid)
     if (currentIndex < 0) return
@@ -346,12 +345,17 @@ export function PlayerView({
         if (isOfflineVideoCached(targetVid)) continue
 
         const label = formatEpisodeLabel(detail.series_name, targetIndex)
-        const success = await preloadOfflineVideo(targetVid, {
-          label,
-          protectedVideoIds: [currentVid],
-        })
+        try {
+          await resolvePlaybackSource(seriesId, detail, targetVid, {
+            label,
+            protectedVideoIds: [currentVid],
+          })
+        } catch (error) {
+          console.log(`[preload] 预加载集数 ${targetVid} 失败：`, error)
+          break
+        }
 
-        if (!success || cancelled) break
+        if (cancelled) break
       }
     }, 1500)
 
@@ -359,7 +363,7 @@ export function PlayerView({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, source])
+  }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, seriesId])
 
   // 基础播放器由当前页面持有，关闭页面后释放，不保留画中画控制器。
   useEffect(() => {
@@ -523,7 +527,7 @@ function EpisodeInfoPanel({
           </Text>
         </HStack>
         <Text font="caption2" foregroundStyle="secondaryLabel" frame={FILL_LEADING}>
-          公开集数在线播放，其余集数下载并解密；↓ 表示尚未缓存
+          公开集数直接下载缓存，其余集数下载并解密；↓ 表示尚未缓存
         </Text>
 
         <EpisodeGrid

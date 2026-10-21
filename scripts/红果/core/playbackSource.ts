@@ -33,14 +33,7 @@ export async function resolvePlaybackSource(
     const publicVideo = await fetchPublicVideo(seriesId, vid)
     if (publicVideo) {
       console.log("[player] 使用官网公开视频源")
-      return {
-        url: publicVideo.main_url,
-        meta: {
-          duration: Number(publicVideo.duration),
-          width: publicVideo.width,
-          height: publicVideo.height,
-        },
-      }
+      return resolveOfflineSource(vid, { ...options, label }, publicVideo)
     }
   }
   return resolveOfflineSource(vid, { ...options, label })
@@ -68,11 +61,13 @@ export async function loadOfflinePlayerData(
   }
 }
 
+/** 使用同一缓存流程保存公开视频或解密后的 App 视频，并返回缓存媒体信息。 */
 async function resolveOfflineSource(
   vid: string,
-  options: PrepareOptions
+  options: PrepareOptions,
+  publicVideo?: VideoPlayerInfo
 ): Promise<ResolvedPlaybackSource> {
-  const url = await prepareOfflineVideo(vid, options)
+  const url = await prepareOfflineVideo(vid, options, publicVideo)
   const meta = getCachedVideoMeta(vid) ?? undefined
   return { url, meta }
 }

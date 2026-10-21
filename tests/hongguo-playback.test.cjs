@@ -227,14 +227,17 @@ test('公开播放绕过 App 接口，初次加载与切集一致，缓存仍优
     },
     './mediaCache': {
       isOfflineVideoCached: () => cached,
-      prepareOfflineVideo: async () => { appCalls++; return '/cache/vid.mp4' },
-      getCachedVideoMeta: () => ({ duration: 80 }),
+      prepareOfflineVideo: async (_vid, _options, publicSource) => {
+        if (!publicSource) appCalls++
+        return '/cache/vid.mp4'
+      },
+      getCachedVideoMeta: () => ({ duration: 79.534 }),
     },
   })
   const initial = await api.loadOfflinePlayerData('series', 'vid')
-  assert.equal(initial.data.playerInfo.main_url, publicVideo.main_url)
+  assert.equal(initial.data.playerInfo.main_url, '/cache/vid.mp4')
   assert.equal(initial.meta.duration, 79.534)
-  assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, publicVideo.main_url)
+  assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, '/cache/vid.mp4')
   assert.equal(appCalls, 0)
   cached = true
   assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, '/cache/vid.mp4')
@@ -243,4 +246,75 @@ test('公开播放绕过 App 接口，初次加载与切集一致，缓存仍优
   publicVideo = null
   assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, '/cache/vid.mp4')
   assert.equal(appCalls, 2)
+})
+
+
+/** 模拟文件系统及系统可播放性检查，验证公开 MP4 的完整缓存流程。 */
+function publicCacheRuntime(playable) {
+  const files = new Map()
+  let downloads = 0
+  let appCalls = 0
+  const bytes = new Uint8Array([1, 2, 3, 4])
+  const api = loadModule('mediaCache', {
+    FileManager: {
+      appGroupDocumentsDirectory: '/test',
+      existsSync: file => files.has(file),
+      createDirectorySync: file => files.set(file, null),
+      writeAsBytesSync: (file, value) => files.set(file, value),
+      writeAsStringSync: (file, value) => files.set(file, value),
+      readAsStringSync: file => files.get(file),
+      removeSync: file => files.delete(file),
+      readDirectorySync: directory => [...files.keys()]
+        .filter(file => file.startsWith(directory + '/')).map(file => file.slice(directory.length + 1)),
+      statSync: file => ({ size: files.get(file).length, modificationDate: 0 }),
+    },
+    AVAsset: class {
+      /** 返回测试指定的系统检查结果。 */
+      async loadIsPlayable() { return playable }
+      /** 测试宿主无需释放真实媒体。 */
+      dispose() {}
+    },
+  }, {
+    './appApi': {
+      fetchEncryptedStreams: async () => { appCalls++; throw new Error('不应请求 App') },
+      downloadStream: async url => {
+        assert.equal(url, 'https://public/video.mp4')
+        downloads++
+        return bytes
+      },
+    },
+    './mp4': { decryptToPlayableAsync: async () => { throw new Error('公开 MP4 不应解密') } },
+    scripting: {},
+  })
+  return { api, files, bytes, downloads: () => downloads, appCalls: () => appCalls }
+}
+
+/** 公开源下载后原样缓存，写入元数据并通知选集；重播无需联网。 */
+test('公开 MP4 写入缓存并复用，不请求 App、不解密', async () => {
+  const run = publicCacheRuntime(true)
+  const stages = []
+  const events = []
+  run.api.onCacheChanged((vid, action) => events.push([vid, action]))
+  const source = { main_url: 'https://public/video.mp4', duration: '79.534', width: 360, height: 640 }
+  const target = await run.api.prepareOfflineVideo('123', {
+    label: '第一集', onProgress: value => stages.push(value.stage),
+  }, source)
+  assert.equal(run.files.get(target), run.bytes)
+  assert.deepEqual(stages, ['fetching', 'downloading', 'downloading', 'validating', 'done'])
+  assert.equal(run.api.getCachedVideoMeta('123').duration, 79.534)
+  assert.equal(run.api.getCachedVideoMeta('123').width, 360)
+  assert.deepEqual(events, [['123', 'added']])
+  assert.equal(await run.api.prepareOfflineVideo('123'), target)
+  assert.equal(run.downloads(), 1)
+  assert.equal(run.appCalls(), 0)
+})
+
+/** 公开源下载成功但系统验证失败时删除文件，不能留下“已缓存”的假状态。 */
+test('公开 MP4 验证失败不保留缓存文件或索引', async () => {
+  const run = publicCacheRuntime(false)
+  await assert.rejects(run.api.prepareOfflineVideo('123', {}, {
+    main_url: 'https://public/video.mp4', duration: '79.534', width: 360, height: 640,
+  }), /无法被 iPhone 播放/)
+  assert.equal(run.api.isOfflineVideoCached('123'), false)
+  assert.equal(run.api.getCachedVideoMeta('123'), null)
 })
