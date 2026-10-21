@@ -98,6 +98,19 @@ export function PlayerView({
   const [preparePercent, setPreparePercent] = useState(0)
 
   const [isAudioReady, setIsAudioReady] = useState(false)
+  const [isPlayerViewReady, setIsPlayerViewReady] = useState(false)
+  const playerViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** 先让原生视图的出现回调返回，再允许下一轮任务设置媒体源。 */
+  const handlePlayerViewAppear = useCallback(() => {
+    console.log("[player] AVPlayerView 已出现")
+    if (playerViewTimerRef.current !== null) clearTimeout(playerViewTimerRef.current)
+    playerViewTimerRef.current = setTimeout(() => {
+      playerViewTimerRef.current = null
+      console.log("[player] AVPlayerView 挂载回调已返回，允许装载媒体")
+      setIsPlayerViewReady(true)
+    }, 0)
+  }, [])
 
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
   const [hasPlaybackStarted, setHasPlaybackStarted] = useState(false)
@@ -268,10 +281,12 @@ export function PlayerView({
         playerReadyRef.current = true
         setIsWaitingForPlayer(false)
         console.log("[player] 媒体已就绪，开始播放")
-        player.play()
+        const started = player.play()
+        console.log(`[player] play 已返回：${started}`)
       },
       /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
       onStatus: status => {
+        console.log(`[player] 系统播放状态：${status}`)
         if (status === TimeControlStatus.playing) setHasPlaybackStarted(true)
       },
       /** 展示原生播放错误，停止等待并保留缓存用于进一步排查。 */
@@ -297,9 +312,9 @@ export function PlayerView({
     })
   }, [player, clearPrepareProgress])
 
-  // 完成事件订阅和音频会话配置后才设置本地源，等待系统就绪事件开始播放。
+  // 原生播放视图先挂载，再设置媒体；切集和错误提示不会销毁播放视图。
   useEffect(() => {
-    if (!source || !isAudioReady || loadedSourceRef.current === source) return
+    if (!source || !isAudioReady || !isPlayerViewReady || loadedSourceRef.current === source) return
     playerReadyRef.current = false
     setHasPlaybackStarted(false)
     setIsWaitingForPlayer(true)
@@ -321,7 +336,7 @@ export function PlayerView({
       console.error("[player] 等待系统就绪超时")
     }, PLAYER_READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [player, source, isAudioReady])
+  }, [player, source, isAudioReady, isPlayerViewReady])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -383,6 +398,8 @@ export function PlayerView({
   // 画中画仍在播放时保留播放器，其余情况在页面关闭后释放。
   useEffect(() => {
     return () => {
+      if (playerViewTimerRef.current !== null) clearTimeout(playerViewTimerRef.current)
+      console.log(`[player] 页面清理，画中画活动：${isPipActiveRef.current}`)
       if (isPipActiveRef.current) retainPipPlayer(player)
       else {
         setPipPlaybackActive(false)
@@ -421,17 +438,16 @@ export function PlayerView({
         frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
-        {isPlayerLoaded ? (
-          <AVPlayerView
-            player={player}
-            pipStatus={pipStatus}
-            allowsPictureInPicturePlayback={true}
-            canStartPictureInPictureAutomaticallyFromInline={false}
-            updatesNowPlayingInfoCenter={true}
-            videoGravity="resizeAspect"
-            frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
-          />
-        ) : null}
+        <AVPlayerView
+          player={player}
+          onAppear={handlePlayerViewAppear}
+          pipStatus={pipStatus}
+          allowsPictureInPicturePlayback={true}
+          canStartPictureInPictureAutomaticallyFromInline={false}
+          updatesNowPlayingInfoCenter={true}
+          videoGravity="resizeAspect"
+          frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+        />
 
         {isPlayerBusy ? (
           <VStack
