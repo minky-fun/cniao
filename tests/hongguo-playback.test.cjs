@@ -182,3 +182,65 @@ test('播放器事件解绑后取消待执行通知', async () => {
   await new Promise(resolve => setTimeout(resolve, 10))
   assert.equal(count, 0)
 })
+
+/** 公开源只接受官网明确开放、标识匹配的数据，保留真实错误。 */
+test('官网公开视频严格校验标识，只有不可用或 404 返回空', async () => {
+  class HttpError extends Error {
+    /** 保存测试响应状态。 */
+    constructor(message, status) { super(message); this.status = status }
+  }
+  let value = { publicVideoSeo: {
+    available: true, seriesId: 'series', itemId: 'vid',
+    durationSeconds: 79.534, width: 360, height: 640, posterUrl: 'poster',
+  } }
+  const api = loadModule('api', {}, {
+    './http': { HttpError, fetchLoaderEntry: async () => {
+      if (value instanceof Error) throw value
+      return value
+    } },
+  })
+  const video = await api.fetchPublicVideo('series', 'vid')
+  assert.equal(video.main_url, 'https://hongguoduanju.com/video/public/vid/360p.mp4')
+  assert.equal(video.duration, '79.534')
+  await assert.rejects(api.fetchPublicVideo('series', 'other'), /标识不匹配/)
+  value.publicVideoSeo.width = 0
+  await assert.rejects(api.fetchPublicVideo('series', 'vid'), /有效媒体信息/)
+  value = { publicVideoSeo: { available: false } }
+  assert.equal(await api.fetchPublicVideo('series', 'vid'), null)
+  value = new HttpError('not found', 404)
+  assert.equal(await api.fetchPublicVideo('series', 'vid'), null)
+  value = new HttpError('network', 0)
+  await assert.rejects(api.fetchPublicVideo('series', 'vid'), /network/)
+})
+
+/** 初次加载和切集共同使用公开源，已有缓存不发网络请求。 */
+test('公开播放绕过 App 接口，初次加载与切集一致，缓存仍优先', async () => {
+  let cached = false
+  let publicCalls = 0
+  let appCalls = 0
+  let publicVideo = { main_url: 'https://public/video.mp4', duration: '79.534', width: 360, height: 640 }
+  const detail = { vid_list: ['vid'], series_name: '剧', series_cover: 'cover' }
+  const api = loadModule('playbackSource', {}, {
+    './api': {
+      fetchDetail: async () => ({ detail, social: null }),
+      fetchPublicVideo: async () => { publicCalls++; return publicVideo },
+    },
+    './mediaCache': {
+      isOfflineVideoCached: () => cached,
+      prepareOfflineVideo: async () => { appCalls++; return '/cache/vid.mp4' },
+      getCachedVideoMeta: () => ({ duration: 80 }),
+    },
+  })
+  const initial = await api.loadOfflinePlayerData('series', 'vid')
+  assert.equal(initial.data.playerInfo.main_url, publicVideo.main_url)
+  assert.equal(initial.meta.duration, 79.534)
+  assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, publicVideo.main_url)
+  assert.equal(appCalls, 0)
+  cached = true
+  assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, '/cache/vid.mp4')
+  assert.equal(publicCalls, 2)
+  cached = false
+  publicVideo = null
+  assert.equal((await api.resolvePlaybackSource('series', detail, 'vid')).url, '/cache/vid.mp4')
+  assert.equal(appCalls, 2)
+})

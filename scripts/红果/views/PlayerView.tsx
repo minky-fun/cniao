@@ -253,7 +253,7 @@ export function PlayerView({
       onReady: () => {
         playerReadyRef.current = true
         setIsWaitingForPlayer(false)
-        console.log("[player] 本地媒体已就绪，开始播放")
+        console.log("[player] 媒体已就绪，开始播放")
         player.play()
       },
       /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
@@ -268,8 +268,8 @@ export function PlayerView({
         setIsPlayerLoaded(false)
         clearPrepareProgress()
         setSwitchLabel("")
-        console.error(`[player] 本地播放失败：${message}`)
-        setErrorMessage(`本地视频播放失败：${message}`)
+        console.error(`[player] 播放失败：${message}`)
+        setErrorMessage(`视频播放失败：${message}`)
       },
       /** 播完后根据当前集数安排下一集，切源不会在原生结束通知内执行。 */
       onEnded: () => {
@@ -289,15 +289,15 @@ export function PlayerView({
     playerReadyRef.current = false
     setHasPlaybackStarted(false)
     setIsWaitingForPlayer(true)
-    console.log("[player] 开始装载本地媒体")
+    console.log("[player] 开始装载媒体")
     if (player.setSource(source)) {
       loadedSourceRef.current = source
       setIsPlayerLoaded(true)
-      console.log("[player] 本地源已设置，等待系统就绪")
+      console.log("[player] 播放源已设置，等待系统就绪")
     } else {
       setIsWaitingForPlayer(false)
       setIsPlayerLoaded(false)
-      setErrorMessage("无法装载本地视频")
+      setErrorMessage("无法装载视频")
       return
     }
     const timer = setTimeout(() => {
@@ -327,7 +327,7 @@ export function PlayerView({
 
   useEffect(() => {
     const detail = data?.seriesDetail
-    if (!detail || !currentVid || !isPlayerLoaded || !hasPlaybackStarted) return
+    if (!detail || !currentVid || !isPlayerLoaded || !hasPlaybackStarted || source.startsWith("https://")) return
 
     const currentIndex = detail.vid_list.indexOf(currentVid)
     if (currentIndex < 0) return
@@ -359,7 +359,7 @@ export function PlayerView({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted])
+  }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, source])
 
   // 基础播放器由当前页面持有，关闭页面后释放，不保留画中画控制器。
   useEffect(() => {
@@ -451,6 +451,7 @@ export function PlayerView({
   )
 }
 
+/** 展示剧集信息、公开播放与缓存说明，以及选集操作。 */
 function EpisodeInfoPanel({
   data,
   currentVid,
@@ -522,7 +523,7 @@ function EpisodeInfoPanel({
           </Text>
         </HStack>
         <Text font="caption2" foregroundStyle="secondaryLabel" frame={FILL_LEADING}>
-          剧集首次播放均需下载并解密，带 ↓ 标记的表示尚未缓存
+          公开集数在线播放，其余集数下载并解密；↓ 表示尚未缓存
         </Text>
 
         <EpisodeGrid
