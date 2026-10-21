@@ -15,6 +15,7 @@ function playerRuntime({ deferred = false } = {}) {
   let tree
   let events
   let constructed = 0
+  let plays = 0
   let disposed = 0
   let hostDisposed = false
   let updatesAfterDispose = 0
@@ -101,7 +102,7 @@ function playerRuntime({ deferred = false } = {}) {
       /** 记录装载媒体源的时机。 */
       setSource(source) { sources.push(source); return true }
       /** 模拟播放请求被原生端接受。 */
-      play() { return true }
+      play() { plays++; return true }
       /** 模拟错误处理中的暂停。 */
       pause() {}
       /** 记录页面清理是否释放播放器。 */
@@ -128,7 +129,7 @@ function playerRuntime({ deferred = false } = {}) {
       /** 遍历节点而不执行额外的子组件。 */
       function find(node) {
         if (!node || typeof node !== 'object') return
-        if (container ? node.type === 'ZStack' && node.props?.onAppear : node.type === 'AVPlayerView') return node
+        if (container ? node.type === 'VStack' && node.props?.onAppear : node.type === 'AVPlayerView') return node
         for (const child of node.children ?? []) {
           const found = find(child)
           if (found) return found
@@ -144,6 +145,16 @@ function playerRuntime({ deferred = false } = {}) {
         task.callback()
       }
     },
+    /** 读取固定状态行，检查启动提示不会盖在视频上。 */
+    statusRow() { return tree.children.find(node => node?.type === 'HStack' && node.props?.frame?.height === 32) },
+    /** 模拟系统媒体就绪通知。 */
+    ready() { events.onReady() },
+    /** 模拟系统播放状态事件。 */
+    status(value) { events.onStatus(value) },
+    /** 读取启动播放调用次数。 */
+    plays() { return plays },
+    /** 检查错误后不会残留覆盖真实错误的启动超时任务。 */
+    pendingTimeouts() { return [...timers.values()].filter(task => task.delay === 15000).length },
     /** 模拟原生错误通知到达事件处理层。 */
     error() { events.onError('测试媒体错误') },
     /** 执行组件清理，检测播放器释放次数。 */
@@ -204,4 +215,75 @@ test('播放器退出时取消容器回调中的待执行任务', async () => {
   await run.flush()
   assert.deepEqual(run.sources, [])
   assert.equal(run.staleUpdates(), 0)
+})
+
+
+/** 就绪事件须先撤销启动提示，后续任务才能调用 play，且原生节点保持同一对象。 */
+test('媒体就绪先提交界面再播放，进度不会覆盖 AVPlayerView', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  const surface = run.view()
+  const container = run.view(true)
+  assert.equal(container.children.length, 1, '原生视频容器内不能放置遮罩或进度视图')
+  assert.equal(surface.props.frame.height, 220)
+  container.props.onAppear()
+  run.tick()
+  await run.flush()
+  assert.equal(run.statusRow().children[0].props.hidden, false)
+  assert.equal(run.statusRow().children[1].children[0], '正在启动系统播放器')
+  assert.equal(run.pendingTimeouts(), 1)
+  run.ready()
+  assert.equal(run.plays(), 0, '就绪回调中不能同步启动播放')
+  await run.flush()
+  assert.equal(run.statusRow().children[0].props.hidden, true)
+  assert.equal(run.statusRow().children[1].children[0], '')
+  assert.equal(run.pendingTimeouts(), 0)
+  assert.equal(run.plays(), 0, '启动必须放在提交后的下一轮任务')
+  assert.equal(run.view(), surface, '更新进度时不能重新创建原生视图节点')
+  run.tick()
+  await run.flush()
+  assert.equal(run.plays(), 1)
+  run.status(2)
+  await run.flush()
+  assert.equal(run.view(), surface)
+  assert.equal(run.statusRow().children[0].props.hidden, true)
+  run.dispose()
+})
+
+/** 页面关闭或媒体报错后，尚未执行的自动播放必须取消。 */
+test('就绪后的待播放任务在退出或出错时取消', async () => {
+  for (const action of ['dispose', 'error']) {
+    const run = playerRuntime()
+    await run.flush()
+    run.view(true).props.onAppear()
+    run.tick()
+    await run.flush()
+    run.ready()
+    await run.flush()
+    run[action]()
+    if (action === 'error') await run.flush()
+    run.tick()
+    await run.flush()
+    assert.equal(run.plays(), 0)
+    assert.equal(run.pendingTimeouts(), 0)
+    assert.equal(run.staleUpdates(), 0)
+    if (action !== 'dispose') run.dispose()
+  }
+})
+
+/** 错误回调到达后应停止等待计时，避免稍后被通用超时提示替换。 */
+test('系统播放错误取消等待超时，保持原生视频节点', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  const surface = run.view()
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  assert.equal(run.pendingTimeouts(), 1)
+  run.error()
+  await run.flush()
+  assert.equal(run.pendingTimeouts(), 0)
+  assert.equal(run.statusRow().children[0].props.hidden, true)
+  assert.equal(run.view(), surface)
+  run.dispose()
 })

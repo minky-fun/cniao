@@ -9,7 +9,6 @@ import {
   Spacer,
   Text,
   VStack,
-  ZStack,
   useEffect,
   useCallback,
   useMemo,
@@ -117,9 +116,11 @@ export function PlayerView({
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
   const [hasPlaybackStarted, setHasPlaybackStarted] = useState(false)
   const [isWaitingForPlayer, setIsWaitingForPlayer] = useState(false)
+  const [readySource, setReadySource] = useState("")
   const playerReadyRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
+  /** 清除下载和验证提示，避免重复更新相同的进度状态。 */
   const clearPrepareProgress = useCallback(() => {
     const shown = prepareShownRef.current
     if (!shown.label && shown.percent === 0) return
@@ -162,6 +163,7 @@ export function PlayerView({
     setErrorMessage("")
     setSwitchLabel("正在切换")
 
+    /** 丢弃页面退出或已被后续请求替代的异步结果。 */
     const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
     resolvePlaybackSource(seriesId, data.seriesDetail, vid, {
@@ -203,8 +205,10 @@ export function PlayerView({
     setSwitchLabel("")
 
     const seq = requestSeqRef.current
+    /** 丢弃页面退出或已被后续请求替代的异步结果。 */
     const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
+    /** 缓存就绪前先展示剧集信息，保留选集入口。 */
     const showDetailEarly = (detail: PlayerData) => {
       if (isStale()) return
       setData(detail)
@@ -291,22 +295,25 @@ export function PlayerView({
   // 原生事件仅排队；读取 duration、调用 play/pause 和切集都在回调返回后执行。
   useEffect(() => {
     return bindPlayerEvents(player, {
-      /** 媒体就绪后启动播放，时长直接使用缓存元数据，避免同步回读原生属性。 */
+      /** 就绪通知仅提交界面状态，播放由提交后的 effect 单独安排。 */
       onReady: () => {
         playerReadyRef.current = true
         setIsWaitingForPlayer(false)
-        console.log("[player] 媒体已就绪，开始播放")
-        const started = player.play()
-        console.log(`[player] play 已返回：${started}`)
+        setReadySource(loadedSourceRef.current)
+        console.log("[player] 媒体已就绪，等待播放界面提交")
       },
       /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
       onStatus: status => {
         console.log(`[player] 系统播放状态：${status}`)
-        if (status === TimeControlStatus.playing) setHasPlaybackStarted(true)
+        if (status === TimeControlStatus.playing) {
+          setHasPlaybackStarted(true)
+          setIsWaitingForPlayer(false)
+        }
       },
       /** 展示原生播放错误，停止等待并保留缓存用于进一步排查。 */
       onError: message => {
         playerReadyRef.current = false
+        setReadySource("")
         player.pause()
         setIsWaitingForPlayer(false)
         setIsPlayerLoaded(false)
@@ -331,6 +338,7 @@ export function PlayerView({
   useEffect(() => {
     if (!source || !isAudioReady || !isPlayerContainerReady || loadedSourceRef.current === source) return
     playerReadyRef.current = false
+    setReadySource("")
     setHasPlaybackStarted(false)
     setIsWaitingForPlayer(true)
     console.log(`[player#${instanceId}] 开始装载媒体`)
@@ -344,14 +352,32 @@ export function PlayerView({
       setErrorMessage("无法装载视频")
       return
     }
+  }, [player, source, isAudioReady, isPlayerContainerReady])
+
+  // 收到就绪或错误后取消超时任务，不覆盖已经得到的真实播放状态。
+  useEffect(() => {
+    if (!isWaitingForPlayer) return
     const timer = setTimeout(() => {
-      if (playerReadyRef.current) return
+      if (!aliveRef.current || playerReadyRef.current) return
       setIsWaitingForPlayer(false)
       setErrorMessage("系统播放器在 15 秒内未能就绪，缓存已保留")
       console.error("[player] 等待系统就绪超时")
     }, PLAYER_READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [player, source, isAudioReady, isPlayerContainerReady])
+  }, [source, isWaitingForPlayer])
+
+  // 等就绪状态提交后再排队启动，避免同一回调内同时重排界面并调用原生 play。
+  useEffect(() => {
+    if (!readySource || readySource !== source) return
+    const timer = setTimeout(() => {
+      if (!aliveRef.current || !playerReadyRef.current || loadedSourceRef.current !== readySource) return
+      console.log("[player] 播放界面已提交，开始播放")
+      const started = player.play()
+      console.log(`[player] play 已返回：${started}`)
+      if (!started) setErrorMessage("系统播放器未能开始播放，请点按播放按钮重试")
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [player, readySource, source])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -426,6 +452,19 @@ export function PlayerView({
     }
   }, [player])
 
+  // 固定原生视图的节点和尺寸，进度变化只更新播放器下方的状态行。
+  const playerSurface = useMemo(() => (
+    <AVPlayerView
+      player={player}
+      pipStatus={pipStatus}
+      allowsPictureInPicturePlayback={false}
+      canStartPictureInPictureAutomaticallyFromInline={false}
+      updatesNowPlayingInfoCenter={true}
+      videoGravity="resizeAspect"
+      frame={{ maxWidth: "infinity", height: PLAYER_HEIGHT }}
+    />
+  ), [player, pipStatus])
+
   const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
 
   return (
@@ -452,49 +491,33 @@ export function PlayerView({
       }}
     >
 
-      <ZStack
+      <VStack
         onAppear={handlePlayerContainerAppear}
-        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
+        spacing={0}
+        frame={{ maxWidth: "infinity", height: PLAYER_HEIGHT }}
         background="black"
       >
-        <AVPlayerView
-          player={player}
-          pipStatus={pipStatus}
-          allowsPictureInPicturePlayback={false}
-          canStartPictureInPictureAutomaticallyFromInline={false}
-          updatesNowPlayingInfoCenter={true}
-          videoGravity="resizeAspect"
-          frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
-        />
+        {playerSurface}
+      </VStack>
 
-        {isPlayerBusy ? (
-          <VStack
-            spacing={12}
-            alignment="center"
-            frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
-            background="black"
-          >
-            {prepareLabel ? (
-              <ProgressView
-                value={preparePercent}
-                total={1.0}
-                progressViewStyle="circular"
-                tint="white"
-                controlSize="regular"
-              />
-            ) : (
-              <ProgressView
-                progressViewStyle="circular"
-                tint="white"
-                controlSize="regular"
-              />
-            )}
-            <Text font="footnote" foregroundStyle="white">
-              {prepareLabel || switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…")}
-            </Text>
-          </VStack>
-        ) : null}
-      </ZStack>
+      <HStack
+        spacing={8}
+        padding={{ horizontal: 16 }}
+        frame={{ maxWidth: "infinity", height: 32, alignment: "leading" }}
+      >
+        <ProgressView
+          progressViewStyle="circular"
+          controlSize="small"
+          frame={{ width: 18, height: 18 }}
+          hidden={!isPlayerBusy}
+        />
+        <Text font="caption" foregroundStyle="secondaryLabel" lineLimit={1}>
+          {isPlayerBusy
+            ? (prepareLabel ? `${prepareLabel} ${Math.round(preparePercent * 100)}%`
+              : switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…"))
+            : ""}
+        </Text>
+      </HStack>
 
       <ScrollView>
         {data ? (
