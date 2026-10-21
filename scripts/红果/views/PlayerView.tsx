@@ -460,7 +460,7 @@ export function PlayerView({
         <AVPlayerView
           player={player}
           pipStatus={pipStatus}
-          allowsPictureInPicturePlayback={true}
+          allowsPictureInPicturePlayback={false}
           canStartPictureInPictureAutomaticallyFromInline={false}
           updatesNowPlayingInfoCenter={true}
           videoGravity="resizeAspect"
