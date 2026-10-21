@@ -4,6 +4,7 @@ import {
   HStack,
   ProgressView,
   ScrollView,
+  Slider,
   Text,
   VStack,
   ZStack,
@@ -106,6 +107,10 @@ export function PlayerView({
   const [isWaitingForPlayer, setIsWaitingForPlayer] = useState(false)
   const [readySource, setReadySource] = useState("")
   const playerReadyRef = useRef(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackPosition, setPlaybackPosition] = useState(0)
+  const seekPositionRef = useRef(0)
+  const isSeekingRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
   /** 清除下载和验证提示，避免重复更新相同的进度状态。 */
@@ -146,6 +151,7 @@ export function PlayerView({
     requestSeqRef.current = seq
 
     player.pause()
+    setIsPlaying(false)
     setHasPlaybackStarted(false)
     clearPrepareProgress()
     setErrorMessage("")
@@ -293,6 +299,7 @@ export function PlayerView({
       /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
       onStatus: status => {
         console.log(`[player] 系统播放状态：${status}`)
+        setIsPlaying(status !== TimeControlStatus.paused)
         if (status === TimeControlStatus.playing) {
           setHasPlaybackStarted(true)
           setIsWaitingForPlayer(false)
@@ -303,6 +310,7 @@ export function PlayerView({
         playerReadyRef.current = false
         setReadySource("")
         player.pause()
+        setIsPlaying(false)
         setIsWaitingForPlayer(false)
         setIsPlayerLoaded(false)
         clearPrepareProgress()
@@ -312,6 +320,7 @@ export function PlayerView({
       },
       /** 播完后根据当前集数安排下一集，切源不会在原生结束通知内执行。 */
       onEnded: () => {
+        setIsPlaying(false)
         const currentData = dataRef.current
         const current = currentVidRef.current
         if (!currentData || !current) return
@@ -326,6 +335,10 @@ export function PlayerView({
   useEffect(() => {
     if (!source || !isAudioReady || !isPlayerContainerReady || loadedSourceRef.current === source) return
     playerReadyRef.current = false
+    setIsPlaying(false)
+    setPlaybackPosition(0)
+    seekPositionRef.current = 0
+    isSeekingRef.current = false
     setReadySource("")
     setHasPlaybackStarted(false)
     setIsWaitingForPlayer(true)
@@ -366,6 +379,54 @@ export function PlayerView({
     }, 0)
     return () => clearTimeout(timer)
   }, [player, readySource, source])
+
+  // 图层模式没有系统控制栏，仅在媒体就绪后定时读取进度，退出或换源时取消任务。
+  useEffect(() => {
+    if (!readySource || readySource !== source) return
+    /** 在原生通知返回后读取进度，拖动过程中保留用户正在选择的位置。 */
+    const updatePosition = () => {
+      if (!aliveRef.current || !playerReadyRef.current) return
+      const duration = player.duration
+      if (Number.isFinite(duration) && duration > 0) setActiveDuration(duration)
+      if (!isSeekingRef.current) {
+        const position = player.currentTime
+        if (Number.isFinite(position) && position >= 0) {
+          setPlaybackPosition(position)
+          seekPositionRef.current = position
+        }
+      }
+      timer = setTimeout(updatePosition, 500)
+    }
+    let timer = setTimeout(updatePosition, 500)
+    return () => clearTimeout(timer)
+  }, [player, readySource, source])
+
+  /** 图层模式使用脚本按钮控制播放，不创建系统播放控制器。 */
+  const togglePlayback = () => {
+    if (!aliveRef.current || !playerReadyRef.current) return
+    if (isPlaying) {
+      player.pause()
+      setIsPlaying(false)
+    } else if (player.play()) {
+      setIsPlaying(true)
+    } else {
+      setErrorMessage("系统播放器未能开始播放，请重试")
+    }
+  }
+
+  /** 拖动时只更新预览进度，结束后再向原生播放器提交一次跳转。 */
+  const changePlaybackPosition = (position: number) => {
+    seekPositionRef.current = position
+    setPlaybackPosition(position)
+  }
+
+  /** 阻止定时进度覆盖拖动值，媒体仍就绪时才应用最终跳转位置。 */
+  const finishSeeking = (editing: boolean) => {
+    isSeekingRef.current = editing
+    if (!editing && aliveRef.current && playerReadyRef.current) {
+      player.currentTime = seekPositionRef.current
+    }
+  }
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -426,7 +487,7 @@ export function PlayerView({
 
   // 画中画已关闭，页面退出时取消异步结果并释放原生播放器。
   useEffect(() => {
-    console.log(`[player#${instanceId}] AVPlayerView 实例已建立，画中画已关闭`)
+    console.log(`[player#${instanceId}] AVPlayerView 图层模式已建立，画中画已关闭`)
     return () => {
       aliveRef.current = false
       requestSeqRef.current += 1
@@ -436,14 +497,12 @@ export function PlayerView({
     }
   }, [player])
 
-  // 原生节点保持挂载，全屏只改变外层布局，不重新装载媒体。
+  // 显式使用图层以避开 AVPlayerViewController 的布局路径，全屏保持同一原生节点。
   const playerSurface = useMemo(() => (
     <AVPlayerView
       player={player}
       pipStatus={pipStatus}
-      allowsPictureInPicturePlayback={false}
-      canStartPictureInPictureAutomaticallyFromInline={false}
-      updatesNowPlayingInfoCenter={true}
+      renderingMode="layer"
       videoGravity="resizeAspect"
       frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
     />
@@ -516,6 +575,33 @@ export function PlayerView({
                 : switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…")}
             </Text>
           </VStack>
+        ) : null}
+
+        {!isPlayerBusy && isPlayerLoaded ? (
+          <HStack
+            spacing={10}
+            padding={12}
+            background="rgba(0, 0, 0, 0.65)"
+            foregroundStyle="white"
+            frame={{ maxWidth: "infinity", maxHeight: "infinity", alignment: "bottom" }}
+          >
+            <Button
+              title={isPlaying ? "暂停" : "播放"}
+              systemImage={isPlaying ? "pause.fill" : "play.fill"}
+              action={togglePlayback}
+            />
+            <Text font="caption2" monospacedDigit>{formatDuration(playbackPosition)}</Text>
+            {activeDuration > 0 ? <Slider
+              min={0}
+              max={activeDuration}
+              value={Math.min(playbackPosition, activeDuration)}
+              onChanged={changePlaybackPosition}
+              onEditingChanged={finishSeeking}
+              label={<Text>播放进度</Text>}
+              tint="white"
+            /> : null}
+            <Text font="caption2" monospacedDigit>{formatDuration(activeDuration)}</Text>
+          </HStack>
         ) : null}
 
         {isFullScreen ? <HStack padding={12} foregroundStyle="white">

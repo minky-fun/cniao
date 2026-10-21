@@ -16,6 +16,10 @@ function playerRuntime({ deferred = false } = {}) {
   let events
   let constructed = 0
   let plays = 0
+  let pauses = 0
+  let position = 0
+  let timeReads = 0
+  const seeks = []
   let disposed = 0
   let hostDisposed = false
   let updatesAfterDispose = 0
@@ -64,7 +68,7 @@ function playerRuntime({ deferred = false } = {}) {
     '../core/api': {},
     '../core/mediaCache': {},
     '../core/history': { savePlayHistoryItem: () => {} },
-    '../core/format': {},
+    '../core/format': require('../work/hongguo-build/core/format.js'),
     '../core/playbackSource': {
       loadOfflinePlayerData: async () => {
         if (deferred) await new Promise(resolve => { finishLoad = resolve })
@@ -94,7 +98,7 @@ function playerRuntime({ deferred = false } = {}) {
     },
     clearTimeout: id => timers.delete(id),
     SharedAudioSession: { setCategory: async () => {}, setActive: async () => {} },
-    TimeControlStatus: { playing: 2 },
+    TimeControlStatus: { paused: 0, waitingToPlayAtSpecifiedRate: 1, playing: 2 },
     AVPlayer: class {
       /** 记录原生播放器创建次数。 */
       constructor() { constructed++ }
@@ -103,7 +107,13 @@ function playerRuntime({ deferred = false } = {}) {
       /** 模拟播放请求被原生端接受。 */
       play() { plays++; return true }
       /** 模拟错误处理中的暂停。 */
-      pause() {}
+      pause() { pauses++ }
+      /** 模拟媒体时长，供脚本控制栏显示可拖动范围。 */
+      get duration() { return 80 }
+      /** 记录图层控制栏何时读取原生播放进度。 */
+      get currentTime() { timeReads++; return position }
+      /** 记录拖动结束后的原生跳转，保留下一次进度读取值。 */
+      set currentTime(value) { seeks.push(value); position = value }
       /** 记录页面清理是否释放播放器。 */
       dispose() { disposed++ }
     },
@@ -115,7 +125,7 @@ function playerRuntime({ deferred = false } = {}) {
     /** 按页面状态读取导航栏全屏按钮或视频上的退出入口。 */
     fullscreenButton() {
       return tree.props.navigationBarVisibility === 'hidden'
-        ? this.view(true).children[2].children[0]
+        ? this.view(true).children.at(-1).children[0]
         : tree.props.toolbar.topBarTrailing.find(node => node.props.title === '全屏')
     },
     completeLoad: () => finishLoad(),
@@ -144,16 +154,25 @@ function playerRuntime({ deferred = false } = {}) {
       }
       return find(tree)
     },
-    /** 仅执行下一轮零延迟任务，避免人为触发媒体超时。 */
-    tick() {
+    /** 执行指定延迟的一轮任务，分别模拟事件队列和进度刷新。 */
+    tick(delay = 0) {
       for (const [id, task] of [...timers]) {
-        if (task.delay !== 0) continue
+        if (task.delay !== delay) continue
         timers.delete(id)
         task.callback()
       }
     },
     /** 读取视频上方的进度蒙版，检查就绪与错误后会撤下。 */
     progressOverlay() { return this.view(true).children[1] },
+    /** 读取图层模式中由脚本提供的播放及进度控制。 */
+    controls() { return this.view(true).children[2] },
+    /** 模拟系统已经播放到指定时间，不经过用户跳转入口。 */
+    advancePlaybackTo(value) { position = value },
+    /** 读取原生暂停次数，验证控制栏操作实际到达播放器。 */
+    pauses() { return pauses },
+    /** 读取进度访问次数，验证未就绪和已退出时不访问原生实例。 */
+    timeReads() { return timeReads },
+    seeks,
     /** 模拟系统媒体就绪通知。 */
     ready() { events.onReady() },
     /** 模拟系统播放状态事件。 */
@@ -300,9 +319,8 @@ test('AVPlayerView 全屏和退出保持实例、媒体源与播放进度', asyn
   await run.flush()
   const surface = run.view()
   assert.equal(surface.props.pipStatus.value, null)
-  assert.equal(surface.props.allowsPictureInPicturePlayback, false)
-  assert.equal(surface.props.canStartPictureInPictureAutomaticallyFromInline, false)
-  assert.equal(Object.hasOwn(surface.props, 'renderingMode'), false)
+  assert.equal(surface.props.renderingMode, 'layer')
+  assert.equal(Object.hasOwn(surface.props, 'pictureInPictureController'), false)
   run.view(true).props.onAppear()
   run.tick()
   await run.flush()
@@ -332,4 +350,68 @@ test('AVPlayerView 全屏和退出保持实例、媒体源与播放进度', asyn
   assert.equal(run.sources.length, 1)
   run.dispose()
   assert.equal(run.disposed(), 1)
+})
+
+/** 图层没有系统控制栏，脚本按钮必须调用同一个原生播放器且不重新装载媒体。 */
+test('图层控制栏可暂停和继续播放，不创建额外播放器', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  assert.equal(run.controls(), null)
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  run.ready()
+  await run.flush()
+  run.tick()
+  run.status(2)
+  await run.flush()
+  assert.equal(run.controls().children[0].props.title, '暂停')
+  run.controls().children[0].props.action()
+  await run.flush()
+  assert.equal(run.pauses(), 1)
+  assert.equal(run.controls().children[0].props.title, '播放')
+  run.controls().children[0].props.action()
+  await run.flush()
+  assert.equal(run.plays(), 2)
+  assert.equal(run.sources.length, 1)
+  assert.equal(run.created(), 1)
+  run.dispose()
+})
+
+/** 拖动不反复跳转，定时进度不覆盖预览值，结束后仅提交一次原生跳转。 */
+test('图层进度在就绪后刷新，拖动完成才跳转，退出后停止读取', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  run.tick(500)
+  assert.equal(run.timeReads(), 0)
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  run.ready()
+  await run.flush()
+  run.advancePlaybackTo(20)
+  run.tick(500)
+  await run.flush()
+  const slider = run.controls().children[2]
+  assert.equal(slider.type, 'Slider')
+  assert.equal(slider.props.value, 20)
+  assert.equal(slider.props.max, 80)
+  slider.props.onEditingChanged(true)
+  slider.props.onChanged(45)
+  await run.flush()
+  assert.deepEqual(run.seeks, [])
+  run.tick(500)
+  await run.flush()
+  assert.equal(run.controls().children[2].props.value, 45)
+  assert.equal(run.timeReads(), 1)
+  slider.props.onEditingChanged(false)
+  assert.deepEqual(run.seeks, [45])
+  run.error()
+  await run.flush()
+  run.tick(500)
+  assert.equal(run.timeReads(), 1)
+  run.dispose()
+  run.tick(500)
+  assert.equal(run.timeReads(), 1)
+  assert.equal(run.staleUpdates(), 0)
 })
