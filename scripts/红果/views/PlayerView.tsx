@@ -4,7 +4,6 @@ import {
   HStack,
   ProgressView,
   ScrollView,
-  Spacer,
   Text,
   VStack,
   ZStack,
@@ -46,7 +45,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 管理集数与播放器生命周期，在视频上覆盖黑色准备进度蒙版。 */
+/** 管理集数与播放器生命周期，显示进度蒙版及右上角全屏操作。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -475,6 +474,7 @@ export function PlayerView({
     >
 
       <ZStack
+        alignment="topTrailing"
         onAppear={handlePlayerContainerAppear}
         frame={isFullScreen
           ? { maxWidth: "infinity", maxHeight: "infinity" }
@@ -503,6 +503,15 @@ export function PlayerView({
             </Text>
           </VStack>
         ) : null}
+
+        <HStack padding={12} foregroundStyle="white">
+          <Button
+            title={isFullScreen ? "退出全屏" : "全屏"}
+            systemImage={isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
+            disabled={!isFullScreen && (!isPlayerLoaded || isPlayerBusy)}
+            action={toggleFullScreen}
+          />
+        </HStack>
       </ZStack>
 
       {isFullScreen && errorMessage ? (
@@ -510,19 +519,6 @@ export function PlayerView({
           {errorMessage}
         </Text>
       ) : null}
-
-      <HStack
-        padding={{ horizontal: 16, bottom: 8 }}
-        foregroundStyle={isFullScreen ? "white" : BRAND_COLOR}
-      >
-        <Spacer />
-        <Button
-          title={isFullScreen ? "退出全屏" : "全屏"}
-          systemImage={isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
-          disabled={!isFullScreen && (!isPlayerLoaded || isPlayerBusy)}
-          action={toggleFullScreen}
-        />
-      </HStack>
 
       {!isFullScreen ? <ScrollView>
         {data ? (

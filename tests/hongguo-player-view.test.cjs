@@ -112,8 +112,8 @@ function playerRuntime({ deferred = false } = {}) {
     sources,
     /** 读取页面根布局以验证全屏导航栏状态。 */
     root: () => tree,
-    /** 查找全屏操作，模拟用户点击同一按钮进入和退出全屏。 */
-    fullscreenButton: () => tree.children.find(node => node?.type === 'HStack' && node.children.some(child => child?.type === 'Button'))?.children.find(node => node?.type === 'Button'),
+    /** 读取播放器右上角操作，模拟同一按钮进入和退出全屏。 */
+    fullscreenButton() { return this.view(true).children[2].children[0] },
     completeLoad: () => finishLoad(),
     staleUpdates: () => updatesAfterDispose,
     /** 推进 Promise 和组件更新，执行实际依赖变化触发的 effects。 */
