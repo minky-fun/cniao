@@ -1,9 +1,8 @@
 import {
-  AVPlayerView,
+  VideoPlayer,
   Button,
   HStack,
   Image,
-  PIPStatus,
   ProgressView,
   ScrollView,
   Spacer,
@@ -12,7 +11,7 @@ import {
   ZStack,
   useEffect,
   useCallback,
-  useObservable,
+  useMemo,
   useRef,
   useState,
 } from "scripting"
@@ -32,7 +31,6 @@ import {
   type OfflineLoadOptions,
 } from "../core/playbackSource"
 import type { PlayerData } from "../core/types"
-import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
 import { bindPlayerEvents } from "../core/playerEvents"
@@ -70,8 +68,7 @@ export function PlayerView({
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
 
-  const [player] = useState(() => new AVPlayer())
-  const pipStatus = useObservable<PIPStatus>(null)
+  const player = useMemo(() => new AVPlayer(), [])
 
   const loadedSourceRef = useRef("")
 
@@ -86,8 +83,6 @@ export function PlayerView({
   const [prepareLabel, setPrepareLabel] = useState("")
   const [preparePercent, setPreparePercent] = useState(0)
 
-  const [surfaceKey, setSurfaceKey] = useState(0)
-
   const [isAudioReady, setIsAudioReady] = useState(false)
 
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
@@ -96,20 +91,6 @@ export function PlayerView({
   const playerReadyRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
-  const pipValue = pipStatus.value
-
-  const isPipActive = pipValue === "willStart" || pipValue === "didStart"
-  const isPipActiveRef = useRef(false)
-  isPipActiveRef.current = isPipActive
-
-  useEffect(() => {
-    if (pipValue === "willStart" || pipValue === "didStart") {
-      setPipPlaybackActive(true)
-    } else if (pipValue === "willStop" || pipValue === "didStop") {
-      setPipPlaybackActive(false)
-    }
-  }, [pipValue])
-
   const clearPrepareProgress = useCallback(() => {
     const shown = prepareShownRef.current
     if (!shown.label && shown.percent === 0) return
@@ -268,12 +249,10 @@ export function PlayerView({
   // 原生事件仅排队；读取 duration、调用 play/pause 和切集都在回调返回后执行。
   useEffect(() => {
     return bindPlayerEvents(player, {
-      /** 媒体就绪后读取时长并启动播放，不再依赖固定延时强制播放。 */
+      /** 媒体就绪后启动播放，时长直接使用缓存元数据，避免同步回读原生属性。 */
       onReady: () => {
         playerReadyRef.current = true
         setIsWaitingForPlayer(false)
-        const seconds = player.duration
-        if (seconds > 0) setActiveDuration(seconds)
         console.log("[player] 本地媒体已就绪，开始播放")
         player.play()
       },
@@ -382,19 +361,9 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted])
 
+  // 基础播放器由当前页面持有，关闭页面后释放，不保留画中画控制器。
   useEffect(() => {
-    if (pipValue === "didStop") setSurfaceKey(key => key + 1)
-  }, [pipValue])
-
-  useEffect(() => {
-    return () => {
-      if (isPipActiveRef.current) {
-        retainPipPlayer(player)
-      } else {
-        setPipPlaybackActive(false)
-        player.dispose()
-      }
-    }
+    return () => player.dispose()
   }, [player])
 
   const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
@@ -428,13 +397,8 @@ export function PlayerView({
         background="black"
       >
         {isPlayerLoaded ? (
-          <AVPlayerView
-            key={surfaceKey}
+          <VideoPlayer
             player={player}
-            pipStatus={pipStatus}
-            allowsPictureInPicturePlayback={true}
-            canStartPictureInPictureAutomaticallyFromInline={false}
-            videoGravity="resizeAspect"
             frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
           />
         ) : null}
