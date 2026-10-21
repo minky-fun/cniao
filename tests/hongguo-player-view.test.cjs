@@ -112,8 +112,12 @@ function playerRuntime({ deferred = false } = {}) {
     sources,
     /** 读取页面根布局以验证全屏导航栏状态。 */
     root: () => tree,
-    /** 读取播放器右上角操作，模拟同一按钮进入和退出全屏。 */
-    fullscreenButton() { return this.view(true).children[2].children[0] },
+    /** 按页面状态读取导航栏全屏按钮或视频上的退出入口。 */
+    fullscreenButton() {
+      return tree.props.navigationBarVisibility === 'hidden'
+        ? this.view(true).children[2].children[0]
+        : tree.props.toolbar.topBarTrailing.find(node => node.props.title === '全屏')
+    },
     completeLoad: () => finishLoad(),
     staleUpdates: () => updatesAfterDispose,
     /** 推进 Promise 和组件更新，执行实际依赖变化触发的 effects。 */
@@ -316,7 +320,7 @@ test('VideoPlayer 全屏和退出保持实例、媒体源与播放进度', async
   assert.equal(run.fullscreenButton().props.title, '退出全屏')
   run.error()
   await run.flush()
-  assert.equal(run.fullscreenButton().props.disabled, false, '全屏播放报错仍须允许退出')
+  assert.notEqual(run.fullscreenButton().props.disabled, true, '全屏播放报错仍须允许退出')
   run.fullscreenButton().props.action()
   await run.flush()
   assert.equal(run.root().props.navigationBarVisibility, 'visible')

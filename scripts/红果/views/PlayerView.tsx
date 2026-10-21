@@ -45,7 +45,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 管理集数与播放器生命周期，显示进度蒙版及右上角全屏操作。 */
+/** 管理集数与播放器生命周期，显示进度蒙版及导航栏全屏操作。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -468,6 +468,12 @@ export function PlayerView({
               ]
             : []),
           ...(onOpenCache ? [<Button title="缓存" action={onOpenCache} />] : []),
+          <Button
+            title="全屏"
+            systemImage="arrow.up.left.and.arrow.down.right"
+            disabled={!isPlayerLoaded || isPlayerBusy}
+            action={toggleFullScreen}
+          />,
           ...(onClose ? [<Button title="关闭" action={onClose} />] : []),
         ],
       }}
@@ -504,14 +510,13 @@ export function PlayerView({
           </VStack>
         ) : null}
 
-        <HStack padding={12} foregroundStyle="white">
+        {isFullScreen ? <HStack padding={12} foregroundStyle="white">
           <Button
-            title={isFullScreen ? "退出全屏" : "全屏"}
-            systemImage={isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
-            disabled={!isFullScreen && (!isPlayerLoaded || isPlayerBusy)}
+            title="退出全屏"
+            systemImage="arrow.down.right.and.arrow.up.left"
             action={toggleFullScreen}
           />
-        </HStack>
+        </HStack> : null}
       </ZStack>
 
       {isFullScreen && errorMessage ? (
