@@ -47,6 +47,7 @@ interface VideoModelEntry {
 }
 
 const DEVICE_STORAGE_KEY = "hongguo-public-player-device"
+const EMPTY_RESPONSE_ATTEMPTS = 3
 
 /** 首次生成游客设备标识并持久保存，配置损坏或请求失败时不更换身份。 */
 function loadDeviceIdentity(): { device_id: string; iid: string } {
@@ -71,43 +72,51 @@ function loadDeviceIdentity(): { device_id: string; iid: string } {
   return { device_id: identity.device_id, iid: identity.iid }
 }
 
-/** 使用完整游客参数发送普通 JSON 请求，不附带旧签名和 gzip 编码。 */
+/** 使用公开游客身份请求多集模型，仅对空的 HTTP 200 响应进行最多三次重试。 */
 async function appPost<T>(path: string, payload: unknown): Promise<T> {
   const body = JSON.stringify(payload)
-  const params: Record<string, string> = {
-    ...APP_COMMON_QUERY,
-    ...loadDeviceIdentity(),
-  }
-  const rawQuery = Object.entries(params)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join("&")
+  const identity = loadDeviceIdentity()
+  let text = ""
 
-  let response: Awaited<ReturnType<typeof fetch>>
-  try {
-    response = await fetch(`${APP_BASE}${path}?${rawQuery}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Accept: "application/json",
-        "User-Agent": APP_USER_AGENT,
-        "X-XS-From-Web": "0",
-        "Sdk-Version": "2",
-      },
-      body,
-      timeout: REQUEST_TIMEOUT_SECONDS,
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new HttpError(`App 接口请求失败：${message}`, 0)
-  }
+  for (let attempt = 0; attempt < EMPTY_RESPONSE_ATTEMPTS; attempt++) {
+    if (attempt > 0) await new Promise<void>(resolve => setTimeout(resolve, attempt * 500))
+    const params: Record<string, string> = {
+      ...APP_COMMON_QUERY,
+      ...identity,
+      _rticket: String(Date.now()),
+    }
+    const rawQuery = Object.entries(params)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join("&")
 
-  if (!response.ok) {
-    throw new HttpError(`App 接口返回 HTTP ${response.status}`, response.status)
-  }
+    let response: Awaited<ReturnType<typeof fetch>>
+    try {
+      response = await fetch(`${APP_BASE}${path}?${rawQuery}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Accept: "application/json",
+          "User-Agent": APP_USER_AGENT,
+          "X-XS-From-Web": "0",
+          "Sdk-Version": "2",
+        },
+        body,
+        timeout: REQUEST_TIMEOUT_SECONDS,
+      })
+      if (!response.ok) {
+        throw new HttpError(`App 接口返回 HTTP ${response.status}`, response.status)
+      }
+      text = await response.text()
+    } catch (error) {
+      if (error instanceof HttpError) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      throw new HttpError(`App 接口请求失败：${message}`, 0)
+    }
 
-  const text = await response.text()
-  if (!text.trim()) {
-    throw new HttpError(`App 视频接口返回空响应（HTTP ${response.status}），请稍后重试`, 0)
+    if (text.trim()) break
+    if (response.status !== 200 || attempt === EMPTY_RESPONSE_ATTEMPTS - 1) {
+      throw new HttpError(`App 视频接口返回空响应（HTTP ${response.status}），请稍后重试`, 0)
+    }
   }
 
   let json: { code?: number; message?: string; data?: unknown }
@@ -233,19 +242,28 @@ function toEncryptedStream(
   }
 }
 
-/** 按真实集数 ID 请求单集视频模型，保留现有 bytevc1 筛选和清晰度排序。 */
+/** 通过公开游客多集接口读取指定集数，筛除 bytevc2 并优先选择最高分辨率。 */
 export async function fetchEncryptedStreams(videoId: string): Promise<EncryptedStream[]> {
-  if (!/^[0-9]{1,25}$/.test(videoId)) throw new HttpError("视频 ID 不合法", 0)
-  const data = await appPost<VideoModelEntry>(
-    "/novel/player/video_model/v1/",
+  if (!/^[0-9]{8,24}$/.test(videoId)) throw new HttpError("视频 ID 不合法", 0)
+  const data = await appPost<Record<string, VideoModelEntry>>(
+    "/novel/player/multi_video_model/v1/",
     {
-      video_id: videoId,
-      content_type: 1,
-      biz_param: { need_all_video_definition: true, video_platform: 3 },
+      mixed_video_id_map: { "1": [videoId] },
+      biz_param: {
+        detail_page_version: 0,
+        device_level: 3,
+        disable_digg_stat: false,
+        disable_video_relate_book: false,
+        need_all_video_definition: true,
+        need_mp4_align: false,
+        use_os_player: false,
+        use_server_dns: false,
+        video_platform: 1024,
+      },
     }
   )
 
-  const embedded = data.video_model
+  const embedded = data[videoId]?.video_model
   if (!embedded) throw new HttpError("该集暂无可播放内容", 404)
   if (typeof embedded !== "string") throw new HttpError("播放信息格式异常", 0)
 

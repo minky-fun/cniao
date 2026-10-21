@@ -1,9 +1,7 @@
 import {
-  AVPlayerView,
-  type PIPStatus,
+  VideoPlayer,
   Button,
   HStack,
-  Image,
   ProgressView,
   ScrollView,
   Spacer,
@@ -12,7 +10,6 @@ import {
   useEffect,
   useCallback,
   useMemo,
-  useObservable,
   useRef,
   useState,
 } from "scripting"
@@ -33,7 +30,6 @@ import type { PlayerData } from "../core/types"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
 import { bindPlayerEvents } from "../core/playerEvents"
-import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 
 const PLAYER_HEIGHT = 220
 
@@ -71,18 +67,7 @@ export function PlayerView({
   const instanceId = useRef(Date.now()).current
   const aliveRef = useRef(true)
   const player = useMemo(() => new AVPlayer(), [])
-  const pipStatus = useObservable<PIPStatus>(null)
-  const pipValue = pipStatus.value
-  const isPipActiveRef = useRef(false)
-
-  // willStop 期间系统仍持有播放器，收到 didStop 后才允许释放。
-  if (pipValue === "willStart" || pipValue === "didStart") isPipActiveRef.current = true
-  else if (pipValue === "didStop") isPipActiveRef.current = false
-
-  useEffect(() => {
-    if (pipValue === "willStart" || pipValue === "didStart") setPipPlaybackActive(true)
-    else if (pipValue === "didStop") setPipPlaybackActive(false)
-  }, [pipValue])
+  const [isFullScreen, setIsFullScreen] = useState(false)
 
   const loadedSourceRef = useRef("")
 
@@ -281,7 +266,7 @@ export function PlayerView({
 
     return () => {
       cancelled = true
-      if (!isPipActiveRef.current) SharedAudioSession.setActive(false).catch(() => {})
+      SharedAudioSession.setActive(false).catch(() => {})
     }
   }, [])
 
@@ -436,34 +421,28 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, seriesId])
 
-  // 画中画仍在播放时保留播放器，其余情况在页面关闭后释放。
+  // 页面退出时取消异步结果并释放基础播放器，不保留画中画实例。
   useEffect(() => {
-    console.log(`[player#${instanceId}] 播放器实例已建立`)
+    console.log(`[player#${instanceId}] VideoPlayer 实例已建立`)
     return () => {
       aliveRef.current = false
       requestSeqRef.current += 1
       if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
-      console.log(`[player#${instanceId}] 页面清理，画中画活动：${isPipActiveRef.current}`)
-      if (isPipActiveRef.current) retainPipPlayer(player)
-      else {
-        setPipPlaybackActive(false)
-        player.dispose()
-      }
+      console.log(`[player#${instanceId}] 页面清理，释放 VideoPlayer`)
+      player.dispose()
     }
   }, [player])
 
-  // 固定原生视图的节点和尺寸，进度变化只更新播放器下方的状态行。
+  // 原生节点保持挂载，全屏只改变外层布局，不重新装载媒体。
   const playerSurface = useMemo(() => (
-    <AVPlayerView
+    <VideoPlayer
       player={player}
-      pipStatus={pipStatus}
-      allowsPictureInPicturePlayback={false}
-      canStartPictureInPictureAutomaticallyFromInline={false}
-      updatesNowPlayingInfoCenter={true}
-      videoGravity="resizeAspect"
-      frame={{ maxWidth: "infinity", height: PLAYER_HEIGHT }}
+      frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
     />
-  ), [player, pipStatus])
+  ), [player])
+
+  /** 在同一播放视图内展开或收起视频，保留当前播放进度。 */
+  const toggleFullScreen = () => setIsFullScreen(value => !value)
 
   const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
 
@@ -474,6 +453,9 @@ export function PlayerView({
       frame={PAGE_FRAME}
       navigationTitle="红果剧场"
       navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility={isFullScreen ? "hidden" : "visible"}
+      tabBarVisibility={isFullScreen ? "hidden" : "automatic"}
+      background={isFullScreen ? "black" : undefined}
       toolbar={{
         topBarTrailing: [
           ...(onOpenHistory
@@ -494,7 +476,9 @@ export function PlayerView({
       <VStack
         onAppear={handlePlayerContainerAppear}
         spacing={0}
-        frame={{ maxWidth: "infinity", height: PLAYER_HEIGHT }}
+        frame={isFullScreen
+          ? { maxWidth: "infinity", maxHeight: "infinity" }
+          : { maxWidth: "infinity", height: PLAYER_HEIGHT }}
         background="black"
       >
         {playerSurface}
@@ -511,15 +495,28 @@ export function PlayerView({
           frame={{ width: 18, height: 18 }}
           hidden={!isPlayerBusy}
         />
-        <Text font="caption" foregroundStyle="secondaryLabel" lineLimit={1}>
+        <Text font="caption" foregroundStyle={isFullScreen ? "white" : "secondaryLabel"} lineLimit={1}>
           {isPlayerBusy
             ? (prepareLabel ? `${prepareLabel} ${Math.round(preparePercent * 100)}%`
               : switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…"))
-            : ""}
+            : (isFullScreen ? errorMessage : "")}
         </Text>
       </HStack>
 
-      <ScrollView>
+      <HStack
+        padding={{ horizontal: 16, bottom: 8 }}
+        foregroundStyle={isFullScreen ? "white" : BRAND_COLOR}
+      >
+        <Spacer />
+        <Button
+          title={isFullScreen ? "退出全屏" : "全屏"}
+          systemImage={isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
+          disabled={!isFullScreen && (!isPlayerLoaded || isPlayerBusy)}
+          action={toggleFullScreen}
+        />
+      </HStack>
+
+      {!isFullScreen ? <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -533,7 +530,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView>
+      </ScrollView> : null}
     </VStack>
   )
 }

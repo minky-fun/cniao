@@ -76,7 +76,6 @@ function playerRuntime({ deferred = false } = {}) {
       events = handlers
       return () => { events = undefined }
     } },
-    '../core/playbackState': { setPipPlaybackActive: () => {}, retainPipPlayer: () => {} },
     './Common': {},
     './EpisodeGrid': {},
   }
@@ -111,6 +110,10 @@ function playerRuntime({ deferred = false } = {}) {
   })
   return {
     sources,
+    /** 读取页面根布局以验证全屏导航栏状态。 */
+    root: () => tree,
+    /** 查找全屏操作，模拟用户点击同一按钮进入和退出全屏。 */
+    fullscreenButton: () => tree.children.find(node => node?.type === 'HStack' && node.children.some(child => child?.type === 'Button'))?.children.find(node => node?.type === 'Button'),
     completeLoad: () => finishLoad(),
     staleUpdates: () => updatesAfterDispose,
     /** 推进 Promise 和组件更新，执行实际依赖变化触发的 effects。 */
@@ -129,7 +132,7 @@ function playerRuntime({ deferred = false } = {}) {
       /** 遍历节点而不执行额外的子组件。 */
       function find(node) {
         if (!node || typeof node !== 'object') return
-        if (container ? node.type === 'VStack' && node.props?.onAppear : node.type === 'AVPlayerView') return node
+        if (container ? node.type === 'VStack' && node.props?.onAppear : node.type === 'VideoPlayer') return node
         for (const child of node.children ?? []) {
           const found = find(child)
           if (found) return found
@@ -168,7 +171,7 @@ function playerRuntime({ deferred = false } = {}) {
 }
 
 /** 原生视图先出现、回调返回后才设置媒体，播放错误不会卸载或重建它。 */
-test('AVPlayerView 在装载媒体前挂载，错误后保持同一播放器', async () => {
+test('VideoPlayer 在装载媒体前挂载，错误后保持同一播放器', async () => {
   const run = playerRuntime()
   await run.flush()
   const initial = run.view()
@@ -219,13 +222,13 @@ test('播放器退出时取消容器回调中的待执行任务', async () => {
 
 
 /** 就绪事件须先撤销启动提示，后续任务才能调用 play，且原生节点保持同一对象。 */
-test('媒体就绪先提交界面再播放，进度不会覆盖 AVPlayerView', async () => {
+test('媒体就绪先提交界面再播放，进度不会覆盖 VideoPlayer', async () => {
   const run = playerRuntime()
   await run.flush()
   const surface = run.view()
   const container = run.view(true)
   assert.equal(container.children.length, 1, '原生视频容器内不能放置遮罩或进度视图')
-  assert.equal(surface.props.frame.height, 220)
+  assert.equal(container.props.frame.height, 220)
   container.props.onAppear()
   run.tick()
   await run.flush()
@@ -286,4 +289,42 @@ test('系统播放错误取消等待超时，保持原生视频节点', async ()
   assert.equal(run.statusRow().children[0].props.hidden, true)
   assert.equal(run.view(), surface)
   run.dispose()
+})
+
+/** 全屏在原容器内伸展，不重建播放器、不换源且可随时退出。 */
+test('VideoPlayer 全屏和退出保持实例、媒体源与播放进度', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  const surface = run.view()
+  assert.equal(Object.hasOwn(surface.props, 'pipStatus'), false)
+  assert.equal(Object.hasOwn(surface.props, 'renderingMode'), false)
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  run.ready()
+  await run.flush()
+  run.tick()
+  await run.flush()
+  assert.equal(run.fullscreenButton().props.disabled, false)
+  run.fullscreenButton().props.action()
+  await run.flush()
+  assert.equal(run.root().props.navigationBarVisibility, 'hidden')
+  assert.equal(run.root().props.tabBarVisibility, 'hidden')
+  assert.equal(run.view(true).props.frame.maxHeight, 'infinity')
+  assert.equal(run.view(), surface)
+  assert.equal(run.sources.length, 1)
+  assert.equal(run.created(), 1)
+  assert.equal(run.fullscreenButton().props.title, '退出全屏')
+  run.error()
+  await run.flush()
+  assert.equal(run.fullscreenButton().props.disabled, false, '全屏播放报错仍须允许退出')
+  run.fullscreenButton().props.action()
+  await run.flush()
+  assert.equal(run.root().props.navigationBarVisibility, 'visible')
+  assert.equal(run.root().props.tabBarVisibility, 'automatic')
+  assert.equal(run.view(true).props.frame.height, 220)
+  assert.equal(run.view(), surface)
+  assert.equal(run.sources.length, 1)
+  run.dispose()
+  assert.equal(run.disposed(), 1)
 })
