@@ -136,7 +136,7 @@ function playerRuntime({ deferred = false } = {}) {
       /** 遍历节点而不执行额外的子组件。 */
       function find(node) {
         if (!node || typeof node !== 'object') return
-        if (container ? node.type === 'ZStack' && node.props?.onAppear : node.type === 'VideoPlayer') return node
+        if (container ? node.type === 'ZStack' && node.props?.onAppear : node.type === 'AVPlayerView') return node
         for (const child of node.children ?? []) {
           const found = find(child)
           if (found) return found
@@ -175,7 +175,7 @@ function playerRuntime({ deferred = false } = {}) {
 }
 
 /** 原生视图先出现、回调返回后才设置媒体，播放错误不会卸载或重建它。 */
-test('VideoPlayer 在装载媒体前挂载，错误后保持同一播放器', async () => {
+test('AVPlayerView 在装载媒体前挂载，错误后保持同一播放器', async () => {
   const run = playerRuntime()
   await run.flush()
   const initial = run.view()
@@ -226,7 +226,7 @@ test('播放器退出时取消容器回调中的待执行任务', async () => {
 
 
 /** 就绪事件须先撤下进度蒙版，后续任务才能调用 play，且原生节点保持同一对象。 */
-test('媒体就绪先撤下黑色进度蒙版再播放，保持 VideoPlayer 节点', async () => {
+test('媒体就绪先撤下黑色进度蒙版再播放，保持 AVPlayerView 节点', async () => {
   const run = playerRuntime()
   await run.flush()
   const surface = run.view()
@@ -295,11 +295,13 @@ test('系统播放错误取消等待超时，保持原生视频节点', async ()
 })
 
 /** 全屏在原容器内伸展，不重建播放器、不换源且可随时退出。 */
-test('VideoPlayer 全屏和退出保持实例、媒体源与播放进度', async () => {
+test('AVPlayerView 全屏和退出保持实例、媒体源与播放进度', async () => {
   const run = playerRuntime()
   await run.flush()
   const surface = run.view()
-  assert.equal(Object.hasOwn(surface.props, 'pipStatus'), false)
+  assert.equal(surface.props.pipStatus.value, null)
+  assert.equal(surface.props.allowsPictureInPicturePlayback, false)
+  assert.equal(surface.props.canStartPictureInPictureAutomaticallyFromInline, false)
   assert.equal(Object.hasOwn(surface.props, 'renderingMode'), false)
   run.view(true).props.onAppear()
   run.tick()

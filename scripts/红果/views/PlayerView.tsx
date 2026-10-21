@@ -1,5 +1,5 @@
 import {
-  VideoPlayer,
+  AVPlayerView,
   Button,
   HStack,
   ProgressView,
@@ -10,8 +10,10 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useObservable,
   useRef,
   useState,
+  type PIPStatus,
 } from "scripting"
 import { fetchDetail } from "../core/api"
 import {
@@ -67,6 +69,7 @@ export function PlayerView({
   const instanceId = useRef(Date.now()).current
   const aliveRef = useRef(true)
   const player = useMemo(() => new AVPlayer(), [])
+  const pipStatus = useObservable<PIPStatus>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
 
   const loadedSourceRef = useRef("")
@@ -421,25 +424,30 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, seriesId])
 
-  // 页面退出时取消异步结果并释放基础播放器，不保留画中画实例。
+  // 画中画已关闭，页面退出时取消异步结果并释放原生播放器。
   useEffect(() => {
-    console.log(`[player#${instanceId}] VideoPlayer 实例已建立`)
+    console.log(`[player#${instanceId}] AVPlayerView 实例已建立，画中画已关闭`)
     return () => {
       aliveRef.current = false
       requestSeqRef.current += 1
       if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
-      console.log(`[player#${instanceId}] 页面清理，释放 VideoPlayer`)
+      console.log(`[player#${instanceId}] 页面清理，释放 AVPlayerView`)
       player.dispose()
     }
   }, [player])
 
   // 原生节点保持挂载，全屏只改变外层布局，不重新装载媒体。
   const playerSurface = useMemo(() => (
-    <VideoPlayer
+    <AVPlayerView
       player={player}
+      pipStatus={pipStatus}
+      allowsPictureInPicturePlayback={false}
+      canStartPictureInPictureAutomaticallyFromInline={false}
+      updatesNowPlayingInfoCenter={true}
+      videoGravity="resizeAspect"
       frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
     />
-  ), [player])
+  ), [player, pipStatus])
 
   /** 在同一播放视图内展开或收起视频，保留当前播放进度。 */
   const toggleFullScreen = () => setIsFullScreen(value => !value)
