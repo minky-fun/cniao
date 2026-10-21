@@ -78,54 +78,78 @@ test('大 chunk 内逐帧让出线程，AES 输出仍与标准实现一致', asy
   assert.deepEqual(Buffer.from(bytes.subarray(offset)), Buffer.concat(plain))
 })
 
-/** 构造本地缓存宿主，记录系统媒体验证和持久化操作。 */
-function cachedRuntime(playable) {
-  let disposed = false
+/** 构造带视频样本入口的 MP4 结构样本，仅用于容器校验而非解码测试。 */
+function cachedMp4(entry = 'hvc1') {
+  return new Uint8Array(Buffer.concat([
+    box('ftyp', Buffer.from('isom'), words(0), Buffer.from('isom')),
+    box('moov', box('trak', box('mdia', box('minf', box('stbl',
+      box('stsd', words(0, 1), box(entry, Buffer.alloc(78))),
+    ))))),
+    box('mdat', Buffer.alloc(16)),
+  ]))
+}
+
+/** 构造本地缓存宿主，禁止原生媒体探测并保留文件读取错误。 */
+function cachedRuntime(bytes) {
+  let nativeProbes = 0
   const progress = []
   const api = loadModule('mediaCache', {
     FileManager: {
       appGroupDocumentsDirectory: '/test',
       existsSync: file => !file.endsWith('cache-index.json'),
       writeAsStringSync: () => {},
+      readAsBytes: async () => {
+        if (bytes instanceof Error) throw bytes
+        return bytes
+      },
     },
     AVAsset: class {
-      /** 测试中记录检查结束时资源是否已释放。 */
-      dispose() { disposed = true }
-      /** 返回系统可播放性检查结果，不解析真实媒体。 */
-      async loadIsPlayable() {
-        if (playable instanceof Error) throw playable
-        return playable
-      }
+      /** 缓存校验不得创建可能阻塞的原生媒体对象。 */
+      constructor() { nativeProbes++; throw new Error('禁止创建 AVAsset') }
     },
-  }, { './appApi': {}, './mp4': {}, scripting: {} })
-  return { api, progress, isDisposed: () => disposed }
+  }, { './appApi': {}, scripting: {} })
+  return { api, progress, nativeProbes: () => nativeProbes }
 }
 
-/** 文件存在但系统判定不可播放时，不能返回成功状态。 */
+/** 文件存在但 MP4 数据不完整时，不能返回成功状态。 */
 test('已存在的坏缓存不再被直接当作播放成功', async () => {
-  const run = cachedRuntime(false)
+  const run = cachedRuntime(cachedMp4().subarray(0, -1))
   await assert.rejects(run.api.prepareOfflineVideo('123', {
     onProgress: value => run.progress.push(value.stage),
-  }), /无法被 iPhone 播放/)
+  }), /MP4 数据不完整/)
   assert.deepEqual(run.progress, ['validating'])
-  assert.equal(run.isDisposed(), true)
+  assert.equal(run.nativeProbes(), 0)
 })
 
-/** 可播放缓存完成验证后才报告准备完成。 */
-test('有效缓存完成系统检查后复用，并释放检查资源', async () => {
-  const run = cachedRuntime(true)
+/** 有效容器检查完成后报告准备完成，全程不创建系统媒体探测对象。 */
+test('有效缓存完成结构检查后复用，不创建 AVAsset', async () => {
+  const run = cachedRuntime(cachedMp4())
   assert.match(await run.api.prepareOfflineVideo('123', {
     onProgress: value => run.progress.push(value.stage),
   }), /123\.mp4$/)
   assert.deepEqual(run.progress, ['validating', 'done'])
-  assert.equal(run.isDisposed(), true)
+  assert.equal(run.nativeProbes(), 0)
 })
 
-/** 系统解析失败应传递错误，并始终释放媒体检查资源。 */
-test('缓存解析异常不被吞掉', async () => {
-  const run = cachedRuntime(new Error('unsupported media'))
-  await assert.rejects(run.api.prepareOfflineVideo('123'), /unsupported media/)
-  assert.equal(run.isDisposed(), true)
+/** 文件读取失败应原样传递，不能伪装成有效缓存或转为原生探测。 */
+test('缓存读取异常不被吞掉', async () => {
+  const run = cachedRuntime(new Error('read failed'))
+  await assert.rejects(run.api.prepareOfflineVideo('123'), /read failed/)
+  assert.equal(run.nativeProbes(), 0)
+})
+
+/** 结构检查拒绝未解密、非视频、无媒体数据和残缺的 MP4。 */
+test('缓存结构检查拒绝加密轨道、ByteVC2、缺失媒体数据及非 MP4', async () => {
+  for (const [bytes, message] of [
+    [cachedMp4('encv'), /仍含加密轨道/],
+    [cachedMp4('bv2C'), /缺少支持的视频轨道/],
+    [new Uint8Array(box('moov')), /缺少 MP4 轨道或媒体数据/],
+    [new Uint8Array([1, 2, 3, 4]), /MP4 数据不完整/],
+  ]) {
+    const run = cachedRuntime(bytes)
+    await assert.rejects(run.api.prepareOfflineVideo('123'), message)
+    assert.equal(run.nativeProbes(), 0)
+  }
 })
 
 /** 原生通知执行期间禁止回调重入播放器，队列任务可以在通知返回后操作它。 */
@@ -249,12 +273,12 @@ test('公开播放绕过 App 接口，初次加载与切集一致，缓存仍优
 })
 
 
-/** 模拟文件系统及系统可播放性检查，验证公开 MP4 的完整缓存流程。 */
-function publicCacheRuntime(playable) {
+/** 模拟文件系统并禁止原生媒体探测，验证公开 MP4 的完整缓存流程。 */
+function publicCacheRuntime(bytes = cachedMp4()) {
   const files = new Map()
   let downloads = 0
   let appCalls = 0
-  const bytes = new Uint8Array([1, 2, 3, 4])
+  let reads = 0
   const api = loadModule('mediaCache', {
     FileManager: {
       appGroupDocumentsDirectory: '/test',
@@ -263,16 +287,15 @@ function publicCacheRuntime(playable) {
       writeAsBytesSync: (file, value) => files.set(file, value),
       writeAsStringSync: (file, value) => files.set(file, value),
       readAsStringSync: file => files.get(file),
+      readAsBytes: async file => { reads++; return files.get(file) },
       removeSync: file => files.delete(file),
       readDirectorySync: directory => [...files.keys()]
         .filter(file => file.startsWith(directory + '/')).map(file => file.slice(directory.length + 1)),
       statSync: file => ({ size: files.get(file).length, modificationDate: 0 }),
     },
     AVAsset: class {
-      /** 返回测试指定的系统检查结果。 */
-      async loadIsPlayable() { return playable }
-      /** 测试宿主无需释放真实媒体。 */
-      dispose() {}
+      /** 下载及缓存重播均不得创建原生媒体探测对象。 */
+      constructor() { throw new Error('禁止创建 AVAsset') }
     },
   }, {
     './appApi': {
@@ -283,15 +306,18 @@ function publicCacheRuntime(playable) {
         return bytes
       },
     },
-    './mp4': { decryptToPlayableAsync: async () => { throw new Error('公开 MP4 不应解密') } },
+    './mp4': {
+      ...loadModule('mp4', {}),
+      decryptToPlayableAsync: async () => { throw new Error('公开 MP4 不应解密') },
+    },
     scripting: {},
   })
-  return { api, files, bytes, downloads: () => downloads, appCalls: () => appCalls }
+  return { api, files, bytes, downloads: () => downloads, appCalls: () => appCalls, reads: () => reads }
 }
 
 /** 公开源下载后原样缓存，写入元数据并通知选集；重播无需联网。 */
 test('公开 MP4 写入缓存并复用，不请求 App、不解密', async () => {
-  const run = publicCacheRuntime(true)
+  const run = publicCacheRuntime()
   const stages = []
   const events = []
   run.api.onCacheChanged((vid, action) => events.push([vid, action]))
@@ -300,21 +326,23 @@ test('公开 MP4 写入缓存并复用，不请求 App、不解密', async () =>
     label: '第一集', onProgress: value => stages.push(value.stage),
   }, source)
   assert.equal(run.files.get(target), run.bytes)
+  assert.equal(run.reads(), 0, '新下载的视频直接检查已有字节，不重复读取大文件')
   assert.deepEqual(stages, ['fetching', 'downloading', 'downloading', 'validating', 'done'])
   assert.equal(run.api.getCachedVideoMeta('123').duration, 79.534)
   assert.equal(run.api.getCachedVideoMeta('123').width, 360)
   assert.deepEqual(events, [['123', 'added']])
   assert.equal(await run.api.prepareOfflineVideo('123'), target)
+  assert.equal(run.reads(), 1, '重播已有缓存时异步读取并检查结构')
   assert.equal(run.downloads(), 1)
   assert.equal(run.appCalls(), 0)
 })
 
-/** 公开源下载成功但系统验证失败时删除文件，不能留下“已缓存”的假状态。 */
+/** 公开源下载成功但结构验证失败时删除文件，不能留下“已缓存”的假状态。 */
 test('公开 MP4 验证失败不保留缓存文件或索引', async () => {
-  const run = publicCacheRuntime(false)
+  const run = publicCacheRuntime(new Uint8Array([1, 2, 3, 4]))
   await assert.rejects(run.api.prepareOfflineVideo('123', {}, {
     main_url: 'https://public/video.mp4', duration: '79.534', width: 360, height: 640,
-  }), /无法被 iPhone 播放/)
+  }), /MP4 数据不完整/)
   assert.equal(run.api.isOfflineVideoCached('123'), false)
   assert.equal(run.api.getCachedVideoMeta('123'), null)
 })

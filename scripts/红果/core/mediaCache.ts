@@ -1,5 +1,5 @@
 import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./appApi"
-import { decryptToPlayableAsync } from "./mp4"
+import { decryptToPlayableAsync, findBox, readBoxes } from "./mp4"
 import { PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
 import { HttpError } from "./http"
 import type { VideoPlayerInfo } from "./types"
@@ -289,27 +289,33 @@ function notifyCacheChanged(videoId: string, action: "added" | "removed" | "clea
   }
 }
 
-/** 在标记准备完成前由系统检查本地媒体，验证失败不继续交给播放器。 */
-async function validateCachedVideo(path: string): Promise<void> {
-  const asset = new AVAsset(path)
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    const playable = await Promise.race([
-      asset.loadIsPlayable(),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error("缓存视频检查超时，请在缓存页删除该集后重试")), 15000)
-      }),
-    ])
-    if (!playable) throw new Error("缓存视频无法被 iPhone 播放，请在缓存页删除该集后重试")
-  } finally {
-    if (timer !== undefined) clearTimeout(timer)
-    asset.dispose()
+/** 仅检查 MP4 容器与明文视频轨道，不创建 AVAsset；实际解码由正式播放器负责。 */
+async function validateCachedVideo(path: string, preparedBytes?: Uint8Array): Promise<void> {
+  console.log("[cache] 开始检查 MP4 结构，不调用原生媒体探测")
+  await new Promise<void>(resolve => setTimeout(resolve, 0))
+  const bytes = preparedBytes ?? await FileManager.readAsBytes(path)
+  const boxes = readBoxes(bytes, 0, bytes.length)
+  if (boxes.length === 0 || boxes[boxes.length - 1].start + boxes[boxes.length - 1].size !== bytes.length) {
+    throw new Error("缓存视频的 MP4 数据不完整，请在缓存页删除该集后重试")
   }
+  const moov = boxes.find(box => box.type === "moov")
+  const mdat = boxes.find(box => box.type === "mdat")
+  if (!moov || !mdat || mdat.size <= mdat.headerSize) {
+    throw new Error("缓存视频缺少 MP4 轨道或媒体数据，请在缓存页删除该集后重试")
+  }
+  if (findBox([moov], "encv") || findBox([moov], "enca") || findBox([moov], "sinf")) {
+    throw new Error("缓存视频仍含加密轨道，请在缓存页删除该集后重新解密")
+  }
+  const hasVideoTrack = ["hvc1", "hev1", "avc1", "avc3"].some(type => findBox([moov], type) !== null)
+  if (!hasVideoTrack) {
+    throw new Error("缓存视频缺少支持的视频轨道，请在缓存页删除该集后重试")
+  }
+  console.log(`[cache] MP4 结构检查通过：${bytes.length} 字节`)
 }
 
 const inflightPrepares = new Map<string, Promise<string>>()
 
-/** 复用缓存或下载公开、加密视频，系统确认可播放后才写入缓存索引。 */
+/** 复用缓存或下载公开、加密视频，检查 MP4 结构后写入索引，由正式播放器报告解码错误。 */
 export async function prepareOfflineVideo(
   videoId: string,
   options: PrepareOptions = {},
@@ -363,7 +369,7 @@ export async function prepareOfflineVideo(
       FileManager.writeAsBytesSync(target, playable)
       onProgress?.({ stage: "validating", progress: 0 })
       try {
-        await validateCachedVideo(target)
+        await validateCachedVideo(target, playable)
       } catch (error) {
         FileManager.removeSync(target)
         throw error
