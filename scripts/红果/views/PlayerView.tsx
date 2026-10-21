@@ -1,4 +1,6 @@
 import {
+  AVPlayerView,
+  type PIPStatus,
   Button,
   HStack,
   Image,
@@ -11,6 +13,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useObservable,
   useRef,
   useState,
 } from "scripting"
@@ -30,8 +33,8 @@ import {
 import type { PlayerData } from "../core/types"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
-import type { WebPlayerEvent } from "../core/webPlayer"
-import { XgPlayerView } from "./XgPlayerView"
+import { bindPlayerEvents } from "../core/playerEvents"
+import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 
 const PLAYER_HEIGHT = 220
 
@@ -47,7 +50,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 管理缓存与选集，通过西瓜播放器播放本地视频并响应网页全屏事件。 */
+/** 管理集数加载与系统播放器生命周期，并显示本地播放错误。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -68,9 +71,21 @@ export function PlayerView({
 
   const instanceId = useRef(Date.now()).current
   const aliveRef = useRef(true)
-  const controller = useMemo(() => new WebViewController(), [])
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [playHint, setPlayHint] = useState("")
+  const player = useMemo(() => new AVPlayer(), [])
+  const pipStatus = useObservable<PIPStatus>(null)
+  const pipValue = pipStatus.value
+  const isPipActiveRef = useRef(false)
+
+  // willStop 期间系统仍持有播放器，收到 didStop 后才允许释放。
+  if (pipValue === "willStart" || pipValue === "didStart") isPipActiveRef.current = true
+  else if (pipValue === "didStop") isPipActiveRef.current = false
+
+  useEffect(() => {
+    if (pipValue === "willStart" || pipValue === "didStart") setPipPlaybackActive(true)
+    else if (pipValue === "didStop") setPipPlaybackActive(false)
+  }, [pipValue])
+
+  const loadedSourceRef = useRef("")
 
   const requestSeqRef = useRef(0)
 
@@ -84,13 +99,27 @@ export function PlayerView({
   const [preparePercent, setPreparePercent] = useState(0)
 
   const [isAudioReady, setIsAudioReady] = useState(false)
+  const [isPlayerContainerReady, setIsPlayerContainerReady] = useState(false)
+  const playerContainerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** 通过标准布局容器的出现事件安排装载，避免依赖原生播放器组件转发生命周期。 */
+  const handlePlayerContainerAppear = useCallback(() => {
+    console.log(`[player#${instanceId}] 播放容器已出现`)
+    if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
+    playerContainerTimerRef.current = setTimeout(() => {
+      playerContainerTimerRef.current = null
+      if (!aliveRef.current) return
+      console.log(`[player#${instanceId}] 播放容器回调已返回，允许装载媒体`)
+      setIsPlayerContainerReady(true)
+    }, 0)
+  }, [])
+
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
   const [hasPlaybackStarted, setHasPlaybackStarted] = useState(false)
   const [isWaitingForPlayer, setIsWaitingForPlayer] = useState(false)
   const playerReadyRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
-  /** 清除缓存准备进度，避免重复提交未变化的界面状态。 */
   const clearPrepareProgress = useCallback(() => {
     const shown = prepareShownRef.current
     if (!shown.label && shown.percent === 0) return
@@ -127,15 +156,12 @@ export function PlayerView({
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
 
-    if (playerReadyRef.current) {
-      controller.evaluateJavaScript("return window.hongguoPlayer.pause()").catch(console.error)
-    }
+    player.pause()
     setHasPlaybackStarted(false)
     clearPrepareProgress()
     setErrorMessage("")
     setSwitchLabel("正在切换")
 
-    /** 判断异步结果是否仍属于当前页面和请求。 */
     const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
     resolvePlaybackSource(seriesId, data.seriesDetail, vid, {
@@ -159,15 +185,13 @@ export function PlayerView({
         clearPrepareProgress()
         setErrorMessage(error instanceof Error ? error.message : String(error))
 
-        if (playerReadyRef.current) {
-          controller.evaluateJavaScript("return window.hongguoPlayer.play()").catch(console.error)
-        }
+        if (playerReadyRef.current) player.play()
       })
       .finally(() => {
         if (!isStale()) setSwitchLabel("")
       })
     },
-    [data, currentVid, seriesId, controller, clearPrepareProgress, updatePrepareProgress]
+    [data, currentVid, seriesId, player, clearPrepareProgress, updatePrepareProgress]
   )
 
   /** 忽略页面退出或后续请求覆盖后的异步结果，防止访问已释放的播放器。 */
@@ -179,10 +203,8 @@ export function PlayerView({
     setSwitchLabel("")
 
     const seq = requestSeqRef.current
-    /** 判断异步结果是否仍属于当前页面和请求。 */
     const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
-    /** 缓存准备完成前先展示剧集信息与选集。 */
     const showDetailEarly = (detail: PlayerData) => {
       if (isStale()) return
       setData(detail)
@@ -255,7 +277,7 @@ export function PlayerView({
 
     return () => {
       cancelled = true
-      SharedAudioSession.setActive(false).catch(console.error)
+      if (!isPipActiveRef.current) SharedAudioSession.setActive(false).catch(() => {})
     }
   }, [])
 
@@ -266,53 +288,70 @@ export function PlayerView({
   const dataRef = useRef(data)
   dataRef.current = data
 
-  /** 只处理当前集数的网页事件，迟到通知不能切集或覆盖当前播放状态。 */
-  const handleWebPlayerEvent = useCallback((event: WebPlayerEvent) => {
-    if (!aliveRef.current || event.type === "bridgeReady" || event.videoId !== currentVidRef.current) return
-    console.log(`[player#${instanceId}] 西瓜播放器事件：${event.type}`)
-    if (event.type === "canplay" || event.type === "playing" || event.type === "autoplayBlocked") {
-      playerReadyRef.current = true
-      setIsWaitingForPlayer(false)
-      setIsPlayerLoaded(true)
-      setPlayHint(event.type === "autoplayBlocked" ? "点按视频开始播放" : "")
-      if (event.type === "playing") setHasPlaybackStarted(true)
-    } else if (event.type === "fullscreen") {
-      setIsFullscreen(event.active)
-    } else if (event.type === "error") {
-      playerReadyRef.current = false
-      setIsWaitingForPlayer(false)
-      setIsPlayerLoaded(false)
-      setPlayHint("")
-      setErrorMessage(event.message)
-    } else if (event.type === "ended") {
-      const currentData = dataRef.current
-      if (!currentData) return
-      const vids = currentData.seriesDetail.vid_list
-      const index = vids.indexOf(currentVidRef.current)
-      if (index >= 0 && index < vids.length - 1) switchEpisodeRef.current(vids[index + 1])
-    }
-  }, [])
-
-  // 网页视图始终挂载；装载媒体和切集不会重建 WebView，也不会覆盖它的控制条。
+  // 原生事件仅排队；读取 duration、调用 play/pause 和切集都在回调返回后执行。
   useEffect(() => {
-    if (!source || !isAudioReady) return
+    return bindPlayerEvents(player, {
+      /** 媒体就绪后启动播放，时长直接使用缓存元数据，避免同步回读原生属性。 */
+      onReady: () => {
+        playerReadyRef.current = true
+        setIsWaitingForPlayer(false)
+        console.log("[player] 媒体已就绪，开始播放")
+        const started = player.play()
+        console.log(`[player] play 已返回：${started}`)
+      },
+      /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
+      onStatus: status => {
+        console.log(`[player] 系统播放状态：${status}`)
+        if (status === TimeControlStatus.playing) setHasPlaybackStarted(true)
+      },
+      /** 展示原生播放错误，停止等待并保留缓存用于进一步排查。 */
+      onError: message => {
+        playerReadyRef.current = false
+        player.pause()
+        setIsWaitingForPlayer(false)
+        setIsPlayerLoaded(false)
+        clearPrepareProgress()
+        setSwitchLabel("")
+        console.error(`[player] 播放失败：${message}`)
+        setErrorMessage(`视频播放失败：${message}`)
+      },
+      /** 播完后根据当前集数安排下一集，切源不会在原生结束通知内执行。 */
+      onEnded: () => {
+        const currentData = dataRef.current
+        const current = currentVidRef.current
+        if (!currentData || !current) return
+        const vids = currentData.seriesDetail.vid_list
+        const index = vids.indexOf(current)
+        if (index >= 0 && index < vids.length - 1) switchEpisodeRef.current(vids[index + 1])
+      },
+    })
+  }, [player, clearPrepareProgress])
+
+  // 原生播放视图先挂载，再设置媒体；切集和错误提示不会销毁播放视图。
+  useEffect(() => {
+    if (!source || !isAudioReady || !isPlayerContainerReady || loadedSourceRef.current === source) return
     playerReadyRef.current = false
     setHasPlaybackStarted(false)
-    setIsPlayerLoaded(false)
     setIsWaitingForPlayer(true)
-    setPlayHint("")
-  }, [source, isAudioReady])
-
-  // 媒体已就绪或报错就停止计时，避免超时提示覆盖真实播放错误。
-  useEffect(() => {
-    if (!isWaitingForPlayer) return
-    const timer = setTimeout(() => {
-      if (!aliveRef.current || playerReadyRef.current) return
+    console.log(`[player#${instanceId}] 开始装载媒体`)
+    if (player.setSource(source)) {
+      loadedSourceRef.current = source
+      setIsPlayerLoaded(true)
+      console.log(`[player#${instanceId}] 播放源已设置，等待系统就绪`)
+    } else {
       setIsWaitingForPlayer(false)
-      setErrorMessage("西瓜播放器在 15 秒内未能就绪，缓存已保留")
+      setIsPlayerLoaded(false)
+      setErrorMessage("无法装载视频")
+      return
+    }
+    const timer = setTimeout(() => {
+      if (playerReadyRef.current) return
+      setIsWaitingForPlayer(false)
+      setErrorMessage("系统播放器在 15 秒内未能就绪，缓存已保留")
+      console.error("[player] 等待系统就绪超时")
     }, PLAYER_READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [source, isWaitingForPlayer])
+  }, [player, source, isAudioReady, isPlayerContainerReady])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -371,15 +410,21 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded, hasPlaybackStarted, seriesId])
 
-  // 网页组件负责释放 WebView，此处仅取消业务请求对页面的更新。
+  // 画中画仍在播放时保留播放器，其余情况在页面关闭后释放。
   useEffect(() => {
-    console.log(`[player#${instanceId}] 西瓜播放器实例已建立`)
+    console.log(`[player#${instanceId}] 播放器实例已建立`)
     return () => {
       aliveRef.current = false
       requestSeqRef.current += 1
-      console.log(`[player#${instanceId}] 页面清理`)
+      if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
+      console.log(`[player#${instanceId}] 页面清理，画中画活动：${isPipActiveRef.current}`)
+      if (isPipActiveRef.current) retainPipPlayer(player)
+      else {
+        setPipPlaybackActive(false)
+        player.dispose()
+      }
     }
-  }, [])
+  }, [player])
 
   const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
 
@@ -390,10 +435,6 @@ export function PlayerView({
       frame={PAGE_FRAME}
       navigationTitle="红果剧场"
       navigationBarTitleDisplayMode="inline"
-      navigationBarVisibility={isFullscreen ? "hidden" : "automatic"}
-      tabBarVisibility={isFullscreen ? "hidden" : "automatic"}
-      ignoresSafeArea={isFullscreen}
-      background={isFullscreen ? "black" : "systemBackground"}
       toolbar={{
         topBarTrailing: [
           ...(onOpenHistory
@@ -412,33 +453,50 @@ export function PlayerView({
     >
 
       <ZStack
-        frame={isFullscreen
-          ? { maxWidth: "infinity", maxHeight: "infinity" }
-          : { maxWidth: "infinity", height: PLAYER_HEIGHT }}
+        onAppear={handlePlayerContainerAppear}
+        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
-        <XgPlayerView
-          controller={controller}
-          source={isAudioReady ? source : ""}
-          videoId={currentVid}
-          instanceId={instanceId}
-          onEvent={handleWebPlayerEvent}
+        <AVPlayerView
+          player={player}
+          pipStatus={pipStatus}
+          allowsPictureInPicturePlayback={false}
+          canStartPictureInPictureAutomaticallyFromInline={false}
+          updatesNowPlayingInfoCenter={true}
+          videoGravity="resizeAspect"
+          frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
         />
+
+        {isPlayerBusy ? (
+          <VStack
+            spacing={12}
+            alignment="center"
+            frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+            background="black"
+          >
+            {prepareLabel ? (
+              <ProgressView
+                value={preparePercent}
+                total={1.0}
+                progressViewStyle="circular"
+                tint="white"
+                controlSize="regular"
+              />
+            ) : (
+              <ProgressView
+                progressViewStyle="circular"
+                tint="white"
+                controlSize="regular"
+              />
+            )}
+            <Text font="footnote" foregroundStyle="white">
+              {prepareLabel || switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…")}
+            </Text>
+          </VStack>
+        ) : null}
       </ZStack>
 
-      {isPlayerBusy || playHint || (isFullscreen && errorMessage) ? (
-        <HStack spacing={8} padding={8} frame={FILL_LEADING}>
-          {isPlayerBusy ? <ProgressView controlSize="small" /> : null}
-          <Text font="caption" foregroundStyle={isFullscreen ? "white" : "secondaryLabel"}>
-            {isPlayerBusy
-              ? (prepareLabel ? `${prepareLabel} ${Math.round(preparePercent * 100)}%`
-                : switchLabel || (isWaitingForPlayer ? "正在启动西瓜播放器" : "加载中…"))
-              : playHint || errorMessage}
-          </Text>
-        </HStack>
-      ) : null}
-
-      {!isFullscreen ? <ScrollView>
+      <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -452,7 +510,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView> : null}
+      </ScrollView>
     </VStack>
   )
 }
