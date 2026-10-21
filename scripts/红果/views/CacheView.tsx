@@ -12,7 +12,6 @@ import { PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "../core/co
 import { formatBytes, formatRelativeTime } from "../core/format"
 import {
   clearOfflineCache,
-  exportOfflineVideo,
   listOfflineCache,
   removeOfflineVideo,
   type CacheEntry,
@@ -77,15 +76,12 @@ function UsageSummary({ entries }: { entries: CacheEntry[] }) {
   )
 }
 
-/** 展示缓存文件信息，并允许原样导出或删除单集缓存。 */
 function CacheRow({
   entry,
   onRemove,
-  onExport,
 }: {
   entry: CacheEntry
   onRemove: (entry: CacheEntry) => void
-  onExport: (entry: CacheEntry) => void
 }) {
   return (
     <HStack
@@ -110,11 +106,6 @@ function CacheRow({
       </VStack>
 
       <Button
-        title="导出"
-        action={() => onExport(entry)}
-        buttonStyle="borderless"
-      />
-      <Button
         action={() => onRemove(entry)}
         buttonStyle="borderless"
         frame={{ width: ROW_ACTION_WIDTH }}
@@ -125,20 +116,10 @@ function CacheRow({
   )
 }
 
-/** 在不进入播放器的情况下管理和导出缓存，便于检查导致闪退的文件。 */
 export function CacheView() {
   const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
 
   const refresh = () => setEntries(listOfflineCache())
-
-  /** 导出已有文件并显示错误，不触发请求、解密或播放器初始化。 */
-  const handleExport = async (entry: CacheEntry) => {
-    try {
-      await exportOfflineVideo(entry.videoId)
-    } catch (error) {
-      await Dialog.alert({ message: error instanceof Error ? error.message : String(error) })
-    }
-  }
 
   const handleRemove = async (entry: CacheEntry) => {
     const confirmed = await Dialog.confirm({
@@ -192,7 +173,7 @@ export function CacheView() {
           ) : (
             <VStack alignment="leading" spacing={0} frame={FILL_LEADING}>
               {entries.map(entry => (
-                <CacheRow key={entry.videoId} entry={entry} onRemove={handleRemove} onExport={handleExport} />
+                <CacheRow key={entry.videoId} entry={entry} onRemove={handleRemove} />
               ))}
             </VStack>
           )}

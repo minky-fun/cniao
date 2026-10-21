@@ -1,6 +1,6 @@
-import { fetchDetail, fetchPublicVideo } from "./api"
+import { fetchDetail } from "./api"
 import { formatEpisodeLabel } from "./format"
-import { getCachedVideoMeta, isOfflineVideoCached, prepareOfflineVideo, type PrepareOptions } from "./mediaCache"
+import { getCachedVideoMeta, prepareOfflineVideo, type PrepareOptions } from "./mediaCache"
 import type { PlayerData, SeriesDetail, SeriesSocialInfo, VideoPlayerInfo } from "./types"
 
 export interface CachedVideoMeta {
@@ -20,7 +20,6 @@ export interface ResolvedPlaybackSource {
   meta?: CachedVideoMeta
 }
 
-/** 优先复用缓存，否则检查官网公开源，未开放时才请求 App 视频。 */
 export async function resolvePlaybackSource(
   seriesId: string,
   detail: SeriesDetail,
@@ -29,17 +28,9 @@ export async function resolvePlaybackSource(
 ): Promise<ResolvedPlaybackSource> {
   const episodeIndex = detail.vid_list.indexOf(vid)
   const label = options.label ?? formatEpisodeLabel(detail.series_name, episodeIndex)
-  if (!isOfflineVideoCached(vid)) {
-    const publicVideo = await fetchPublicVideo(seriesId, vid)
-    if (publicVideo) {
-      console.log("[player] 使用官网公开视频源")
-      return resolveOfflineSource(vid, { ...options, label }, publicVideo)
-    }
-  }
   return resolveOfflineSource(vid, { ...options, label })
 }
 
-/** 加载剧集详情，并为初次进入播放器选择缓存、公开或 App 视频源。 */
 export async function loadOfflinePlayerData(
   seriesId: string,
   vid: string,
@@ -53,7 +44,7 @@ export async function loadOfflinePlayerData(
 
   onDetail?.(buildOfflinePlayerData(seriesId, vid, result.detail, result.social, "", undefined))
 
-  const { url, meta } = await resolvePlaybackSource(seriesId, result.detail, vid, { ...prepareOptions, label })
+  const { url, meta } = await resolveOfflineSource(vid, { ...prepareOptions, label })
 
   return {
     data: buildOfflinePlayerData(seriesId, vid, result.detail, result.social, url, meta),
@@ -61,13 +52,11 @@ export async function loadOfflinePlayerData(
   }
 }
 
-/** 使用同一缓存流程保存公开视频或解密后的 App 视频，并返回缓存媒体信息。 */
 async function resolveOfflineSource(
   vid: string,
-  options: PrepareOptions,
-  publicVideo?: VideoPlayerInfo
+  options: PrepareOptions
 ): Promise<ResolvedPlaybackSource> {
-  const url = await prepareOfflineVideo(vid, options, publicVideo)
+  const url = await prepareOfflineVideo(vid, options)
   const meta = getCachedVideoMeta(vid) ?? undefined
   return { url, meta }
 }

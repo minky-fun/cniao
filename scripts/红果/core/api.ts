@@ -168,45 +168,6 @@ export function getFreeEpisodeCount(detail: SeriesDetail): number {
   return Math.min(value, detail.vid_list.length)
 }
 
-/** 只在官网明确开放且剧集标识匹配时返回公开视频源，404 表示需要 App 播放源。 */
-export async function fetchPublicVideo(seriesId: string, vid: string): Promise<VideoPlayerInfo | null> {
-  let entry: { publicVideoSeo?: {
-    available: boolean
-    seriesId: string
-    itemId: string
-    durationSeconds: number
-    width: number
-    height: number
-    posterUrl: string
-  } } | null
-  try {
-    entry = await fetchLoaderEntry(
-      `/player/${encodeURIComponent(seriesId)}/${encodeURIComponent(vid)}`,
-      "player_(series_id)/(vid)/page"
-    )
-  } catch (error) {
-    if (error instanceof HttpError && error.status === 404) return null
-    throw error
-  }
-  const video = entry?.publicVideoSeo
-  if (video?.available !== true) return null
-  if (video.seriesId !== seriesId || video.itemId !== vid) {
-    throw new Error("官网公开视频的剧集标识不匹配")
-  }
-  if (!Number.isFinite(video.durationSeconds) || video.durationSeconds <= 0 ||
-      !Number.isFinite(video.width) || video.width <= 0 ||
-      !Number.isFinite(video.height) || video.height <= 0) {
-    throw new Error("官网公开视频缺少有效媒体信息")
-  }
-  return {
-    main_url: `${WEB_BASE}/video/public/${encodeURIComponent(vid)}/360p.mp4`,
-    duration: String(video.durationSeconds),
-    width: video.width,
-    height: video.height,
-    poster_url: video.posterUrl,
-  }
-}
-
 export async function fetchPlayer(seriesId: string, vid: string): Promise<PlayerData> {
   const entry = await fetchLoaderEntry<PlayerEntry | null>(
     `/player/${encodeURIComponent(seriesId)}/${encodeURIComponent(vid)}`,

@@ -1,8 +1,7 @@
 import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./appApi"
-import { decryptToPlayableAsync, findBox, readBoxes } from "./mp4"
+import { decryptToPlayableAsync } from "./mp4"
 import { PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
 import { HttpError } from "./http"
-import type { VideoPlayerInfo } from "./types"
 
 const CACHE_FILE_EXTENSION = ".mp4"
 
@@ -239,7 +238,7 @@ export function pruneOfflineCache(): number {
 
 export interface PrepareProgress {
 
-  stage: "fetching" | "downloading" | "decrypting" | "validating" | "done"
+  stage: "fetching" | "downloading" | "decrypting" | "done"
 
   progress: number
 }
@@ -289,37 +288,11 @@ function notifyCacheChanged(videoId: string, action: "added" | "removed" | "clea
   }
 }
 
-/** 仅检查 MP4 容器与明文视频轨道，不创建 AVAsset；实际解码由正式播放器负责。 */
-async function validateCachedVideo(path: string, preparedBytes?: Uint8Array): Promise<void> {
-  console.log("[cache] 开始检查 MP4 结构，不调用原生媒体探测")
-  await new Promise<void>(resolve => setTimeout(resolve, 0))
-  const bytes = preparedBytes ?? await FileManager.readAsBytes(path)
-  const boxes = readBoxes(bytes, 0, bytes.length)
-  if (boxes.length === 0 || boxes[boxes.length - 1].start + boxes[boxes.length - 1].size !== bytes.length) {
-    throw new Error("缓存视频的 MP4 数据不完整，请在缓存页删除该集后重试")
-  }
-  const moov = boxes.find(box => box.type === "moov")
-  const mdat = boxes.find(box => box.type === "mdat")
-  if (!moov || !mdat || mdat.size <= mdat.headerSize) {
-    throw new Error("缓存视频缺少 MP4 轨道或媒体数据，请在缓存页删除该集后重试")
-  }
-  if (findBox([moov], "encv") || findBox([moov], "enca") || findBox([moov], "sinf")) {
-    throw new Error("缓存视频仍含加密轨道，请在缓存页删除该集后重新解密")
-  }
-  const hasVideoTrack = ["hvc1", "hev1", "avc1", "avc3"].some(type => findBox([moov], type) !== null)
-  if (!hasVideoTrack) {
-    throw new Error("缓存视频缺少支持的视频轨道，请在缓存页删除该集后重试")
-  }
-  console.log(`[cache] MP4 结构检查通过：${bytes.length} 字节`)
-}
-
 const inflightPrepares = new Map<string, Promise<string>>()
 
-/** 复用缓存或下载公开、加密视频，检查 MP4 结构后写入索引，由正式播放器报告解码错误。 */
 export async function prepareOfflineVideo(
   videoId: string,
-  options: PrepareOptions = {},
-  publicVideo?: VideoPlayerInfo
+  options: PrepareOptions = {}
 ): Promise<string> {
   const { label, onProgress, protectedVideoIds } = options
   ensureCacheDirectory()
@@ -327,8 +300,6 @@ export async function prepareOfflineVideo(
   const target = cachePath(videoId)
 
   if (FileManager.existsSync(target)) {
-    onProgress?.({ stage: "validating", progress: 0 })
-    await validateCachedVideo(target)
     markUsed(videoId, label)
     onProgress?.({ stage: "done", progress: 1 })
     return target
@@ -345,40 +316,28 @@ export async function prepareOfflineVideo(
     try {
       onProgress?.({ stage: "fetching", progress: 0 })
 
-      let stream: EncryptedStream | undefined
-      if (!publicVideo) {
-        const streams = await fetchEncryptedStreams(videoId)
-        if (streams.length === 0) {
-          throw new HttpError("该集暂无可用清晰度，或均为设备不支持的编码", 404)
-        }
-        stream = streams[0]
+      const streams = await fetchEncryptedStreams(videoId)
+      if (streams.length === 0) {
+        throw new HttpError("该集暂无可用清晰度，或均为设备不支持的编码", 404)
       }
+
+      const stream: EncryptedStream = streams[0]
 
       onProgress?.({ stage: "downloading", progress: 0 })
-      const downloaded = await downloadStream(publicVideo ? publicVideo.main_url : stream!.url)
+      const encrypted = await downloadStream(stream.url)
       onProgress?.({ stage: "downloading", progress: 1 })
 
-      let playable = downloaded
-      if (stream) {
-        onProgress?.({ stage: "decrypting", progress: 0 })
-        playable = await decryptToPlayableAsync(downloaded, stream.contentKey, ratio => {
-          onProgress?.({ stage: "decrypting", progress: ratio })
-        })
-      }
+      onProgress?.({ stage: "decrypting", progress: 0 })
+      const playable = await decryptToPlayableAsync(encrypted, stream.contentKey, ratio => {
+        onProgress?.({ stage: "decrypting", progress: ratio })
+      })
 
       FileManager.writeAsBytesSync(target, playable)
-      onProgress?.({ stage: "validating", progress: 0 })
-      try {
-        await validateCachedVideo(target, playable)
-      } catch (error) {
-        FileManager.removeSync(target)
-        throw error
-      }
 
       markUsed(videoId, label, {
-        duration: publicVideo ? Number(publicVideo.duration) : stream!.duration,
-        width: publicVideo ? publicVideo.width : stream!.width,
-        height: publicVideo ? publicVideo.height : stream!.height,
+        duration: stream.duration,
+        width: stream.width,
+        height: stream.height,
       })
 
       const protectList = [videoId, ...(protectedVideoIds ?? [])]
@@ -414,18 +373,6 @@ export async function preloadOfflineVideo(
     console.log(`[preload] 预加载集数 ${videoId} 失败（已静默跳过）:`, error)
     return false
   }
-}
-
-/** 将现有缓存原样复制到用户选择的文件夹，不加载或解码媒体。 */
-export async function exportOfflineVideo(videoId: string): Promise<void> {
-  if (!/^[0-9]{1,25}$/.test(videoId)) throw new Error("视频 ID 不合法")
-  const source = cachePath(videoId)
-  if (!FileManager.existsSync(source)) throw new Error("该集缓存文件不存在")
-  const directory = await DocumentPicker.pickDirectory()
-  if (!directory) return
-  const destination = `${directory}/hongguo-${videoId}.mp4`
-  if (FileManager.existsSync(destination)) throw new Error("所选文件夹中已有同名视频，请选择其他文件夹")
-  await FileManager.copyFile(source, destination)
 }
 
 export function removeOfflineVideo(videoId: string): void {

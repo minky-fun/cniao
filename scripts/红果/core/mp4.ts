@@ -162,14 +162,12 @@ function readTrackSamples(bytes: Uint8Array, stbl: Mp4Box): TrackSamples | null 
   }
 }
 
-const DECRYPT_TIME_SLICE_MS = 8
+const DECRYPT_TIME_SLICE_MS = 60
 
-/** 将执行权交还给 iPhone 界面，避免长时间独占脚本线程。 */
 function yieldToMainThread(): Promise<void> {
   return new Promise<void>(resolve => setTimeout(resolve, 0))
 }
 
-/** 按样本解密并定期让出线程，单个大 chunk 也不能阻塞整集。 */
 export async function decryptSamplesAsync(
   bytes: Uint8Array,
   contentKey: Uint8Array,
@@ -213,12 +211,12 @@ export async function decryptSamplesAsync(
         offset += size
         index++
         processed++
+      }
 
-        if (Date.now() - sliceStart >= DECRYPT_TIME_SLICE_MS) {
-          onProgress?.(totalSamples > 0 ? processed / totalSamples : 1)
-          await yieldToMainThread()
-          sliceStart = Date.now()
-        }
+      if (Date.now() - sliceStart >= DECRYPT_TIME_SLICE_MS) {
+        onProgress?.(totalSamples > 0 ? processed / totalSamples : 1)
+        await yieldToMainThread()
+        sliceStart = Date.now()
       }
     }
   }

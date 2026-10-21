@@ -29,7 +29,7 @@ export const RANK_BOARDS = [
   { board: "hot-ai-drama", label: "热播 AI 剧榜" },
 ] as const
 
-export const APP_BASE = "https://api5-normal-sinfonlineb.fqnovel.com"
+export const APP_BASE = "https://reading.snssdk.com"
 
 export const APP_USER_AGENT =
   "com.phoenix.read/73532 (Linux; U; Android 16; zh_CN; 25053RT47C; Build/BP2A.250605.031.A3; Cronet/TTNetVersion:04657795 2026-01-23 QuicVersion:c67e9834 2025-09-08)"
@@ -53,6 +53,8 @@ export const APP_COMMON_QUERY: Record<string, string> = {
   resolution: "1280*2772",
   dpi: "520",
   ac: "wifi",
+  device_id: "1234567890123456789",
+  iid: "9876543210987654321",
 }
 
 export const MEDIA_USER_AGENT =
