@@ -65,6 +65,8 @@ export function PlayerView({
   const [data, setData] = useState<PlayerData | null>(null)
   const [currentVid, setCurrentVid] = useState(initialVid ?? "")
   const [isLoading, setIsLoading] = useState(true)
+  // 全屏仅改变布局，保持同一播放器和播放源，避免切换时重新装载媒体。
+  const [isFullScreen, setIsFullScreen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
   const player = useMemo(() => new AVPlayer(), [])
@@ -379,8 +381,15 @@ export function PlayerView({
       frame={PAGE_FRAME}
       navigationTitle="红果剧场"
       navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility={isFullScreen ? "hidden" : "visible"}
+      tabBarVisibility={isFullScreen ? "hidden" : "automatic"}
+      background={isFullScreen ? "black" : undefined}
+      ignoresSafeArea={isFullScreen}
       toolbar={{
         topBarTrailing: [
+          <Button title="全屏" systemImage="arrow.up.left.and.arrow.down.right"
+            disabled={!isPlayerLoaded || isPlayerBusy}
+            action={() => setIsFullScreen(true)} />,
           ...(onOpenHistory
             ? [
                 <Button
@@ -397,7 +406,9 @@ export function PlayerView({
     >
 
       <ZStack
-        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
+        frame={isFullScreen
+          ? { maxWidth: "infinity", maxHeight: "infinity" }
+          : { maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
         {isPlayerLoaded ? (
@@ -436,7 +447,15 @@ export function PlayerView({
         ) : null}
       </ZStack>
 
-      <ScrollView>
+      {isFullScreen ? (
+        <HStack padding={{ horizontal: 16, top: 8, bottom: 32 }} foregroundStyle="white">
+          <Spacer />
+          <Button title="退出全屏" systemImage="arrow.down.right.and.arrow.up.left"
+            action={() => setIsFullScreen(false)} />
+        </HStack>
+      ) : null}
+
+      {!isFullScreen ? <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -450,7 +469,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView>
+      </ScrollView> : null}
     </VStack>
   )
 }
