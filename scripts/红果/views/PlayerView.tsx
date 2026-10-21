@@ -35,10 +35,11 @@ import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
+import { bindPlayerEvents } from "../core/playerEvents"
 
 const PLAYER_HEIGHT = 220
 
-const PLAY_AFTER_MOUNT_MS = 120
+const PLAYER_READY_TIMEOUT_MS = 15000
 
 const PREPARE_PROGRESS_STEP = 0.05
 
@@ -91,6 +92,8 @@ export function PlayerView({
 
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
   const [hasPlaybackStarted, setHasPlaybackStarted] = useState(false)
+  const [isWaitingForPlayer, setIsWaitingForPlayer] = useState(false)
+  const playerReadyRef = useRef(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
   const pipValue = pipStatus.value
@@ -156,19 +159,12 @@ export function PlayerView({
 
         if (isStale()) return
 
-        if (!player.setSource(url)) {
-          throw new Error(`无法装载第 ${data.seriesDetail.vid_list.indexOf(vid) + 1} 集`)
-        }
-        loadedSourceRef.current = url
-        setIsPlayerLoaded(true)
-
         const durSec = meta?.duration ?? 0
         setData(prev => (prev ? applyOfflineSource(prev, vid, url, meta) : prev))
         setActiveDuration(durSec > 0 ? durSec : 0)
 
         setCurrentVid(vid)
         setSource(url)
-        player.play()
       })
       .catch(error => {
         if (isStale()) return
@@ -176,8 +172,7 @@ export function PlayerView({
         clearPrepareProgress()
         setErrorMessage(error instanceof Error ? error.message : String(error))
 
-        const fallback = loadedSourceRef.current
-        if (fallback && player.setSource(fallback)) player.play()
+        if (playerReadyRef.current) player.play()
       })
       .finally(() => {
         if (!isStale()) setSwitchLabel("")
@@ -263,74 +258,77 @@ export function PlayerView({
     }
   }, [])
 
-  // 先订阅加载失败事件，避免本地媒体解析失败时只留下黑屏。
+  const switchEpisodeRef = useRef(switchEpisode)
+  switchEpisodeRef.current = switchEpisode
+  const currentVidRef = useRef(currentVid)
+  currentVidRef.current = currentVid
+  const dataRef = useRef(data)
+  dataRef.current = data
+
+  // 原生事件仅排队；读取 duration、调用 play/pause 和切集都在回调返回后执行。
   useEffect(() => {
-    player.onError = message => {
-      player.pause()
-      setIsPlayerLoaded(false)
-      loadedSourceRef.current = ""
-      clearPrepareProgress()
-      setSwitchLabel("")
-      setErrorMessage(`本地视频播放失败：${message}。请在缓存页删除该集后重试`)
-    }
-    return () => { player.onError = undefined }
+    return bindPlayerEvents(player, {
+      /** 媒体就绪后读取时长并启动播放，不再依赖固定延时强制播放。 */
+      onReady: () => {
+        playerReadyRef.current = true
+        setIsWaitingForPlayer(false)
+        const seconds = player.duration
+        if (seconds > 0) setActiveDuration(seconds)
+        console.log("[player] 本地媒体已就绪，开始播放")
+        player.play()
+      },
+      /** 使用系统提供的事件参数更新播放状态，避免在事件内回读 rate。 */
+      onStatus: status => {
+        if (status === TimeControlStatus.playing) setHasPlaybackStarted(true)
+      },
+      /** 展示原生播放错误，停止等待并保留缓存用于进一步排查。 */
+      onError: message => {
+        playerReadyRef.current = false
+        player.pause()
+        setIsWaitingForPlayer(false)
+        setIsPlayerLoaded(false)
+        clearPrepareProgress()
+        setSwitchLabel("")
+        console.error(`[player] 本地播放失败：${message}`)
+        setErrorMessage(`本地视频播放失败：${message}`)
+      },
+      /** 播完后根据当前集数安排下一集，切源不会在原生结束通知内执行。 */
+      onEnded: () => {
+        const currentData = dataRef.current
+        const current = currentVidRef.current
+        if (!currentData || !current) return
+        const vids = currentData.seriesDetail.vid_list
+        const index = vids.indexOf(current)
+        if (index >= 0 && index < vids.length - 1) switchEpisodeRef.current(vids[index + 1])
+      },
+    })
   }, [player, clearPrepareProgress])
 
+  // 完成事件订阅和音频会话配置后才设置本地源，等待系统就绪事件开始播放。
   useEffect(() => {
-    if (!source || !isAudioReady) return
-    if (loadedSourceRef.current === source) return
-
+    if (!source || !isAudioReady || loadedSourceRef.current === source) return
+    playerReadyRef.current = false
+    setHasPlaybackStarted(false)
+    setIsWaitingForPlayer(true)
+    console.log("[player] 开始装载本地媒体")
     if (player.setSource(source)) {
       loadedSourceRef.current = source
       setIsPlayerLoaded(true)
+      console.log("[player] 本地源已设置，等待系统就绪")
     } else {
+      setIsWaitingForPlayer(false)
       setIsPlayerLoaded(false)
-      setErrorMessage("无法装载本地视频，请在缓存页删除该集后重试")
-    }
-  }, [player, source, isAudioReady])
-
-  const syncPlayerDuration = () => {
-    const d = player.duration
-    if (d > 0) {
-      setActiveDuration(prev => {
-        if (Math.abs(prev - d) >= 0.5) return d
-        return prev
-      })
-    }
-  }
-
-  useEffect(() => {
-    if (!isPlayerLoaded) return
-
-    player.onReadyToPlay = () => {
-      syncPlayerDuration()
-      player.play()
+      setErrorMessage("无法装载本地视频")
+      return
     }
     const timer = setTimeout(() => {
-      syncPlayerDuration()
-      player.play()
-    }, PLAY_AFTER_MOUNT_MS)
-
+      if (playerReadyRef.current) return
+      setIsWaitingForPlayer(false)
+      setErrorMessage("系统播放器在 15 秒内未能就绪，缓存已保留")
+      console.error("[player] 等待系统就绪超时")
+    }, PLAYER_READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [player, isPlayerLoaded, surfaceKey])
-
-  useEffect(() => {
-    player.onTimeControlStatusChanged = () => {
-      if (player.rate > 0) setHasPlaybackStarted(true)
-      syncPlayerDuration()
-    }
-    return () => {
-      player.onTimeControlStatusChanged = undefined
-    }
-  }, [player])
-
-  useEffect(() => {
-    if (!source) return
-    const timers = [120, 300, 600, 1200].map(delay =>
-      setTimeout(syncPlayerDuration, delay)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [source])
+  }, [player, source, isAudioReady])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -399,34 +397,7 @@ export function PlayerView({
     }
   }, [player])
 
-  const switchEpisodeRef = useRef(switchEpisode)
-  switchEpisodeRef.current = switchEpisode
-
-  const currentVidRef = useRef(currentVid)
-  currentVidRef.current = currentVid
-  const dataRef = useRef(data)
-  dataRef.current = data
-
-  useEffect(() => {
-    player.onEnded = () => {
-      const currentData = dataRef.current
-      const current = currentVidRef.current
-      if (!currentData || !current) return
-
-      const vidList = currentData.seriesDetail.vid_list
-      const currentIndex = vidList.indexOf(current)
-      if (currentIndex >= 0 && currentIndex < vidList.length - 1) {
-        const nextVid = vidList[currentIndex + 1]
-        switchEpisodeRef.current(nextVid)
-      }
-    }
-
-    return () => {
-      player.onEnded = undefined
-    }
-  }, [player])
-
-  const isPlayerBusy = isLoading || prepareLabel !== "" || switchLabel !== ""
+  const isPlayerBusy = isLoading || isWaitingForPlayer || prepareLabel !== "" || switchLabel !== ""
 
   return (
     <VStack
@@ -491,7 +462,7 @@ export function PlayerView({
               />
             )}
             <Text font="footnote" foregroundStyle="white">
-              {prepareLabel || switchLabel || "加载中…"}
+              {prepareLabel || switchLabel || (isWaitingForPlayer ? "正在启动系统播放器" : "加载中…")}
             </Text>
           </VStack>
         ) : null}

@@ -127,3 +127,58 @@ test('缓存解析异常不被吞掉', async () => {
   await assert.rejects(run.api.prepareOfflineVideo('123'), /unsupported media/)
   assert.equal(run.isDisposed(), true)
 })
+
+/** 原生通知执行期间禁止回调重入播放器，队列任务可以在通知返回后操作它。 */
+test('播放器四类事件均在原生通知返回后处理', async () => {
+  const { bindPlayerEvents } = loadModule('playerEvents', {})
+  let insideNativeNotification = false
+  const events = []
+  const player = {}
+  /** 模拟不允许在原生通知中同步回调的播放器桥接。 */
+  function nativeOperation(label) {
+    assert.equal(insideNativeNotification, false, '不能重入原生播放器通知')
+    events.push(label)
+  }
+  const dispose = bindPlayerEvents(player, {
+    onReady: () => nativeOperation('play'),
+    onStatus: status => nativeOperation(`status:${status}`),
+    onError: message => nativeOperation(`error:${message}`),
+    onEnded: () => nativeOperation('next'),
+  })
+  insideNativeNotification = true
+  player.onReadyToPlay()
+  player.onTimeControlStatusChanged(2)
+  player.onError('decode failed')
+  player.onEnded()
+  assert.deepEqual(events, [])
+  insideNativeNotification = false
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.deepEqual(events, ['play', 'status:2', 'error:decode failed', 'next'])
+  dispose()
+  assert.equal(player.onReadyToPlay, undefined)
+  assert.equal(player.onTimeControlStatusChanged, undefined)
+  assert.equal(player.onError, undefined)
+  assert.equal(player.onEnded, undefined)
+})
+
+/** 页面关闭后取消已排队的事件，避免继续播放或访问已释放的播放器。 */
+test('播放器事件解绑后取消待执行通知', async () => {
+  const { bindPlayerEvents } = loadModule('playerEvents', {})
+  const player = {}
+  let count = 0
+  const dispose = bindPlayerEvents(player, {
+    onReady: () => { count++ },
+    onStatus: () => { count++ },
+    onError: () => { count++ },
+    onEnded: () => { count++ },
+  })
+  const lateNotification = player.onReadyToPlay
+  player.onReadyToPlay()
+  player.onTimeControlStatusChanged(2)
+  player.onError('decode failed')
+  player.onEnded()
+  dispose()
+  lateNotification()
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(count, 0)
+})
