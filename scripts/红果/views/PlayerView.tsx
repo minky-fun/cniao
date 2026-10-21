@@ -29,7 +29,6 @@ import {
   durationSeconds,
   loadOfflinePlayerData,
   resolvePlaybackSource,
-  type OfflineLoadOptions,
 } from "../core/playbackSource"
 import type { PlayerData } from "../core/types"
 import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
@@ -70,6 +69,8 @@ export function PlayerView({
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
 
+  const instanceId = useRef(Date.now()).current
+  const aliveRef = useRef(true)
   const player = useMemo(() => new AVPlayer(), [])
   const pipStatus = useObservable<PIPStatus>(null)
   const pipValue = pipStatus.value
@@ -98,17 +99,18 @@ export function PlayerView({
   const [preparePercent, setPreparePercent] = useState(0)
 
   const [isAudioReady, setIsAudioReady] = useState(false)
-  const [isPlayerViewReady, setIsPlayerViewReady] = useState(false)
-  const playerViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isPlayerContainerReady, setIsPlayerContainerReady] = useState(false)
+  const playerContainerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  /** 先让原生视图的出现回调返回，再允许下一轮任务设置媒体源。 */
-  const handlePlayerViewAppear = useCallback(() => {
-    console.log("[player] AVPlayerView 已出现")
-    if (playerViewTimerRef.current !== null) clearTimeout(playerViewTimerRef.current)
-    playerViewTimerRef.current = setTimeout(() => {
-      playerViewTimerRef.current = null
-      console.log("[player] AVPlayerView 挂载回调已返回，允许装载媒体")
-      setIsPlayerViewReady(true)
+  /** 通过标准布局容器的出现事件安排装载，避免依赖原生播放器组件转发生命周期。 */
+  const handlePlayerContainerAppear = useCallback(() => {
+    console.log(`[player#${instanceId}] 播放容器已出现`)
+    if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
+    playerContainerTimerRef.current = setTimeout(() => {
+      playerContainerTimerRef.current = null
+      if (!aliveRef.current) return
+      console.log(`[player#${instanceId}] 播放容器回调已返回，允许装载媒体`)
+      setIsPlayerContainerReady(true)
     }, 0)
   }, [])
 
@@ -126,8 +128,10 @@ export function PlayerView({
     setPreparePercent(0)
   }, [])
 
+  /** 页面存活时更新下载和验证进度，忽略退出后的后台通知。 */
   const updatePrepareProgress = useCallback(
     ({ stage, progress }: PrepareProgress) => {
+      if (!aliveRef.current) return
       if (stage === "done") {
         clearPrepareProgress()
         return
@@ -145,6 +149,7 @@ export function PlayerView({
     [clearPrepareProgress]
   )
 
+  /** 切换集数时只应用当前页面的最新请求，退出后丢弃后台结果。 */
   const switchEpisode = useCallback((vid: string) => {
     if (!data || vid === currentVid) return
 
@@ -157,7 +162,7 @@ export function PlayerView({
     setErrorMessage("")
     setSwitchLabel("正在切换")
 
-    const isStale = () => requestSeqRef.current !== seq
+    const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
     resolvePlaybackSource(seriesId, data.seriesDetail, vid, {
       onProgress: updatePrepareProgress,
@@ -189,18 +194,7 @@ export function PlayerView({
     [data, currentVid, seriesId, player, clearPrepareProgress, updatePrepareProgress]
   )
 
-  const applyOfflineLoad = async (vid: string, options: OfflineLoadOptions = {}) => {
-    const { data: offlineData, meta } = await loadOfflinePlayerData(seriesId, vid, {
-      ...options,
-      onProgress: updatePrepareProgress,
-    })
-    setData(offlineData)
-    setCurrentVid(vid)
-    setSource(offlineData.playerInfo.main_url)
-    const seconds = durationSeconds(meta?.duration)
-    if (seconds > 0) setActiveDuration(seconds)
-  }
-
+  /** 忽略页面退出或后续请求覆盖后的异步结果，防止访问已释放的播放器。 */
   const load = (vid: string) => {
     setIsLoading(true)
     setErrorMessage("")
@@ -209,7 +203,7 @@ export function PlayerView({
     setSwitchLabel("")
 
     const seq = requestSeqRef.current
-    const isStale = () => requestSeqRef.current !== seq
+    const isStale = () => !aliveRef.current || requestSeqRef.current !== seq
 
     const showDetailEarly = (detail: PlayerData) => {
       if (isStale()) return
@@ -217,13 +211,30 @@ export function PlayerView({
       setCurrentVid(vid)
     }
 
-    applyOfflineLoad(vid, { onDetail: showDetailEarly })
+    console.log(`[player#${instanceId}] 开始加载剧集 ${vid}`)
+    loadOfflinePlayerData(seriesId, vid, {
+      onDetail: showDetailEarly,
+      onProgress: updatePrepareProgress,
+    })
+      .then(({ data: offlineData, meta }) => {
+        if (isStale()) {
+          console.log(`[player#${instanceId}] 忽略已失效的加载结果`)
+          return
+        }
+        console.log(`[player#${instanceId}] 剧集缓存已准备好`)
+        setData(offlineData)
+        setCurrentVid(vid)
+        setSource(offlineData.playerInfo.main_url)
+        setActiveDuration(durationSeconds(meta?.duration))
+      })
       .catch(error => {
+        if (isStale()) return
         clearPrepareProgress()
-
         setErrorMessage(error instanceof Error ? error.message : String(error))
       })
-      .finally(() => setIsLoading(false))
+      .finally(() => {
+        if (!isStale()) setIsLoading(false)
+      })
   }
 
   useEffect(() => {
@@ -234,6 +245,7 @@ export function PlayerView({
 
     fetchDetail(seriesId)
       .then(result => {
+        if (!aliveRef.current) return
         const firstVid = result.detail.vid_list[0]
         if (!firstVid) {
           setErrorMessage("该剧集暂无可播放内容")
@@ -243,6 +255,7 @@ export function PlayerView({
         load(firstVid)
       })
       .catch(error => {
+        if (!aliveRef.current) return
         setErrorMessage(error instanceof Error ? error.message : String(error))
         setIsLoading(false)
       })
@@ -251,7 +264,9 @@ export function PlayerView({
   useEffect(() => {
     let cancelled = false
     SharedAudioSession.setCategory("playback", [])
-      .then(() => SharedAudioSession.setActive(true))
+      .then(() => {
+        if (!cancelled) return SharedAudioSession.setActive(true)
+      })
       .then(() => {
         if (!cancelled) setIsAudioReady(true)
       })
@@ -314,15 +329,15 @@ export function PlayerView({
 
   // 原生播放视图先挂载，再设置媒体；切集和错误提示不会销毁播放视图。
   useEffect(() => {
-    if (!source || !isAudioReady || !isPlayerViewReady || loadedSourceRef.current === source) return
+    if (!source || !isAudioReady || !isPlayerContainerReady || loadedSourceRef.current === source) return
     playerReadyRef.current = false
     setHasPlaybackStarted(false)
     setIsWaitingForPlayer(true)
-    console.log("[player] 开始装载媒体")
+    console.log(`[player#${instanceId}] 开始装载媒体`)
     if (player.setSource(source)) {
       loadedSourceRef.current = source
       setIsPlayerLoaded(true)
-      console.log("[player] 播放源已设置，等待系统就绪")
+      console.log(`[player#${instanceId}] 播放源已设置，等待系统就绪`)
     } else {
       setIsWaitingForPlayer(false)
       setIsPlayerLoaded(false)
@@ -336,7 +351,7 @@ export function PlayerView({
       console.error("[player] 等待系统就绪超时")
     }, PLAYER_READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [player, source, isAudioReady, isPlayerViewReady])
+  }, [player, source, isAudioReady, isPlayerContainerReady])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -397,9 +412,12 @@ export function PlayerView({
 
   // 画中画仍在播放时保留播放器，其余情况在页面关闭后释放。
   useEffect(() => {
+    console.log(`[player#${instanceId}] 播放器实例已建立`)
     return () => {
-      if (playerViewTimerRef.current !== null) clearTimeout(playerViewTimerRef.current)
-      console.log(`[player] 页面清理，画中画活动：${isPipActiveRef.current}`)
+      aliveRef.current = false
+      requestSeqRef.current += 1
+      if (playerContainerTimerRef.current !== null) clearTimeout(playerContainerTimerRef.current)
+      console.log(`[player#${instanceId}] 页面清理，画中画活动：${isPipActiveRef.current}`)
       if (isPipActiveRef.current) retainPipPlayer(player)
       else {
         setPipPlaybackActive(false)
@@ -435,12 +453,12 @@ export function PlayerView({
     >
 
       <ZStack
+        onAppear={handlePlayerContainerAppear}
         frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
         <AVPlayerView
           player={player}
-          onAppear={handlePlayerViewAppear}
           pipStatus={pipStatus}
           allowsPictureInPicturePlayback={true}
           canStartPictureInPictureAutomaticallyFromInline={false}

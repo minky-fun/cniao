@@ -5,7 +5,7 @@ const assert = require('node:assert/strict')
 const { test } = require('node:test')
 
 /** 运行真实 PlayerView，替换 Scripting 宿主并记录渲染、定时任务和播放器调用。 */
-function playerRuntime() {
+function playerRuntime({ deferred = false } = {}) {
   const hooks = []
   const pendingEffects = []
   const timers = new Map()
@@ -16,12 +16,16 @@ function playerRuntime() {
   let events
   let constructed = 0
   let disposed = 0
+  let hostDisposed = false
+  let updatesAfterDispose = 0
+  let finishLoad
   const sources = []
   const scripting = new Proxy({
     useState: initial => {
       const index = cursor++
       if (!hooks[index]) hooks[index] = { value: initial }
       return [hooks[index].value, value => {
+        if (hostDisposed) updatesAfterDispose++
         const previous = hooks[index].value
         hooks[index].value = typeof value === 'function' ? value(previous) : value
         if (!Object.is(previous, hooks[index].value)) dirty = true
@@ -61,7 +65,10 @@ function playerRuntime() {
     '../core/history': { savePlayHistoryItem: () => {} },
     '../core/format': {},
     '../core/playbackSource': {
-      loadOfflinePlayerData: async () => ({ data, meta: { duration: 80 } }),
+      loadOfflinePlayerData: async () => {
+        if (deferred) await new Promise(resolve => { finishLoad = resolve })
+        return { data, meta: { duration: 80 } }
+      },
       durationSeconds: Number,
     },
     '../core/playerEvents': { bindPlayerEvents: (_player, handlers) => {
@@ -103,6 +110,8 @@ function playerRuntime() {
   })
   return {
     sources,
+    completeLoad: () => finishLoad(),
+    staleUpdates: () => updatesAfterDispose,
     /** 推进 Promise 和组件更新，执行实际依赖变化触发的 effects。 */
     async flush() {
       for (let round = 0; round < 20; round++) {
@@ -114,12 +123,12 @@ function playerRuntime() {
         await Promise.resolve()
       }
     },
-    /** 在实际返回树中查找原生播放器节点。 */
-    view() {
+    /** 在实际返回树中查找原生播放器或挂载它的布局容器。 */
+    view(container = false) {
       /** 遍历节点而不执行额外的子组件。 */
       function find(node) {
         if (!node || typeof node !== 'object') return
-        if (node.type === 'AVPlayerView') return node
+        if (container ? node.type === 'ZStack' && node.props?.onAppear : node.type === 'AVPlayerView') return node
         for (const child of node.children ?? []) {
           const found = find(child)
           if (found) return found
@@ -138,7 +147,10 @@ function playerRuntime() {
     /** 模拟原生错误通知到达事件处理层。 */
     error() { events.onError('测试媒体错误') },
     /** 执行组件清理，检测播放器释放次数。 */
-    dispose() { for (const hook of hooks) hook?.cleanup?.() },
+    dispose() {
+      for (const hook of hooks) hook?.cleanup?.()
+      hostDisposed = true
+    },
     created: () => constructed,
     disposed: () => disposed,
   }
@@ -151,7 +163,7 @@ test('AVPlayerView 在装载媒体前挂载，错误后保持同一播放器', a
   const initial = run.view()
   assert.ok(initial, '媒体未设置时必须已经渲染原生视图')
   assert.deepEqual(run.sources, [])
-  initial.props.onAppear()
+  run.view(true).props.onAppear()
   assert.deepEqual(run.sources, [], '出现回调内部禁止同步设置媒体')
   run.tick()
   await run.flush()
@@ -164,4 +176,32 @@ test('AVPlayerView 在装载媒体前挂载，错误后保持同一播放器', a
   assert.equal(run.sources.length, 1)
   run.dispose()
   assert.equal(run.disposed(), 1)
+})
+
+
+/** 退出页面后即使缓存准备才返回，也不能更新组件或重新设置播放源。 */
+test('播放器退出后忽略迟到的缓存加载结果', async () => {
+  const run = playerRuntime({ deferred: true })
+  await run.flush()
+  run.view(true).props.onAppear()
+  run.tick()
+  await run.flush()
+  run.dispose()
+  run.completeLoad()
+  await run.flush()
+  assert.deepEqual(run.sources, [])
+  assert.equal(run.staleUpdates(), 0)
+  assert.equal(run.disposed(), 1)
+})
+
+/** 页面在容器出现回调排队后立即关闭时，应取消装载任务。 */
+test('播放器退出时取消容器回调中的待执行任务', async () => {
+  const run = playerRuntime()
+  await run.flush()
+  run.view(true).props.onAppear()
+  run.dispose()
+  run.tick()
+  await run.flush()
+  assert.deepEqual(run.sources, [])
+  assert.equal(run.staleUpdates(), 0)
 })
