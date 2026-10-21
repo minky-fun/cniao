@@ -598,6 +598,8 @@ export function PlayerView({
               onChanged={changePlaybackPosition}
               onEditingChanged={finishSeeking}
               label={<Text>播放进度</Text>}
+              labelsHidden={true}
+              frame={{ maxWidth: "infinity", height: 28 }}
               tint="white"
             /> : null}
             <Text font="caption2" monospacedDigit>{formatDuration(activeDuration)}</Text>
