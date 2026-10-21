@@ -403,6 +403,18 @@ export async function preloadOfflineVideo(
   }
 }
 
+/** 将现有缓存原样复制到用户选择的文件夹，不加载或解码媒体。 */
+export async function exportOfflineVideo(videoId: string): Promise<void> {
+  if (!/^[0-9]{1,25}$/.test(videoId)) throw new Error("视频 ID 不合法")
+  const source = cachePath(videoId)
+  if (!FileManager.existsSync(source)) throw new Error("该集缓存文件不存在")
+  const directory = await DocumentPicker.pickDirectory()
+  if (!directory) return
+  const destination = `${directory}/hongguo-${videoId}.mp4`
+  if (FileManager.existsSync(destination)) throw new Error("所选文件夹中已有同名视频，请选择其他文件夹")
+  await FileManager.copyFile(source, destination)
+}
+
 export function removeOfflineVideo(videoId: string): void {
   const target = cachePath(videoId)
   if (FileManager.existsSync(target)) FileManager.removeSync(target)
