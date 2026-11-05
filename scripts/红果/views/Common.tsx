@@ -451,10 +451,11 @@ export function SkeletonHome({ sections = 2 }: { sections?: number }) {
   )
 }
 
+/** 按官网中间详情区的封面尺寸与分区间距展示加载占位。 */
 export function SkeletonDetail() {
   const phase = useShimmerPhase()
 
-  const headTextWidth = CONTENT_WIDTH - 108 - 14
+  const headTextWidth = CONTENT_WIDTH - 98 - 16
 
   const episodeSpacing = 8
   const episodeCols = 5
@@ -463,10 +464,10 @@ export function SkeletonDetail() {
   )
 
   return (
-    <VStack alignment="leading" spacing={18} padding={{ bottom: 24 }} frame={FILL_LEADING}>
+    <VStack alignment="leading" spacing={28} padding={{ top: 16, bottom: 28 }} frame={FILL_LEADING}>
 
-      <HStack spacing={14} alignment="top" padding={{ horizontal: PAGE_H_PADDING, top: 12 }} frame={FILL_LEADING}>
-        <SkeletonBlock width={108} height={162} cornerRadius={10} phase={phase} />
+      <HStack spacing={16} alignment="top" padding={{ horizontal: PAGE_H_PADDING }} frame={FILL_LEADING}>
+        <SkeletonBlock width={98} height={140} cornerRadius={8} phase={phase} />
         <VStack alignment="leading" spacing={10} frame={{ width: headTextWidth }}>
           <SkeletonBlock width={headTextWidth} height={22} phase={phase} />
           <SkeletonBlock width={Math.round(headTextWidth * 0.45)} height={14} phase={phase} />
