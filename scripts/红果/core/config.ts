@@ -32,15 +32,15 @@ export const RANK_BOARDS = [
 export const APP_BASE = "https://api5-normal-sinfonlineb.fqnovel.com"
 
 export const APP_USER_AGENT =
-  "com.phoenix.read/73532 (Linux; U; Android 16; zh_CN; 25053RT47C; Build/BP2A.250605.031.A3; Cronet/TTNetVersion:04657795 2026-01-23 QuicVersion:c67e9834 2025-09-08)"
+  "com.phoenix.read/71532 (Linux; U; Android 9; SM-N9860; Build/PQ3A.190705.10241111;tt-ok/3.12.13.20)"
 
 export const APP_COMMON_QUERY: Record<string, string> = {
   aid: "8662",
   app_name: "novelread",
-  version_code: "73532",
-  version_name: "7.3.5.32",
-  manifest_version_code: "73532",
-  update_version_code: "73532",
+  version_code: "71332",
+  version_name: "7.1.3.32",
+  manifest_version_code: "71332",
+  update_version_code: "71332",
   channel: "update_64",
   device_platform: "android",
   os: "android",
@@ -53,6 +53,13 @@ export const APP_COMMON_QUERY: Record<string, string> = {
   resolution: "1280*2772",
   dpi: "520",
   ac: "wifi",
+  compliance_status: "0",
+  dragon_device_type: "phone",
+  host_abi: "arm64-v8a",
+  is_android_pad_screen: "0",
+  need_personal_recommend: "1",
+  player_so_load: "1",
+  pv_player: "71332",
 }
 
 export const MEDIA_USER_AGENT =
