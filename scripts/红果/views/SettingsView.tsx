@@ -14,14 +14,19 @@ const THEME_LABELS: Record<ThemeMode, string> = {
   dark: "深色",
 }
 
-/** 统一设置行的间距、右侧说明和跳转箭头，可用于按钮、菜单及只读信息。 */
+/** 统一设置行样式，并让整行矩形区域参与点击检测，包含文字与箭头之间的空白。 */
 function SettingsRow({ title, value, disclosure = false }: {
   title: string
   value?: string
   disclosure?: boolean
 }) {
   return (
-    <HStack spacing={8} padding={{ horizontal: 20 }} frame={{ maxWidth: "infinity", minHeight: 52 }}>
+    <HStack
+      spacing={8}
+      padding={{ horizontal: 20 }}
+      frame={{ maxWidth: "infinity", minHeight: 52 }}
+      contentShape="rect"
+    >
       <Text font={14} foregroundStyle="label">{title}</Text>
       <Spacer />
       {value ? <Text font={14} foregroundStyle="secondaryLabel" lineLimit={2} multilineTextAlignment="trailing">{value}</Text> : null}
@@ -54,13 +59,13 @@ export function SettingsView({
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
-            <Button action={onOpenCache} buttonStyle="plain">
+            <Button action={onOpenCache} buttonStyle="plain" frame={FILL_LEADING}>
               <SettingsRow title="清理缓存" disclosure />
             </Button>
           </VStack>
 
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
-            <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain">
+            <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
               <Button title="跟随系统" systemImage={theme === "system" ? "checkmark" : undefined} action={() => onThemeChange("system")} />
               <Button title="浅色" systemImage={theme === "light" ? "checkmark" : undefined} action={() => onThemeChange("light")} />
               <Button title="深色" systemImage={theme === "dark" ? "checkmark" : undefined} action={() => onThemeChange("dark")} />
@@ -70,7 +75,7 @@ export function SettingsView({
                 {themeError}
               </Text>
             ) : null}
-            <Button action={onOpenHistory} buttonStyle="plain">
+            <Button action={onOpenHistory} buttonStyle="plain" frame={FILL_LEADING}>
               <SettingsRow title="历史记录" disclosure />
             </Button>
           </VStack>
@@ -82,7 +87,7 @@ export function SettingsView({
             <SettingsRow title="版本号" value={version} />
             {author ? <SettingsRow title="作者" value={author.name} /> : null}
             {author?.homepage ? (
-              <Link url={author.homepage} buttonStyle="plain">
+              <Link url={author.homepage} buttonStyle="plain" frame={FILL_LEADING}>
                 <SettingsRow title="作者主页" disclosure />
               </Link>
             ) : null}
