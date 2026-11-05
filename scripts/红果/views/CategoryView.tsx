@@ -95,7 +95,7 @@ function SkeletonCategoryGrid({ cardWidth }: { cardWidth: number }) {
   )
 }
 
-/** 仅呈现官网中段分类筛选与三列网格，触底追加下一页并隔离过时请求。 */
+/** 以贯穿安全区的主题背景展示分类筛选与三列网格，保留分页及请求隔离。 */
 export function CategoryView({ onSelectSeries }: { onSelectSeries: (seriesId: string) => void }) {
   const [view, setView] = useState<CategoryViewState>({
     routeIndex: 0, tagSlug: "", page: 1, data: null, selectorList: [],
@@ -185,7 +185,18 @@ export function CategoryView({ onSelectSeries }: { onSelectSeries: (seriesId: st
   }
 
   return (
-    <GeometryReader background={CATEGORY_SURFACE} foregroundStyle="label">
+    <GeometryReader
+      background={
+        <VStack
+          frame={PAGE_FRAME}
+          background={CATEGORY_SURFACE}
+          ignoresSafeArea={{ regions: "container" }}
+        />
+      }
+      foregroundStyle="label"
+      toolbarBackground={{ style: CATEGORY_SURFACE, bars: ["navigationBar", "tabBar"] }}
+      toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
+    >
       {({ size }) => {
         const cardWidth = (size.width - 32 - 16) / 3
         return (

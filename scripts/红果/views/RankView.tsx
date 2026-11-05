@@ -113,7 +113,7 @@ function RankRow({
   )
 }
 
-/** 同步切换榜单，触底追加后续页，并保留离线快照及请求隔离。 */
+/** 以贯穿安全区的主题背景展示榜单，保留分类切换、分页、离线快照及请求隔离。 */
 export function RankView({
   onSelectSeries,
 }: {
@@ -224,7 +224,18 @@ export function RankView({
   }
 
   return (
-    <GeometryReader background={RANK_SURFACE} foregroundStyle="label">
+    <GeometryReader
+      background={
+        <VStack
+          frame={PAGE_FRAME}
+          background={RANK_SURFACE}
+          ignoresSafeArea={{ regions: "container" }}
+        />
+      }
+      foregroundStyle="label"
+      toolbarBackground={{ style: RANK_SURFACE, bars: ["navigationBar", "tabBar"] }}
+      toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
+    >
       {({ size }) => (
         <VStack alignment="leading" spacing={0} frame={PAGE_FRAME}>
           <ScrollView axes="horizontal" scrollIndicator="hidden">
