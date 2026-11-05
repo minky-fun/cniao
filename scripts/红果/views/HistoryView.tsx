@@ -25,8 +25,8 @@ const FILTER_SURFACE = { light: "#F6F6F6", dark: "#202121" } as const
 const ACCENT_COLOR = { light: "#B55200", dark: "#FA7705" } as const
 const HISTORY_FILTERS = [
   { value: "all", title: "全部" },
-  { value: "ongoing", title: "未到末集" },
-  { value: "last", title: "已到末集" },
+  { value: "ongoing", title: "未看完" },
+  { value: "last", title: "已看完" },
 ] as const
 type HistoryFilter = typeof HISTORY_FILTERS[number]["value"]
 
