@@ -284,12 +284,11 @@ export function HomeView({
 
   const featured = banners.slice(0, 5)
 
-  // 保留顶部安全区，让海报从导航栏下方开始；底部延伸到浮动标签栏后方。
+  // 保留导航栏和标签栏安全区，使滚动到底部时最后一排内容完整可见。
   return (
     <GeometryReader
       background={HOME_BACKGROUND}
       foregroundStyle="label"
-      ignoresSafeArea={{ regions: "container", edges: "bottom" }}
       toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{
         visibility: "visible",
