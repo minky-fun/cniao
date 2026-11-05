@@ -21,12 +21,13 @@ import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, SkeletonHo
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 
-const HOME_BACKGROUND = "#101011"
+const HOME_BACKGROUND = "systemBackground"
 const BANNER_SHADE = gradient("linear", {
   stops: [
     { color: "rgba(16,16,17,0.6)", location: 0 },
     { color: "rgba(16,16,17,0.05)", location: 0.3 },
     { color: "rgba(16,16,17,0.6)", location: 0.55 },
+    { color: "rgba(16,16,17,0.8)", location: 0.93 },
     { color: HOME_BACKGROUND, location: 1 },
   ],
   startPoint: "top",
@@ -96,7 +97,7 @@ function LandscapeCard({
         </VStack>
       </ZStack>
 
-      <Text font="caption" foregroundStyle="white" lineLimit={1} frame={FILL_LEADING}>
+      <Text font="caption" foregroundStyle="label" lineLimit={1} frame={FILL_LEADING}>
         {series.series_title}
       </Text>
     </VStack>
@@ -212,7 +213,7 @@ function HeroCarousel({
   )
 }
 
-/** 在深色首页展示现有横向推荐分区，隐藏横向滚动指示条。 */
+/** 按系统外观展示横向推荐分区，隐藏横向滚动指示条。 */
 function SectionRow({
   section,
   onSelect,
@@ -222,7 +223,7 @@ function SectionRow({
 }) {
   return (
     <VStack alignment="leading" spacing={10} frame={FILL_LEADING}>
-      <Text font="title3" bold foregroundStyle="white" padding={{ horizontal: 16 }}>
+      <Text font="title3" bold foregroundStyle="label" padding={{ horizontal: 16 }}>
         {section.tab_name}
       </Text>
 
@@ -237,7 +238,7 @@ function SectionRow({
   )
 }
 
-/** 加载原有首页数据，以通栏海报轮播衔接推荐内容，并保留离线快照与重试。 */
+/** 按系统外观加载首页，以通栏海报衔接推荐内容并保留离线快照与重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
@@ -287,14 +288,13 @@ export function HomeView({
   return (
     <GeometryReader
       background={HOME_BACKGROUND}
-      foregroundStyle="white"
+      foregroundStyle="label"
       ignoresSafeArea={{ regions: "container", edges: "bottom" }}
       toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{
         visibility: "visible",
         bars: ["navigationBar", "tabBar"],
       }}
-      toolbarColorScheme={{ colorScheme: "dark", bars: ["navigationBar", "tabBar"] }}
     >
       {({ size }) => (
         <ScrollView
