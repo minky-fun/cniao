@@ -169,7 +169,8 @@ function HeroCarousel({
 }) {
   const selection = useObservable(0)
   const [visible, setVisible] = useState(false)
-  const height = Math.min(560, Math.max(440, width * 1.35))
+  // 收起原按钮及控制条占用的高度，保持海报文案在屏幕上的原有位置。
+  const height = Math.min(560, Math.max(440, width * 1.35)) - 92
   const index = selection.value
 
   useEffect(() => {
