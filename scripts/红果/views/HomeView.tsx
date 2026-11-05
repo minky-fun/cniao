@@ -312,16 +312,20 @@ export function HomeView({
     <GeometryReader
       background={HOME_BACKGROUND}
       foregroundStyle="white"
-      ignoresSafeArea={featured.length > 0 ? { regions: "container", edges: "top" } : false}
-      toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar"] }}
+      toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{
         visibility: featured.length > 0 ? "hidden" : "visible",
         bars: ["navigationBar"],
       }}
-      toolbarColorScheme={{ colorScheme: "dark", bars: ["navigationBar"] }}
+      toolbarColorScheme={{ colorScheme: "dark", bars: ["navigationBar", "tabBar"] }}
     >
       {({ size }) => (
-        <ScrollView scrollIndicator="hidden" frame={{ width: size.width, height: size.height }}>
+        <ScrollView
+          scrollIndicator="hidden"
+          frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+          background={HOME_BACKGROUND}
+          ignoresSafeArea={featured.length > 0 ? { regions: "container", edges: "top" } : false}
+        >
           <VStack alignment="leading" spacing={0} frame={{ width: size.width }} padding={{ bottom: 28 }}>
             {featured.length > 0 ? (
               <HeroCarousel
