@@ -121,7 +121,7 @@ export function SettingsView({
               </Text>
             ) : null}
             <Button action={onOpenHistory} buttonStyle="plain" frame={FILL_LEADING}>
-              <SettingsRow title="历史记录" disclosure />
+              <SettingsRow title="播放历史" disclosure />
             </Button>
           </VStack>
 
