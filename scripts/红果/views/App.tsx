@@ -142,7 +142,7 @@ function TabPage({
   )
 }
 
-/** 一级页面使用原生标签栏，搜索排在中间，后续页面在标签栏之外展示并继承主题。 */
+/** 一级页面使用原生标签栏和独立搜索入口，后续页面在标签栏之外展示并继承主题。 */
 export function App() {
   const selection = useObservable(0)
   const path = useObservable<string[]>([])
@@ -225,10 +225,6 @@ export function App() {
           />
         </Tab>
 
-        <Tab title="搜索" systemImage="magnifyingglass" value={3}>
-          <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
-        </Tab>
-
         <Tab title="分类" systemImage="square.grid.2x2.fill" value={2}>
           <TabPage
             title="分类"
@@ -254,6 +250,10 @@ export function App() {
               />
             )}
           />
+        </Tab>
+
+        <Tab title="搜索" systemImage="magnifyingglass" value={3} role="search">
+          <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
         </Tab>
       </TabView>
     </NavigationStack>
