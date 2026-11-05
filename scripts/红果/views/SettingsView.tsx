@@ -1,7 +1,11 @@
 import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
-import { AUTO_CACHE_EPISODE_COUNT } from "../core/config"
-import { getAutoCacheEnabled, setAutoCacheEnabled } from "../core/mediaCache"
+import {
+  getAutoCacheEnabled,
+  getAutoCacheEpisodeCount,
+  setAutoCacheEnabled,
+  setAutoCacheEpisodeCount,
+} from "../core/mediaCache"
 
 export type ThemeMode = "system" | "light" | "dark"
 
@@ -37,7 +41,7 @@ function SettingsRow({ title, value, disclosure = false }: {
   )
 }
 
-/** 展示圆角设置卡片，并保存自动缓存开关的用户选择。 */
+/** 展示圆角设置卡片，并保存自动缓存开关及集数的用户选择。 */
 export function SettingsView({
   theme,
   themeError,
@@ -55,6 +59,7 @@ export function SettingsView({
 }) {
   const { version, author, contributors } = Script.metadata
   const [autoCache, setAutoCache] = useState(getAutoCacheEnabled)
+  const [autoCacheCount, setAutoCacheCount] = useState(getAutoCacheEpisodeCount)
   const [autoCacheError, setAutoCacheError] = useState("")
 
   /** 保存自动缓存偏好，保存失败时保持原开关状态并提示原因。 */
@@ -65,6 +70,30 @@ export function SettingsView({
       setAutoCacheError("")
     } catch (error) {
       setAutoCacheError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  /** 输入并保存后续自动缓存集数，取消或保存失败时保留原值。 */
+  const changeAutoCacheCount = async () => {
+    try {
+      const input = await Dialog.prompt({
+        title: "自动缓存集数",
+        message: "请输入不小于 1 的整数。建议设置 3-5 集，适量即可；过多会增加流量和存储占用，实际缓存仍受缓存上限限制。",
+        defaultValue: String(autoCacheCount),
+        keyboardType: "numberPad",
+        selectAll: true,
+        confirmLabel: "保存",
+        cancelLabel: "取消",
+      })
+      if (input == null) return
+      const value = Number(input.trim())
+      setAutoCacheEpisodeCount(value)
+      setAutoCacheCount(value)
+    } catch (error) {
+      await Dialog.alert({
+        title: "未能保存自动缓存集数",
+        message: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 
@@ -96,8 +125,11 @@ export function SettingsView({
             >
               <Text font={14} foregroundStyle="label">自动缓存</Text>
             </Toggle>
+            <Button action={changeAutoCacheCount} buttonStyle="plain" frame={FILL_LEADING}>
+              <SettingsRow title="自动缓存集数" value={`${autoCacheCount} 集`} disclosure />
+            </Button>
             <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
-              {`开启后自动缓存后续 ${AUTO_CACHE_EPISODE_COUNT} 集，受缓存上限限制；关闭后仅加载当前播放集。`}
+              {`开启后自动缓存后续 ${autoCacheCount} 集，受缓存上限限制；关闭后仅加载当前播放集。建议设置 3-5 集，适量即可，不宜过多。`}
             </Text>
             {autoCacheError ? (
               <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>

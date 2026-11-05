@@ -1,6 +1,6 @@
 import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./appApi"
 import { decryptToPlayableAsync } from "./mp4"
-import { PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
+import { AUTO_CACHE_EPISODE_COUNT, PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
 import { HttpError } from "./http"
 
 const CACHE_FILE_EXTENSION = ".mp4"
@@ -12,6 +12,8 @@ const INDEX_VERSION = 1
 const MAX_ENTRIES_STORAGE_KEY = "hongguo-cache-max-entries"
 
 const AUTO_CACHE_STORAGE_KEY = "hongguo-auto-cache"
+
+const AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY = "hongguo-auto-cache-episode-count"
 
 function cacheDirectory(): string {
   return `${FileManager.appGroupDocumentsDirectory}/${PLAYBACK_CACHE_DIR}`
@@ -233,6 +235,21 @@ export function getAutoCacheEnabled(): boolean {
 export function setAutoCacheEnabled(enabled: boolean): void {
   if (!Storage.set(AUTO_CACHE_STORAGE_KEY, enabled)) {
     throw new Error("自动缓存设置保存失败，请重试")
+  }
+}
+
+/** 读取自动缓存的后续集数，未配置时使用默认五集。 */
+export function getAutoCacheEpisodeCount(): number {
+  return Storage.get<number>(AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY) ?? AUTO_CACHE_EPISODE_COUNT
+}
+
+/** 仅保存正整数自动缓存集数，保存失败时保留原配置。 */
+export function setAutoCacheEpisodeCount(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new Error("请输入不小于 1 的整数集数")
+  }
+  if (!Storage.set(AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY, value)) {
+    throw new Error("自动缓存集数保存失败，请重试")
   }
 }
 

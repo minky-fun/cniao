@@ -45,15 +45,42 @@ test("auto-cache defaults on, persists off and keeps its value if saving fails",
   assert.equal(cache.getAutoCacheEnabled(), false)
 })
 
-/** Mount the production prefetch effect with an already-loaded player and controlled timers. */
-function prefetchScenario({ enabled = true, maxEntries = 50, current = 0, afterDownload } = {}) {
+test("episode count defaults to five, persists valid choices and rejects invalid or failed writes", () => {
+  const config = load("core/config.js", {})
+  const values = new Map()
+  let saveSucceeds = true
+  const cache = load("core/mediaCache.js", { "./appApi": {}, "./mp4": {}, "./config": config, "./http": {} }, {
+    Storage: {
+      get: key => values.get(key) ?? null,
+      /** Leave the saved count untouched when simulating a failed write. */
+      set(key, value) {
+        if (!saveSucceeds) return false
+        values.set(key, value)
+        return true
+      },
+    },
+  })
+  assert.equal(cache.getAutoCacheEpisodeCount(), 5)
+  cache.setAutoCacheEpisodeCount(3)
+  assert.equal(cache.getAutoCacheEpisodeCount(), 3)
+  for (const value of [0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => cache.setAutoCacheEpisodeCount(value), /不小于 1 的整数/)
+    assert.equal(cache.getAutoCacheEpisodeCount(), 3)
+  }
+  saveSucceeds = false
+  assert.throws(() => cache.setAutoCacheEpisodeCount(6), /自动缓存集数保存失败/)
+  assert.equal(cache.getAutoCacheEpisodeCount(), 3)
+})
+
+/** Mount the production prefetch effect with configurable preferences and controlled timers. */
+function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0, afterDownload } = {}) {
   const config = load("core/config.js", {})
   const detail = { series_id: "series", series_name: "Test", series_cover: "", vid_list: Array.from({ length: 8 }, (_, i) => String(i)) }
   const currentVid = detail.vid_list[current]
   const data = { seriesDetail: detail }
   const states = [data, currentVid, false, "", {}, "", "", "", 0, 0, true, true, 0]
   const effects = [], timers = new Map(), calls = []
-  const preference = { enabled }
+  const preference = { enabled, count: count ?? config.AUTO_CACHE_EPISODE_COUNT }
   let stateIndex = 0, timerId = 0
   const scripting = {
     useState: () => [states[stateIndex++], () => {}],
@@ -69,6 +96,7 @@ function prefetchScenario({ enabled = true, maxEntries = 50, current = 0, afterD
     "../core/config": config,
     "../core/mediaCache": {
       getAutoCacheEnabled: () => preference.enabled,
+      getAutoCacheEpisodeCount: () => preference.count,
       getPlaybackCacheMaxEntries: () => maxEntries,
       isOfflineVideoCached: () => false,
       /** Record completed background tasks and allow preference changes between episodes. */
@@ -103,6 +131,17 @@ test("a loaded player prefetches the next five episodes by default", async () =>
   const scenario = prefetchScenario()
   await scenario.flush()
   assert.deepEqual(scenario.calls, ["1", "2", "3", "4", "5"])
+})
+
+test("prefetch follows configured counts and stops after a count is reduced", async () => {
+  for (const count of [1, 3, 6]) {
+    const scenario = prefetchScenario({ count })
+    await scenario.flush()
+    assert.deepEqual(scenario.calls, Array.from({ length: count }, (_, i) => String(i + 1)))
+  }
+  const reduced = prefetchScenario({ count: 6, afterDownload: preference => { preference.count = 1 } })
+  await reduced.flush()
+  assert.deepEqual(reduced.calls, ["1"])
 })
 
 test("disabled auto-cache starts no downloads, including when disabled during the delay", async () => {

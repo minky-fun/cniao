@@ -17,9 +17,9 @@ import {
   useState,
 } from "scripting"
 import { fetchDetail } from "../core/api"
-import { AUTO_CACHE_EPISODE_COUNT } from "../core/config"
 import {
   getAutoCacheEnabled,
+  getAutoCacheEpisodeCount,
   getPlaybackCacheMaxEntries,
   isOfflineVideoCached,
   preloadOfflineVideo,
@@ -52,7 +52,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 展示剧集播放页，按自动缓存开关预加载后续五集并保存真实剧集信息。 */
+/** 展示剧集播放页，按自动缓存开关及用户配置集数预加载并保存真实剧集信息。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -343,7 +343,7 @@ export function PlayerView({
       if (cancelled || !getAutoCacheEnabled()) return
 
       // 为当前播放留出一集额度，每集开始前重新检查自动缓存开关。
-      for (let offset = 1; offset <= AUTO_CACHE_EPISODE_COUNT && offset < getPlaybackCacheMaxEntries(); offset++) {
+      for (let offset = 1; offset <= getAutoCacheEpisodeCount() && offset < getPlaybackCacheMaxEntries(); offset++) {
         if (cancelled || !getAutoCacheEnabled()) break
         const targetIndex = currentIndex + offset
         if (targetIndex >= detail.vid_list.length) break
