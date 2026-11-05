@@ -116,6 +116,22 @@ export function SettingsView({
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
+              <Button title="跟随系统" systemImage={theme === "system" ? "checkmark" : undefined} action={() => onThemeChange("system")} />
+              <Button title="浅色" systemImage={theme === "light" ? "checkmark" : undefined} action={() => onThemeChange("light")} />
+              <Button title="深色" systemImage={theme === "dark" ? "checkmark" : undefined} action={() => onThemeChange("dark")} />
+            </Menu>
+            {themeError ? (
+              <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+                {themeError}
+              </Text>
+            ) : null}
+            <Button action={onOpenHistory} buttonStyle="plain" frame={FILL_LEADING}>
+              <SettingsRow title="播放历史" disclosure />
+            </Button>
+          </VStack>
+
+          <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
             <Toggle
               value={autoCache}
               onChanged={changeAutoCache}
@@ -138,22 +154,6 @@ export function SettingsView({
             ) : null}
             <Button action={onOpenCache} buttonStyle="plain" frame={FILL_LEADING}>
               <SettingsRow title="清理缓存" disclosure />
-            </Button>
-          </VStack>
-
-          <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
-            <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
-              <Button title="跟随系统" systemImage={theme === "system" ? "checkmark" : undefined} action={() => onThemeChange("system")} />
-              <Button title="浅色" systemImage={theme === "light" ? "checkmark" : undefined} action={() => onThemeChange("light")} />
-              <Button title="深色" systemImage={theme === "dark" ? "checkmark" : undefined} action={() => onThemeChange("dark")} />
-            </Menu>
-            {themeError ? (
-              <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
-                {themeError}
-              </Text>
-            ) : null}
-            <Button action={onOpenHistory} buttonStyle="plain" frame={FILL_LEADING}>
-              <SettingsRow title="播放历史" disclosure />
             </Button>
           </VStack>
 
