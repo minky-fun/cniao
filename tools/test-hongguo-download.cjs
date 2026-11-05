@@ -6,7 +6,7 @@ const vm = require("node:vm")
 const { test } = require("node:test")
 const build = path.join(__dirname, "../work/hongguo-build")
 const videoId = "1234567890123456789"
-const primary = "https://api5-normal-sinfonlineb.fqnovel.com"
+const primary = "https://api5-normal-sinfonlinec.fqnovel.com"
 const spare = "https://api5-normal-lq.fqnovel.com"
 
 /** Load production modules while replacing only explicit host dependencies. */
@@ -26,11 +26,13 @@ function load(file, dependencies = {}, globals = {}) {
 
 const config = load("core/config.js")
 const bytes = load("core/bytes.js")
+const signer = require(path.join(build, "core/playbackSign.js"))
 const http = load("core/http.js", { scripting: {}, "./config": config, "./routerData": {} })
 
 /** Provide an isolated identity store and deterministic queued network results. */
 function createApi(replies) {
-  const calls = [], delays = [], storage = new Map()
+  const calls = [], delays = [], storage = new Map(), identities = []
+  let identity = { deviceId: "1000000000000000001", installId: "1000000000000000002", deviceToken: "synthetic-device", cookies: { install_id: "1000000000000000002" } }
   const api = load("core/appApi.js", {
     scripting: {
       /** Consume exactly one queued reply for each real production request. */
@@ -43,6 +45,16 @@ function createApi(replies) {
       },
     },
     "./config": config, "./bytes": bytes, "./http": http,
+    "./playbackSign": signer,
+    "./playbackIdentity": {
+      PLAYBACK_QUERY: { aid: "8662", version_name: "7.1.3.32" }, PLAYBACK_USER_AGENT: "synthetic-agent",
+      /** Model a single registered identity replacement after all hosts reject it. */
+      async getPlaybackIdentity(failed) {
+        if (failed) identity = { ...identity, deviceId: "1000000000000000003", installId: "1000000000000000004" }
+        identities.push(identity)
+        return identity
+      },
+    },
   }, {
     Storage: {
       contains: key => storage.has(key),
@@ -52,7 +64,7 @@ function createApi(replies) {
     /** Record retry backoff without slowing the test suite. */
     setTimeout(callback, milliseconds) { delays.push(milliseconds); callback() },
   })
-  return { api, calls, delays, storage }
+  return { api, calls, delays, storage, identities }
 }
 
 /** Build an API reply containing only synthetic public video metadata. */
@@ -60,7 +72,7 @@ function modelReply(definitions = []) {
   return {
     ok: true, status: 200,
     text: async () => JSON.stringify({ code: 0, data: {
-      video_model_data: { [videoId]: { video_model: JSON.stringify({ video_list: definitions }) } },
+      [videoId]: { video_model: JSON.stringify({ video_list: definitions }) },
     } }),
   }
 }
@@ -91,22 +103,55 @@ test("empty video response switches host, preserves identity and remembers succe
   assert.equal(new URL(calls[0].url).origin, primary)
   assert.equal(new URL(calls[1].url).origin, spare)
   const first = new URL(calls[0].url), second = new URL(calls[1].url)
-  for (const field of ["device_id", "iid", "cdid", "video_id", "video_platform"]) {
+  for (const field of ["device_id", "iid"]) {
     assert.equal(first.searchParams.get(field), second.searchParams.get(field))
   }
-  assert.equal(first.pathname, "/reading/bookapi/video_tab/multi_video_model/v1/")
-  assert.equal(calls[1].options.method, "GET")
+  assert.equal(first.pathname, "/novel/player/multi_video_model/v1/")
+  assert.equal(calls[1].options.method, "POST")
+  assert.deepEqual(JSON.parse(calls[1].options.body).mixed_video_id_map, { "1004": [videoId] })
+  assert.ok(calls[1].options.headers["X-Medusa"])
+  assert.ok(calls[1].options.headers["X-Helios"])
+  assert.notEqual(calls[0].options.headers["X-Medusa"], calls[1].options.headers["X-Medusa"])
   await api.fetchEncryptedStreams(videoId)
   assert.equal(new URL(calls[2].url).origin, spare)
 })
 
-test("all empty replies stop after three official hosts with a readable error", async () => {
-  const { api, calls } = createApi(Array.from({ length: 3 }, () => ({
+test("all empty replies refresh identity once and stop after six attempts", async () => {
+  const { api, calls } = createApi(Array.from({ length: 6 }, () => ({
     ok: true, status: 200, text: async () => "",
   })))
   await assert.rejects(api.fetchEncryptedStreams(videoId), /空响应，已尝试备用节点/)
-  assert.equal(calls.length, 3)
+  assert.equal(calls.length, 6)
   assert.equal(new Set(calls.map(call => new URL(call.url).origin)).size, 3)
+  assert.notEqual(new URL(calls[0].url).searchParams.get("device_id"), new URL(calls[3].url).searchParams.get("device_id"))
+})
+
+test("a replacement anonymous identity restores playback after all original hosts return empty", async () => {
+  const { api, calls, identities } = createApi([
+    ...Array.from({ length: 3 }, () => ({ ok: true, status: 200, text: async () => "" })), modelReply(),
+  ])
+  await api.fetchEncryptedStreams(videoId)
+  assert.equal(calls.length, 4)
+  assert.equal(identities.length, 2)
+  assert.notEqual(identities[0].deviceId, identities[1].deviceId)
+})
+
+test("only business 100100 retries the desktop's 1001 video ID type", async () => {
+  const { api, calls } = createApi([
+    { ok: true, status: 200, text: async () => JSON.stringify({ code: 100100 }) }, modelReply(),
+  ])
+  await api.fetchEncryptedStreams(videoId)
+  assert.deepEqual(JSON.parse(calls[0].options.body).mixed_video_id_map, { "1004": [videoId] })
+  assert.deepEqual(JSON.parse(calls[1].options.body).mixed_video_id_map, { "1001": [videoId] })
+  assert.equal(new URL(calls[0].url).origin, new URL(calls[1].url).origin)
+  assert.notEqual(calls[0].options.headers["X-Ss-Stub"], calls[1].options.headers["X-Ss-Stub"])
+})
+
+test("network failures alone stop after host retries without replacing the anonymous device", async () => {
+  const { api, calls, identities } = createApi(Array.from({ length: 3 }, () => new Error("timeout")))
+  await assert.rejects(api.fetchEncryptedStreams(videoId), /网络连接中断或超时/)
+  assert.equal(calls.length, 3)
+  assert.equal(identities.length, 1)
 })
 
 test("network, body-read, throttling and server failures switch video API hosts", async () => {
@@ -124,7 +169,7 @@ test("HTTP rejection, malformed JSON, business errors and missing episodes do no
   for (const failed of [{ ok: false, status: 403 },
     { ok: true, status: 200, text: async () => "not json" },
     { ok: true, status: 200, text: async () => JSON.stringify({ code: 1, message: "unavailable" }) },
-    { ok: true, status: 200, text: async () => JSON.stringify({ code: 0, data: { video_model_data: {} } }) },
+    { ok: true, status: 200, text: async () => JSON.stringify({ code: 0, data: {} }) },
   ]) {
     const { api, calls } = createApi([failed])
     await assert.rejects(api.fetchEncryptedStreams(videoId))

@@ -25,7 +25,7 @@ def main():
         name = pending.pop()
         for match in imports.finditer((source / name).read_text()):
             dependency = match[1] or match[2]
-            if dependency == 'scripting':
+            if dependency in {'scripting', 'node:buffer', 'node:crypto', 'node:zlib'}:
                 continue
             if not dependency.startswith(('./', '../')):
                 raise ValueError('未支持的外部依赖: ' + dependency)

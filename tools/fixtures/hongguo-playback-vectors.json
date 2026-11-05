@@ -1,0 +1,131 @@
+{
+  "params": {
+    "device_id": "1000000000000000001",
+    "iid": "1000000000000000002",
+    "version_name": "7.1.3.32",
+    "resolution": "1280*2772"
+  },
+  "body": "{\"mixed_video_id_map\":{\"1004\":[\"1234567890123456789\"]}}",
+  "vectors": [
+    {
+      "stamp": 1730000000000,
+      "query": "_rticket=1730000000000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000000",
+      "medusa": "3de0cbf91200a04ee22a76411605ace758499cf5a0b0320ad455545a991d9f9e",
+      "helios": "AAAAADUzZVmLcwHJuUxqjZRF8+HIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000001000,
+      "query": "_rticket=1730000001004&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000001",
+      "medusa": "81c80498fd17766d1f6fe41237a5f4340302825cb81d5d841caafaa8274be5f9",
+      "helios": "AAAAAJAoN277peC/n/HcBOZlLevIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000002000,
+      "query": "_rticket=1730000002001&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000002",
+      "medusa": "ba3419d531d5a590bd75810794ee9f65e9000f65640653c1dfc491b775977cfc",
+      "helios": "AAAAAPNOY+0Gh8+kH8TcUSJA+fnIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000003000,
+      "query": "_rticket=1730000003001&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000003",
+      "medusa": "d71e5167e594ff2dc971d07c184c4a2cce65452036ee4547ad28710262e738c1",
+      "helios": "AAAAAKGaM7OUjvPj5DsIYCWTN9zIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000004000,
+      "query": "_rticket=1730000004008&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000004",
+      "medusa": "ba7cc90a90b1bf1bad17503f6f28603cecc9616a37444fe79a4548e3325c5cf1",
+      "helios": "AAAAAOncj7v5DZna99E3tSw70RnIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000005000,
+      "query": "_rticket=1730000005000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000005",
+      "medusa": "98eb4b12b6fc17d0f5566cdcb54d8ca475f8a8ef964b64c4fd556787f9b2e591",
+      "helios": "AAAAAGHANz/shXCvyc4eTe+BqbbIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000006000,
+      "query": "_rticket=1730000006000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000006",
+      "medusa": "5d5182a55eb754fdc10049a523d194edcda05a7f9ce00dcf59a1f7f7c5f54c28",
+      "helios": "AAAAALvwpTU2UluWgBPQgEvrsh/IMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000007000,
+      "query": "_rticket=1730000007001&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000007",
+      "medusa": "b7fc4c48c9fa1f8b8d3d75e7cf358615d7a7a17376f2620027efa0003ebaf2f2",
+      "helios": "AAAAAIdh0DR6/o9SNN2a4ml/Ek/IMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000008000,
+      "query": "_rticket=1730000008006&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000008",
+      "medusa": "94ae7429a0e3077e6a60771f3150a055cc629c6f3cd4d7f310db6c30903632f8",
+      "helios": "AAAAANSCG1bd+oyQLD1g0kmjEmbIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000009000,
+      "query": "_rticket=1730000009000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000009",
+      "medusa": "3e1e673c439d94b63265ca2729a46fc4beb51370d50663e0d25c1c9c20b28e85",
+      "helios": "AAAAANUG/zPXApAtPDJ5BtDwtbXIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000010000,
+      "query": "_rticket=1730000010000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000010",
+      "medusa": "e60b92f869856f77df58d56e68ff5f81772d54a7286291e7cb531723b6a6e8b0",
+      "helios": "AAAAAIRhvKhFqDiuOfXvvHwc5xPIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000011000,
+      "query": "_rticket=1730000011005&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000011",
+      "medusa": "1181bcb6514416d0b384e4a1b94935e07455f75c06c72ab94e683e44c72e8d51",
+      "helios": "AAAAALArcOV+M/OBm7jPkOqSxM/IMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000012000,
+      "query": "_rticket=1730000012002&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000012",
+      "medusa": "a1da26fdddc8e65deca597624ad31973ccd8ffe1dc27bac8608ec3209712e7c0",
+      "helios": "AAAAAHNooy5baSnK0f551qPQgqXIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000013000,
+      "query": "_rticket=1730000013000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000013",
+      "medusa": "626089d4629bf40e4ca1dc740e70f96a455f917757061796994c8299faec5ce8",
+      "helios": "AAAAAGLWHp6VVHaVmKo/8SlK3SrIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000014000,
+      "query": "_rticket=1730000014001&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000014",
+      "medusa": "5a93cae7f7977dcf6b065fe2c0799226a8f7f686df853aaef99ff0e8f5496dae",
+      "helios": "AAAAAJxjS6tKbog/vC6JUwer1r3IMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000015000,
+      "query": "_rticket=1730000015000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000015",
+      "medusa": "1d99785aa04d716ed30d12a18ddacfb9b2a1fbed2bea37e7ce1369213575f546",
+      "helios": "AAAAADdDDTxSucgyowurlCpQpUTIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000016000,
+      "query": "_rticket=1730000016001&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000016",
+      "medusa": "44a1fbd7dc09b6a53962343e59a54760435b585015565c83dfeddd3b87ab9e55",
+      "helios": "AAAAAIbEUqy6pqqzWatB0FVFKCrIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000017000,
+      "query": "_rticket=1730000017000&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000017",
+      "medusa": "ec7f14f8b01f266b979a336de641dec14bb058c885db64f3fdd59b1a5c3edd44",
+      "helios": "AAAAAGPke3HSueiWxxoSrejL/mTIMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000018000,
+      "query": "_rticket=1730000018004&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000018",
+      "medusa": "268d16a890ea80aa662c2508fbab68a5b382fb0d50123b49a9a9d45ddd3f1bdf",
+      "helios": "AAAAAKOfLfAwjLv7EsS2bLPDdr/IMLpgJZ6NUTjqlT9/cKKP"
+    },
+    {
+      "stamp": 1730000019000,
+      "query": "_rticket=1730000019004&device_id=1000000000000000001&iid=1000000000000000002&resolution=1280%2A2772&version_name=7.1.3.32&ts=1730000019",
+      "medusa": "369103324775b35528b2eb4c94ee06823289b8ebde79015870d1c1f07eec6480",
+      "helios": "AAAAAPRdzkp0zmkgIqF4FgA5p8HIMLpgJZ6NUTjqlT9/cKKP"
+    }
+  ]
+}
