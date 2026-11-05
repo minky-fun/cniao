@@ -308,14 +308,16 @@ export function HomeView({
 
   const featured = banners.slice(0, 5)
 
+  // 保留顶部安全区，让海报从导航栏下方开始；底部延伸到浮动标签栏后方。
   return (
     <GeometryReader
       background={HOME_BACKGROUND}
       foregroundStyle="white"
+      ignoresSafeArea={{ regions: "container", edges: "bottom" }}
       toolbarBackground={{ style: HOME_BACKGROUND, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{
-        visibility: featured.length > 0 ? "hidden" : "visible",
-        bars: ["navigationBar"],
+        visibility: "visible",
+        bars: ["navigationBar", "tabBar"],
       }}
       toolbarColorScheme={{ colorScheme: "dark", bars: ["navigationBar", "tabBar"] }}
     >
@@ -324,7 +326,6 @@ export function HomeView({
           scrollIndicator="hidden"
           frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
           background={HOME_BACKGROUND}
-          ignoresSafeArea={featured.length > 0 ? { regions: "container", edges: "top" } : false}
         >
           <VStack alignment="leading" spacing={0} frame={{ width: size.width }} padding={{ bottom: 28 }}>
             {featured.length > 0 ? (
