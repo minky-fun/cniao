@@ -410,7 +410,7 @@ export async function prepareOfflineVideo(
       const stream: EncryptedStream = streams[0]
 
       onProgress?.({ stage: "downloading", progress: 0 })
-      const encrypted = await downloadStream(stream.url)
+      const encrypted = await downloadStream(stream.url, stream.backupUrls)
       onProgress?.({ stage: "downloading", progress: 1 })
 
       onProgress?.({ stage: "decrypting", progress: 0 })

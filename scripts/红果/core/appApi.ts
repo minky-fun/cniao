@@ -48,6 +48,13 @@ interface VideoModelEntry {
 
 const DEVICE_STORAGE_KEY = "hongguo-public-player-device"
 const VIDEO_TAB_PATH = "/reading/bookapi/video_tab/multi_video_model/v1/"
+// 桌面版 1.2.21 的 hostPicker 使用这些 fqnovel 官方节点处理空响应。
+const VIDEO_API_BASES = [
+  APP_BASE,
+  "https://api5-normal-lq.fqnovel.com",
+  "https://api5-normal-sinfonlinea.fqnovel.com",
+]
+let preferredVideoApiBase = APP_BASE
 
 /** 生成并持久使用播放请求所需的 UUID 形式 cdid。 */
 function createCdid(): string {
@@ -89,7 +96,7 @@ function loadDeviceIdentity(): { device_id: string; iid: string; cdid: string } 
   return { device_id: identity.device_id, iid: identity.iid, cdid: identity.cdid as string }
 }
 
-/** 按桌面版优先使用的 video_tab GET 协议读取指定集的播放模型。 */
+/** 保留已验证的 video_tab GET 协议；空响应或临时网络故障时切换官方节点。 */
 async function fetchVideoModel(videoId: string): Promise<VideoModelEntry> {
   const identity = loadDeviceIdentity()
   const params: Record<string, string> = {
@@ -106,28 +113,41 @@ async function fetchVideoModel(videoId: string): Promise<VideoModelEntry> {
     source: "0",
     from_video_id: "",
   }
-  const rawQuery = Object.keys(params).sort()
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-    .join("&")
-
-  let text: string
-  try {
-    const response = await fetch(`${APP_BASE}${VIDEO_TAB_PATH}?${rawQuery}`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json; charset=utf-8",
-        "User-Agent": APP_USER_AGENT,
-      },
-      timeout: REQUEST_TIMEOUT_SECONDS,
-    })
-    if (!response.ok) throw new HttpError(`视频接口返回 HTTP ${response.status}`, response.status)
-    text = await response.text()
-  } catch (error) {
-    if (error instanceof HttpError) throw error
-    const message = error instanceof Error ? error.message : String(error)
-    throw new HttpError(`视频接口请求失败：${message}`, 0)
+  const bases = [preferredVideoApiBase, ...VIDEO_API_BASES.filter(base => base !== preferredVideoApiBase)]
+  let text = ""
+  let selectedBase = ""
+  let lastError = new HttpError("视频接口返回空响应，已尝试备用节点，请稍后重试", 0)
+  for (const base of bases) {
+    params._rticket = String(Date.now())
+    const rawQuery = Object.keys(params).sort()
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      .join("&")
+    try {
+      const response = await fetch(`${base}${VIDEO_TAB_PATH}?${rawQuery}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json; charset=utf-8",
+          "User-Agent": APP_USER_AGENT,
+        },
+        timeout: REQUEST_TIMEOUT_SECONDS,
+      })
+      if (!response.ok) throw new HttpError(`视频接口返回 HTTP ${response.status}`, response.status)
+      text = await response.text()
+      if (!text.trim()) {
+        lastError = new HttpError("视频接口返回空响应，已尝试备用节点，请稍后重试", 0)
+        continue
+      }
+      selectedBase = base
+      break
+    } catch (error) {
+      lastError = error instanceof HttpError
+        ? error
+        : new HttpError("视频接口请求失败：网络连接中断或超时，请检查网络后重试", 0)
+      if (lastError.status !== 0 && lastError.status !== 408 && lastError.status !== 429
+          && lastError.status < 500) throw lastError
+    }
   }
-  if (!text.trim()) throw new HttpError("视频接口返回空响应，请稍后重试", 0)
+  if (!selectedBase) throw lastError
 
   let json: { code?: number; message?: string; data?: { video_model_data?: Record<string, VideoModelEntry> } }
   try {
@@ -150,6 +170,7 @@ async function fetchVideoModel(videoId: string): Promise<VideoModelEntry> {
 
   const entry = json.data.video_model_data?.[videoId]
   if (!entry) throw new HttpError("该集暂无可播放内容", 404)
+  preferredVideoApiBase = selectedBase
   return entry
 }
 
@@ -195,6 +216,8 @@ export interface EncryptedStream {
 
   url: string
 
+  backupUrls: string[]
+
   codec: string
   width: number
   height: number
@@ -208,6 +231,7 @@ export interface EncryptedStream {
   kid: string
 }
 
+/** 解析接口提供的明文或 Base64 媒体地址。 */
 function resolveUrl(value: string | undefined): string {
   const trimmed = (value ?? "").trim()
   if (!trimmed) return ""
@@ -221,6 +245,7 @@ function resolveUrl(value: string | undefined): string {
   }
 }
 
+/** 保留同一清晰度的主备地址及对应密钥，供下载失败后切换节点。 */
 function toEncryptedStream(
   definition: VideoDefinition,
   fallbackDuration: number
@@ -234,16 +259,18 @@ function toEncryptedStream(
   const contentKey = deriveContentKey(spadeA)
   if (!contentKey) return null
 
-  const url =
-    resolveUrl(definition.main_url) ||
-    resolveUrl(definition.backup_url) ||
-    resolveUrl(definition.url_list?.[0])
-  if (!url) return null
+  const urls = [...new Set([
+    definition.main_url,
+    definition.backup_url,
+    ...(definition.url_list ?? []),
+  ].map(resolveUrl).filter(url => url !== ""))]
+  if (urls.length === 0) return null
 
   const durationMs = definition.video_meta?.duration
 
   return {
-    url,
+    url: urls[0],
+    backupUrls: urls.slice(1),
     codec,
     width: definition.video_meta?.vwidth ?? 0,
     height: definition.video_meta?.vheight ?? 0,
@@ -280,24 +307,47 @@ export async function fetchEncryptedStreams(videoId: string): Promise<EncryptedS
   return streams.sort((a, b) => b.height - a.height)
 }
 
-export async function downloadStream(url: string): Promise<Uint8Array> {
-  let response: Awaited<ReturnType<typeof fetch>>
-  try {
-    response = await fetch(url, {
-      headers: {
-        "User-Agent": MEDIA_USER_AGENT,
-        Referer: MEDIA_REFERER,
-      },
-      timeout: 120,
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new HttpError(`媒体下载失败：${message}`, 0)
+/** 有限重试临时下载故障，优先切换同清晰度备用地址，并拒绝空文件或不完整响应。 */
+export async function downloadStream(url: string, backupUrls: string[] = []): Promise<Uint8Array> {
+  const pendingUrls = [...new Set([url, ...backupUrls])]
+  const maxAttempts = Math.max(3, pendingUrls.length)
+  let lastError = new HttpError("媒体下载失败，请稍后重试", 0)
+
+  for (let attempt = 0; attempt < maxAttempts && pendingUrls.length > 0; attempt++) {
+    if (attempt > 0) await new Promise<void>(resolve => setTimeout(resolve, attempt * 1000))
+    const currentUrl = pendingUrls.shift()!
+    try {
+      const response = await fetch(currentUrl, {
+        headers: {
+          "User-Agent": MEDIA_USER_AGENT,
+          Referer: MEDIA_REFERER,
+        },
+        timeout: 120,
+      })
+      if (!response.ok) {
+        throw new HttpError(`媒体下载返回 HTTP ${response.status}`, response.status)
+      }
+      if (response.status !== 200) {
+        throw new HttpError("媒体下载未返回完整文件，请稍后重试", 0)
+      }
+
+      const bytes = new Uint8Array(await response.arrayBuffer())
+      const expectedLength = response.expectedContentLength
+      if (bytes.length === 0 || (expectedLength !== undefined && expectedLength > 0
+          && bytes.length !== expectedLength)) {
+        throw new HttpError("媒体下载文件不完整，请稍后重试", 0)
+      }
+      return bytes
+    } catch (error) {
+      lastError = error instanceof HttpError
+        ? error
+        : new HttpError("媒体下载失败：网络连接中断或超时，请检查网络后重试", 0)
+      const status = lastError.status
+      if (status === 0 || status === 408 || status === 429 || status >= 500) {
+        pendingUrls.push(currentUrl)
+      }
+    }
   }
 
-  if (!response.ok) {
-    throw new HttpError(`媒体下载返回 HTTP ${response.status}`, response.status)
-  }
-
-  return new Uint8Array(await response.arrayBuffer())
+  throw lastError
 }
