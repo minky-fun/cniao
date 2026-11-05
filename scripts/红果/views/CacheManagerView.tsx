@@ -57,7 +57,7 @@ function CachedSeriesRow({ group, selected, disabled, onSelect }: {
   )
 }
 
-/** 按真实剧集归属管理缓存，支持全选及确认后删除所选剧集文件。 */
+/** 以贯穿安全区的主题背景管理真实缓存，保留全选、确认删除和现有布局。 */
 export function CacheManagerView({ onDone }: { onDone: () => void }) {
   const [entries, setEntries] = useState(listOfflineCache)
   const [history, setHistory] = useState(loadPlayHistory)
@@ -135,8 +135,16 @@ export function CacheManagerView({ onDone }: { onDone: () => void }) {
     <VStack
       spacing={0}
       frame={PAGE_FRAME}
-      background={MANAGEMENT_SURFACE}
+      background={
+        <VStack
+          frame={PAGE_FRAME}
+          background={MANAGEMENT_SURFACE}
+          ignoresSafeArea={{ regions: "container" }}
+        />
+      }
       foregroundStyle="label"
+      toolbarBackground={{ style: MANAGEMENT_SURFACE, bars: ["navigationBar", "tabBar"] }}
+      toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       navigationBarVisibility="hidden"
       tabBarVisibility="hidden"
       onAppear={refresh}
