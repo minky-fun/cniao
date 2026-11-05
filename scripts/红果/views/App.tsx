@@ -145,7 +145,7 @@ function TabStack({
   )
 }
 
-/** 展示主标签页，并在整个脚本界面应用已保存的主题。 */
+/** 以橙色高亮主标签选中项，并在整个脚本界面应用已保存的主题。 */
 export function App() {
   const selection = useObservable(0)
   const dismiss = Navigation.useDismiss()
@@ -185,7 +185,11 @@ export function App() {
   }
 
   return (
-    <TabView selection={selection} preferredColorScheme={theme === "system" ? undefined : theme}>
+    <TabView
+      selection={selection}
+      tint="#fa7705"
+      preferredColorScheme={theme === "system" ? undefined : theme}
+    >
       <Tab title="首页" systemImage="house.fill" value={0}>
         <TabStack
           title="红果剧场"
