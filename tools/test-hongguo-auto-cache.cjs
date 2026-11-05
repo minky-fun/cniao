@@ -73,18 +73,19 @@ test("episode count defaults to five, persists valid choices and rejects invalid
 })
 
 /** Mount the production prefetch effect with configurable preferences and controlled timers. */
-function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0, afterDownload } = {}) {
+function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0, total = 8,
+  cached = new Set(), failures = new Map(), afterDownload } = {}) {
   const config = load("core/config.js", {})
-  const detail = { series_id: "series", series_name: "Test", series_cover: "", vid_list: Array.from({ length: 8 }, (_, i) => String(i)) }
+  const detail = { series_id: "series", series_name: "Test", series_cover: "", vid_list: Array.from({ length: total }, (_, i) => String(i)) }
   const currentVid = detail.vid_list[current]
   const data = { seriesDetail: detail }
   const states = [data, currentVid, false, "", {}, "", "", "", 0, 0, true, true, 0]
-  const effects = [], timers = new Map(), calls = []
+  const effects = [], timers = new Map(), calls = [], delays = [], refs = []
   const preference = { enabled, count: count ?? config.AUTO_CACHE_EPISODE_COUNT }
-  let stateIndex = 0, timerId = 0
+  let stateIndex = 0, refIndex = 0, timerId = 0
   const scripting = {
     useState: () => [states[stateIndex++], () => {}],
-    useRef: value => ({ current: value }),
+    useRef: value => refs[refIndex++] ?? (refs[refIndex - 1] = { current: value }),
     useObservable: value => ({ value }),
     useCallback: callback => callback,
     useEffect: (setup, deps) => effects.push({ setup, deps }),
@@ -98,11 +99,16 @@ function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0,
       getAutoCacheEnabled: () => preference.enabled,
       getAutoCacheEpisodeCount: () => preference.count,
       getPlaybackCacheMaxEntries: () => maxEntries,
-      isOfflineVideoCached: () => false,
+      isOfflineVideoCached: vid => cached.has(vid),
       /** Record completed background tasks and allow preference changes between episodes. */
       async preloadOfflineVideo(vid) {
         calls.push(vid)
         afterDownload?.(preference)
+        if ((failures.get(vid) ?? 0) > 0) {
+          failures.set(vid, failures.get(vid) - 1)
+          return false
+        }
+        cached.add(vid)
         return true
       },
     },
@@ -112,18 +118,37 @@ function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0,
   }, {
     createElement: (type, props, ...children) => ({ type, props, children }),
     /** Retain scheduled callbacks so tests can change settings before they start. */
-    setTimeout(callback) { timers.set(++timerId, callback); return timerId },
+    setTimeout(callback, delay) { delays.push(delay); timers.set(++timerId, callback); return timerId },
     clearTimeout: id => timers.delete(id),
   })
-  PlayerView({ seriesId: "series", initialVid: currentVid })
-  const effect = effects.find(item => item.deps?.length === 3 && item.deps[0] === detail
-    && item.deps[1] === currentVid && item.deps[2] === true)
-  assert.ok(effect, "Player must register its background prefetch effect")
-  const cleanup = effect.setup()
+  let cleanup
+  /** Re-render the same player after a successful episode switch and replace its prefetch effect. */
+  function advance(index) {
+    cleanup?.()
+    states[1] = detail.vid_list[index]
+    stateIndex = 0
+    refIndex = 0
+    effects.length = 0
+    PlayerView({ seriesId: "series", initialVid: currentVid })
+    const effect = effects.find(item => item.deps?.length === 3 && item.deps[0] === detail
+      && item.deps[1] === states[1] && item.deps[2] === true)
+    assert.ok(effect, "Player must register its background prefetch effect")
+    cleanup = effect.setup()
+  }
+  advance(current)
   return {
-    calls, preference, cleanup,
+    calls, preference, cached, delays, advance,
+    /** Dispose the currently mounted prefetch effect. */
+    cleanup() { cleanup() },
     /** Run pending background work to completion without real downloads or delays. */
-    async flush() { for (const callback of timers.values()) await callback(); timers.clear() },
+    async flush() {
+      for (let round = 0; timers.size; round++) {
+        assert.ok(round < 10, "Background retries must be bounded")
+        const callbacks = [...timers.values()]
+        timers.clear()
+        for (const callback of callbacks) await callback()
+      }
+    },
   }
 }
 
@@ -170,4 +195,57 @@ test("prefetch respects cache retention, series end and leaving the player", asy
   dismissed.cleanup()
   await dismissed.flush()
   assert.deepEqual(dismissed.calls, [])
+})
+
+test("a ten-episode window replenishes one episode after every episode switch", async () => {
+  const cached = new Set(Array.from({ length: 10 }, (_, index) => String(96 + index)))
+  const scenario = prefetchScenario({ current: 95, total: 120, count: 10, cached })
+  await scenario.flush()
+  assert.deepEqual(scenario.calls, [])
+  for (let current = 96; current <= 99; current++) {
+    scenario.advance(current)
+    await scenario.flush()
+    assert.equal(scenario.calls.at(-1), String(current + 10))
+    assert.equal(scenario.calls.length, current - 95)
+    for (let offset = 1; offset <= 10; offset++) assert.ok(cached.has(String(current + offset)))
+  }
+})
+
+test("episode 97 failing does not stop later episodes and is retried during episode 96", async () => {
+  const scenario = prefetchScenario({ current: 95, total: 120, count: 10,
+    failures: new Map([["96", 1]]) })
+  await scenario.flush()
+  assert.deepEqual(scenario.calls, [...Array.from({ length: 10 }, (_, i) => String(96 + i)), "96"])
+  assert.deepEqual(scenario.delays, [1500, 15000])
+  for (let index = 96; index <= 105; index++) assert.ok(scenario.cached.has(String(index)))
+})
+
+test("persistent prefetch failure is bounded and does not block the remaining window", async () => {
+  const scenario = prefetchScenario({ failures: new Map([["1", Infinity]]) })
+  await scenario.flush()
+  assert.deepEqual(scenario.calls, ["1", "2", "3", "4", "5", "1", "1"])
+  assert.equal(scenario.cached.has("1"), false)
+})
+
+test("disabling auto-cache or leaving the player cancels delayed failure retries", async () => {
+  for (const action of ["disable", "leave"]) {
+    let scenario
+    scenario = prefetchScenario({ failures: new Map([["1", Infinity]]), afterDownload: () => {
+      if (action === "disable") scenario.preference.enabled = false
+      else scenario.cleanup()
+    } })
+    await scenario.flush()
+    assert.deepEqual(scenario.calls, ["1"])
+    assert.deepEqual(scenario.delays, [1500])
+  }
+})
+
+test("switching episodes while prefetch awaits stops the old window and fills the new one", async () => {
+  let scenario
+  let switched = false
+  scenario = prefetchScenario({ total: 20, count: 10, afterDownload: () => {
+    if (!switched) { switched = true; scenario.advance(1) }
+  } })
+  await scenario.flush()
+  assert.deepEqual(scenario.calls, Array.from({ length: 11 }, (_, i) => String(i + 1)))
 })

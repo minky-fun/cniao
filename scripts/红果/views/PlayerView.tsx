@@ -330,6 +330,7 @@ export function PlayerView({
     })
   }, [data?.seriesDetail, currentVid, seriesId])
 
+  // 每次切集重新补齐后续缓存，失败集在当前播放期间最多尝试三轮。
   useEffect(() => {
     const detail = data?.seriesDetail
     if (!detail || !currentVid || !isPlayerLoaded) return
@@ -338,9 +339,13 @@ export function PlayerView({
     if (currentIndex < 0) return
 
     let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
+    const attempts = new Map<string, number>()
 
-    const timer = setTimeout(async () => {
+    /** 跳过已有缓存，补下载缺失剧集；单集失败不阻断队列，稍后有限重试。 */
+    const replenish = async () => {
       if (cancelled || !getAutoCacheEnabled()) return
+      let needsRetry = false
 
       // 为当前播放留出一集额度，每集开始前重新检查自动缓存开关。
       for (let offset = 1; offset <= getAutoCacheEpisodeCount() && offset < getPlaybackCacheMaxEntries(); offset++) {
@@ -350,6 +355,9 @@ export function PlayerView({
 
         const targetVid = detail.vid_list[targetIndex]
         if (isOfflineVideoCached(targetVid)) continue
+        const attempt = attempts.get(targetVid) ?? 0
+        if (attempt >= 3) continue
+        attempts.set(targetVid, attempt + 1)
 
         const label = formatEpisodeLabel(detail.series_name, targetIndex)
         const success = await preloadOfflineVideo(targetVid, {
@@ -360,10 +368,17 @@ export function PlayerView({
           protectedVideoIds: [currentVid],
         })
 
-        if (!success || cancelled) break
+        if (cancelled) return
+        if (!success && attempt + 1 < 3) needsRetry = true
       }
-    }, 1500)
+      if (needsRetry && !cancelled && getAutoCacheEnabled()) {
+        timer = setTimeout(replenish, 15000)
+      }
+    }
 
+    timer = setTimeout(replenish, 1500)
+
+    /** 切集或退出后停止旧窗口的补下载及重试，不再追加旧任务。 */
     return () => {
       cancelled = true
       clearTimeout(timer)
