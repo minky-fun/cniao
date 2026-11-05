@@ -35,10 +35,11 @@ const BANNER_BACKDROP_MASK = gradient("linear", {
 })
 
 const HOME_BACKGROUND = "systemBackground"
+// 减淡海报顶部遮罩，底部继续保留文案所需的暗底。
 const BANNER_SHADE = gradient("linear", {
   stops: [
-    { color: "rgba(16,16,17,0.6)", location: 0 },
-    { color: "rgba(16,16,17,0.05)", location: 0.3 },
+    { color: "rgba(16,16,17,0.3)", location: 0 },
+    { color: "rgba(16,16,17,0.02)", location: 0.3 },
     { color: "rgba(16,16,17,0.6)", location: 0.55 },
     { color: "rgba(16,16,17,0.8)", location: 1 },
   ],
