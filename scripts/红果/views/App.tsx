@@ -109,7 +109,7 @@ function buildRoute(route: Route | null, push: (raw: string) => void, onClose: (
   )
 }
 
-/** 为每个标签维护独立的导航栈。 */
+/** 为每个标签维护独立导航栈，一级页面显示标签栏，所有后续页面统一隐藏。 */
 function TabStack({
   title,
   render,
@@ -131,6 +131,7 @@ function TabStack({
       <ZStack
         navigationTitle={title}
         navigationBarTitleDisplayMode="inline"
+        tabBarVisibility="visible"
         toolbar={{
           cancellationAction: <Button title="关闭" action={onClose} />,
           topBarTrailing: [
@@ -143,7 +144,13 @@ function TabStack({
           ],
         }}
         navigationDestination={
-          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, onClose, pop)}</NavigationDestination>
+          <NavigationDestination>
+            {raw => (
+              <ZStack tabBarVisibility="hidden">
+                {buildRoute(decodeRoute(raw), push, onClose, pop)}
+              </ZStack>
+            )}
+          </NavigationDestination>
         }
       >
         {render(push)}

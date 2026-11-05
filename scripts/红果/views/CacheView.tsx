@@ -150,7 +150,6 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
       navigationTitle="清理缓存"
       navigationBarTitleDisplayMode="inline"
       navigationBarVisibility="visible"
-      tabBarVisibility="visible"
       toolbarBackground={{ style: CACHE_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       onAppear={refresh}
