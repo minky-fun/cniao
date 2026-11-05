@@ -194,16 +194,16 @@ export function CacheView() {
               <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
                 {formatBytes(usedBytes)}
               </Text>
-              <Button action={handleClear} buttonStyle="plain" role="destructive" disabled={entries.length === 0}>
+              {/* 缩小橙色外观，外层仍保留 44 点触控高度。 */}
+              <Button action={handleClear} buttonStyle="plain" role="destructive" disabled={entries.length === 0} frame={{ height: 44 }}>
                 <Text
-                  font={14}
+                  font={12}
                   fontWeight="medium"
                   foregroundStyle={entries.length > 0 ? "white" : "secondaryLabel"}
-                  frame={{ minHeight: 44 }}
-                  padding={{ horizontal: 12 }}
+                  frame={{ width: 72, height: 28 }}
                   background={{
                     style: entries.length > 0 ? "#FA7705" : TRACK_SURFACE,
-                    shape: { type: "rect", cornerRadius: 9 },
+                    shape: { type: "rect", cornerRadius: 8 },
                   }}
                 >
                   一键清理
