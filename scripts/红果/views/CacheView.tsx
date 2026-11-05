@@ -10,13 +10,15 @@ import {
   VStack,
   useState,
 } from "scripting"
-import { PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "../core/config"
+import { PLAYBACK_CACHE_MAX_BYTES } from "../core/config"
 import { formatBytes, formatRelativeTime } from "../core/format"
 import { loadPlayHistory } from "../core/history"
 import {
   clearOfflineCache,
+  getPlaybackCacheMaxEntries,
   listOfflineCache,
   removeOfflineVideo,
+  setPlaybackCacheMaxEntries,
   type CacheEntry,
 } from "../core/mediaCache"
 import { CoverImage, FILL_LEADING, PAGE_FRAME } from "./Common"
@@ -118,23 +120,49 @@ function CacheRow({
   )
 }
 
-/** 展示缓存概览和一键清理，默认显示带封面的逐集明细并保留删除确认。 */
+/** 展示缓存与清理操作，支持保存保留集数，默认显示带封面的逐集明细。 */
 export function CacheView() {
   const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
   const [history, setHistory] = useState(loadPlayHistory)
   const [showDetails, setShowDetails] = useState(true)
+  const [maxEntries, setMaxEntries] = useState(getPlaybackCacheMaxEntries)
   const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
 
-  /** 重新读取现有缓存，清空后收起明细，不触发下载或修改缓存策略。 */
+  /** 重新读取缓存及保留集数，清空后收起明细，不触发下载。 */
   const refresh = () => {
     const currentEntries = listOfflineCache()
     setEntries(currentEntries)
     setHistory(loadPlayHistory())
+    setMaxEntries(getPlaybackCacheMaxEntries())
     if (currentEntries.length === 0) setShowDetails(false)
   }
 
   /** 展开或收起真实缓存明细，不改变缓存文件。 */
   const toggleDetails = () => setShowDetails(!showDetails)
+
+  /** 输入不小于两集的整数并保存，后续自动清理使用新配置，取消时不修改。 */
+  const changeMaxEntries = async () => {
+    try {
+      const input = await Dialog.prompt({
+        title: "最多保留几集",
+        message: "至少保留 2 集，请输入不小于 2 的整数。保存后，后续写入缓存和下次启动时按新上限自动清理。",
+        defaultValue: String(maxEntries),
+        keyboardType: "numberPad",
+        selectAll: true,
+        confirmLabel: "保存",
+        cancelLabel: "取消",
+      })
+      if (input == null) return
+      const value = Number(input.trim())
+      setPlaybackCacheMaxEntries(value)
+      setMaxEntries(value)
+    } catch (error) {
+      await Dialog.alert({
+        title: "未能保存保留集数",
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
 
   /** 确认后删除指定缓存，并更新容量与列表。 */
   const handleRemove = async (entry: CacheEntry) => {
@@ -241,8 +269,22 @@ export function CacheView() {
               </LazyVStack>
             ) : null}
           </VStack>
+          <VStack
+            padding={{ horizontal: 20, vertical: 8 }}
+            frame={FILL_LEADING}
+            background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
+          >
+            <Button action={changeMaxEntries} buttonStyle="plain">
+              <HStack spacing={8} frame={{ maxWidth: "infinity", minHeight: 44 }}>
+                <Text font={14}>最多保留</Text>
+                <Spacer />
+                <Text font={14} foregroundStyle={ACCENT_COLOR}>{`${maxEntries} 集`}</Text>
+                <Image systemName="chevron.right" font={11} foregroundStyle="secondaryLabel" />
+              </HStack>
+            </Button>
+          </VStack>
           <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 4 }} frame={FILL_LEADING}>
-            {`最多保留 ${PLAYBACK_CACHE_MAX_ENTRIES} 集，超出上限时自动清理最久未观看的剧集。`}
+            {`最多保留 ${maxEntries} 集，容量上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}。后续写入缓存和下次启动时，自动清理最久未观看的剧集。`}
           </Text>
         </VStack>
       </ScrollView>

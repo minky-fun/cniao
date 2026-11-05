@@ -9,6 +9,8 @@ const INDEX_FILE_NAME = "cache-index.json"
 
 const INDEX_VERSION = 1
 
+const MAX_ENTRIES_STORAGE_KEY = "hongguo-cache-max-entries"
+
 function cacheDirectory(): string {
   return `${FileManager.appGroupDocumentsDirectory}/${PLAYBACK_CACHE_DIR}`
 }
@@ -168,9 +170,22 @@ export interface CacheLimits {
   maxEntries: number
 }
 
-const DEFAULT_LIMITS: CacheLimits = {
-  maxBytes: PLAYBACK_CACHE_MAX_BYTES,
-  maxEntries: PLAYBACK_CACHE_MAX_ENTRIES,
+/** 读取用户设置的保留集数，尚未设置或旧数据无效时使用原有默认值。 */
+export function getPlaybackCacheMaxEntries(): number {
+  const value = Storage.get<number>(MAX_ENTRIES_STORAGE_KEY)
+  return value !== null && Number.isSafeInteger(value) && value >= 2
+    ? value
+    : PLAYBACK_CACHE_MAX_ENTRIES
+}
+
+/** 校验并持久保存保留集数，保存失败时保留现有配置并报告原因。 */
+export function setPlaybackCacheMaxEntries(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 2) {
+    throw new Error("请输入不小于 2 的整数集数")
+  }
+  if (!Storage.set(MAX_ENTRIES_STORAGE_KEY, value)) {
+    throw new Error("保留集数保存失败，请重试")
+  }
 }
 
 export function selectEvictions(
@@ -201,9 +216,13 @@ export function selectEvictions(
   return evicted
 }
 
+/** 每次清理读取最新保留集数，按最久未观看顺序清理并保护指定剧集。 */
 export function enforceCacheLimit(
   protectedVideoIds: string[] = [],
-  limits: CacheLimits = DEFAULT_LIMITS
+  limits: CacheLimits = {
+    maxBytes: PLAYBACK_CACHE_MAX_BYTES,
+    maxEntries: getPlaybackCacheMaxEntries(),
+  }
 ): number {
   const entries = listOfflineCache()
   if (entries.length === 0) return 0

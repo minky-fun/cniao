@@ -18,6 +18,7 @@ import {
 } from "scripting"
 import { fetchDetail } from "../core/api"
 import {
+  getPlaybackCacheMaxEntries,
   isOfflineVideoCached,
   preloadOfflineVideo,
   type PrepareProgress,
@@ -339,7 +340,8 @@ export function PlayerView({
     const timer = setTimeout(async () => {
       if (cancelled) return
 
-      for (let offset = 1; offset <= 2; offset++) {
+      // 为当前播放留出一集额度，保留两集时只预加载下一集。
+      for (let offset = 1; offset <= 2 && offset < getPlaybackCacheMaxEntries(); offset++) {
         if (cancelled) break
         const targetIndex = currentIndex + offset
         if (targetIndex >= detail.vid_list.length) break
