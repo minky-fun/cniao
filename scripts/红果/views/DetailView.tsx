@@ -8,11 +8,13 @@ import {
   Spacer,
   Text,
   VStack,
+  ZStack,
   useEffect,
   useState,
 } from "scripting"
 import { fetchDetail } from "../core/api"
 import { formatCount } from "../core/format"
+import { listCachedVideoIds, onCacheChanged } from "../core/mediaCache"
 import type { Review, SeriesDetail, SeriesSocialInfo } from "../core/types"
 import {
   CoverImage,
@@ -257,9 +259,24 @@ function SocialStats({ social }: { social: SeriesSocialInfo | null }) {
   )
 }
 
-/** 每 30 集分段，以单行等宽高方块展示选集并保留每集播放入口。 */
+/** 每 30 集分段，以正方形选集展示播放入口和实时缓存角标。 */
 function DetailEpisodes({ vids, onSelect }: { vids: string[]; onSelect: (vid: string) => void }) {
   const [rangeIndex, setRangeIndex] = useState(0)
+  const [cachedVidSet, setCachedVidSet] = useState<Set<string>>(() => listCachedVideoIds())
+
+  // 订阅缓存增删与清空事件，组件卸载时取消监听。
+  useEffect(() => {
+    return onCacheChanged((videoId, action) => {
+      setCachedVidSet(previous => {
+        const next = new Set(previous)
+        if (action === "added") next.add(videoId)
+        else if (action === "removed") next.delete(videoId)
+        else if (action === "cleared") next.clear()
+        return next
+      })
+    })
+  }, [])
+
   const start = rangeIndex * EPISODE_RANGE_SIZE
 
   return (
@@ -282,14 +299,22 @@ function DetailEpisodes({ vids, onSelect }: { vids: string[]; onSelect: (vid: st
         <HStack spacing={8} padding={{ horizontal: 16 }}>
           {vids.slice(start, start + EPISODE_RANGE_SIZE).map((vid, index) => (
             <Button key={vid} action={() => onSelect(vid)} buttonStyle="plain">
-              <Text
-                font={16}
-                foregroundStyle="label"
-                frame={{ width: 52, height: 52 }}
-                background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
-              >
-                {String(start + index + 1)}
-              </Text>
+              <ZStack alignment="topLeading">
+                <Text
+                  font={16}
+                  foregroundStyle="label"
+                  frame={{ width: 52, height: 52 }}
+                  background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
+                >
+                  {String(start + index + 1)}
+                </Text>
+                <Image
+                  systemName={cachedVidSet.has(vid) ? "checkmark.circle.fill" : "arrow.down.circle"}
+                  font={10}
+                  foregroundStyle={cachedVidSet.has(vid) ? THEME_COLOR : "tertiaryLabel"}
+                  padding={4}
+                />
+              </ZStack>
             </Button>
           ))}
         </HStack>
