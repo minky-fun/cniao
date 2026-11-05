@@ -57,8 +57,8 @@ function CachedSeriesRow({ group, selected, disabled, onSelect }: {
   )
 }
 
-/** 以贯穿安全区的主题背景管理真实缓存，保留全选、确认删除和现有布局。 */
-export function CacheManagerView({ onDone }: { onDone: () => void }) {
+/** 使用原生导航返回管理缓存，保留主题背景、全选和确认删除。 */
+export function CacheManagerView() {
   const [entries, setEntries] = useState(listOfflineCache)
   const [history, setHistory] = useState(loadPlayHistory)
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
@@ -145,7 +145,9 @@ export function CacheManagerView({ onDone }: { onDone: () => void }) {
       foregroundStyle="label"
       toolbarBackground={{ style: MANAGEMENT_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
-      navigationBarVisibility="hidden"
+      navigationTitle="缓存管理"
+      navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility="visible"
       tabBarVisibility="hidden"
       onAppear={refresh}
     >
@@ -154,9 +156,6 @@ export function CacheManagerView({ onDone }: { onDone: () => void }) {
           <Text font={16} frame={{ minHeight: 44 }}>{allSelected ? "取消全选" : "全选"}</Text>
         </Button>
         <Spacer />
-        <Button action={onDone} buttonStyle="plain" disabled={deleting}>
-          <Text font={16} frame={{ minHeight: 44 }}>完成</Text>
-        </Button>
       </HStack>
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         {groups.length === 0 ? <EmptyView text="暂无缓存" /> : (

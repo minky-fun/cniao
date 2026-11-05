@@ -68,14 +68,14 @@ export function decodeRoute(raw: string): Route | null {
 }
 
 /** 按路径构建搜索、详情、播放和数据管理页面。 */
-function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void, pop: () => void) {
+function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void) {
   if (!route) return <VStack />
 
   if (route.kind === "search") {
     return <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
   }
   if (route.kind === "cache") return <CacheView onOpenManager={() => push(CACHE_MANAGER_ROUTE)} />
-  if (route.kind === "cache-manager") return <CacheManagerView onDone={pop} />
+  if (route.kind === "cache-manager") return <CacheManagerView />
   if (route.kind === "history") {
     return <HistoryView onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
   }
@@ -153,8 +153,6 @@ export function App() {
 
   /** 在标签页之外追加页面，保留根部标签的选择和内容状态。 */
   const push = (raw: string) => path.setValue([...path.value, raw])
-  /** 完成管理后只返回上一页，系统返回手势也同步使用同一导航路径。 */
-  const pop = () => path.setValue(path.value.slice(0, -1))
 
   /** 保存主题后更新界面；保存失败时保留当前选择并提示原因。 */
   const changeTheme = (value: ThemeMode) => {
@@ -202,7 +200,7 @@ export function App() {
         selection={selection}
         navigationBarVisibility="hidden"
         navigationDestination={
-          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close, pop)}</NavigationDestination>
+          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close)}</NavigationDestination>
         }
       >
         <Tab title="首页" systemImage="house.fill" value={0}>
