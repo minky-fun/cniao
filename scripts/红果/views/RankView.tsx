@@ -1,4 +1,4 @@
-import { GeometryReader, HStack, Image, ScrollView, SVG, Text, VStack, ZStack, useEffect, useRef, useState } from "scripting"
+import { GeometryReader, HStack, LazyVStack, ProgressView, ScrollView, SVG, Text, VStack, ZStack, useEffect, useRef, useState } from "scripting"
 import { fetchRank } from "../core/api"
 import { RANK_BOARDS } from "../core/config"
 import { loadCachedRank, saveCachedRank } from "../core/feedCache"
@@ -40,6 +40,8 @@ interface RankViewState {
   data: RankData | null
   isLoading: boolean
   errorMessage: string
+  isLoadingMore: boolean
+  loadMoreError: string
 }
 
 /** 复用网页版斜边角标轮廓与配色，第四名起使用半透明黑底。 */
@@ -142,7 +144,7 @@ function RankRow({
   )
 }
 
-/** 同步切换榜单与列表，保留离线快照并隔离过时请求。 */
+/** 同步切换榜单，触底追加后续页，并保留离线快照及请求隔离。 */
 export function RankView({
   onSelectSeries,
 }: {
@@ -150,53 +152,107 @@ export function RankView({
 }) {
   const [view, setView] = useState<RankViewState>(() => {
     const cached = loadCachedRank(RANK_BOARDS[0].board, 1)
-    return { boardIndex: 0, page: 1, data: cached, isLoading: !cached, errorMessage: "" }
+    return { boardIndex: 0, page: 1, data: cached, isLoading: true, errorMessage: "", isLoadingMore: false, loadMoreError: "" }
   })
-  const requestId = useRef(0)
-  const { boardIndex, page, data, isLoading, errorMessage } = view
+  // 同步记录请求锁与已加载页码，阻止同一帧内重复触底及旧底部回调。
+  const request = useRef({ id: 0, boardIndex: 0, page: 1, loading: true, failed: false })
+  const { boardIndex, page, data, isLoading, errorMessage, isLoadingMore, loadMoreError } = view
 
-  /** 一次更新分类、页码及快照，只让最新请求更新当前列表。 */
-  const load = (targetBoardIndex: number, targetPage: number) => {
-    const currentRequest = ++requestId.current
+  /** 首屏展示快照，后续页按单页缓存追加；只有当前请求可修改列表。 */
+  const load = async (targetBoardIndex: number, targetPage = 1) => {
+    const append = targetPage > 1
+    if (append && (request.current.loading || request.current.boardIndex !== targetBoardIndex || request.current.page !== targetPage - 1)) return
+    const currentRequest = ++request.current.id
+    request.current.loading = true
+    request.current.failed = false
     const targetBoard = RANK_BOARDS[targetBoardIndex].board
     const cached = loadCachedRank(targetBoard, targetPage)
-    setView({
-      boardIndex: targetBoardIndex,
-      page: targetPage,
-      data: cached,
-      isLoading: !cached,
-      errorMessage: "",
-    })
 
-    fetchRank(targetBoard, targetPage)
-      .then(next => {
-        saveCachedRank(targetBoard, targetPage, next)
-        if (currentRequest !== requestId.current) return
-        setView(previous => ({ ...previous, data: next, isLoading: false, errorMessage: "" }))
+    if (append) {
+      setView(previous => ({ ...previous, isLoadingMore: true, loadMoreError: "" }))
+    } else {
+      request.current.boardIndex = targetBoardIndex
+      request.current.page = 1
+      setView({
+        boardIndex: targetBoardIndex,
+        page: 1,
+        data: cached,
+        isLoading: true,
+        errorMessage: "",
+        isLoadingMore: false,
+        loadMoreError: "",
       })
-      .catch(error => {
-        if (currentRequest !== requestId.current) return
+    }
+
+    let next: RankData
+    let offlineMessage = ""
+    try {
+      next = await fetchRank(targetBoard, targetPage)
+      saveCachedRank(targetBoard, targetPage, next)
+    } catch (error) {
+      if (currentRequest !== request.current.id) return
+      const message = error instanceof Error ? error.message : String(error)
+      if (!append || !cached) {
+        request.current.loading = false
+        request.current.failed = append
         setView(previous => ({
           ...previous,
           isLoading: false,
-          errorMessage: error instanceof Error ? error.message : String(error),
+          isLoadingMore: false,
+          errorMessage: append ? previous.errorMessage : message,
+          loadMoreError: append ? message : "",
         }))
-      })
+        return
+      }
+      next = cached
+      offlineMessage = message
+    }
+    if (currentRequest !== request.current.id) return
+
+    request.current.page = targetPage
+    request.current.loading = false
+    setView(previous => {
+      const rankList = append && previous.data ? [...previous.data.rankList] : []
+      const seen = new Set(rankList.map(item => item.seriesId))
+      for (const item of next.rankList) {
+        if (seen.has(item.seriesId)) continue
+        rankList.push(item)
+        seen.add(item.seriesId)
+      }
+      return {
+        ...previous,
+        page: targetPage,
+        data: { ...next, rankList },
+        isLoading: false,
+        isLoadingMore: false,
+        errorMessage: offlineMessage || (append ? previous.errorMessage : ""),
+        loadMoreError: "",
+      }
+    })
   }
 
   useEffect(() => {
-    load(0, 1)
+    void load(0)
     // 页面退出后，未结束的请求只写快照，不再更新界面。
-    return () => { requestId.current += 1 }
+    return () => {
+      request.current.id += 1
+      request.current.loading = true
+    }
   }, [])
 
   /** 切换榜单时从第一页开始浏览。 */
   const switchBoard = (index: number) => {
     if (index === boardIndex) return
-    load(index, 1)
+    void load(index)
   }
 
   const totalPages = data?.pagination.totalPages ?? 1
+
+  /** 底部进入可视范围时串行加载下一页；失败后只响应显式重试。 */
+  const loadMore = (retry = false) => {
+    if (!data || isLoading || isLoadingMore || (!retry && (loadMoreError || request.current.failed)) || page >= totalPages) return
+    void load(boardIndex, page + 1)
+  }
 
   return (
     <GeometryReader background={RANK_SURFACE} foregroundStyle="label">
@@ -221,70 +277,58 @@ export function RankView({
             </HStack>
           </ScrollView>
 
-          <ScrollView scrollIndicator="hidden">
-            <VStack alignment="leading" spacing={0} frame={FILL_LEADING} padding={{ bottom: 28 }}>
+          <ScrollView key={`rank-list:${boardIndex}`} scrollIndicator="hidden">
+            <LazyVStack alignment="leading" spacing={24} frame={FILL_LEADING} padding={{ bottom: 28 }}>
               {isLoading && !data ? <SkeletonRankList width={size.width} /> : null}
-              {!isLoading && errorMessage && !data ? <ErrorView message={errorMessage} onRetry={() => load(boardIndex, page)} /> : null}
+              {!isLoading && errorMessage && !data ? <ErrorView message={errorMessage} onRetry={() => { void load(boardIndex) }} /> : null}
               {!isLoading && !errorMessage && data && data.rankList.length === 0 ? <EmptyView text="榜单暂无数据" /> : null}
 
-              {data && (data.rankList.length > 0 || errorMessage) ? (
-                <VStack alignment="leading" spacing={24} frame={FILL_LEADING}>
-                  {errorMessage ? (
-                    <Text
-                      font="caption"
-                      foregroundStyle="systemOrange"
-                      padding={{ horizontal: 12 }}
-                      frame={FILL_LEADING}
-                      onTapGesture={() => load(boardIndex, page)}
-                    >
-                      网络不可用，正在显示上次内容，点此重试
+              {data && errorMessage ? (
+                <Text
+                  font="caption"
+                  foregroundStyle="systemOrange"
+                  padding={{ horizontal: 12 }}
+                  frame={FILL_LEADING}
+                  onTapGesture={() => { void load(boardIndex) }}
+                >
+                  网络不可用，正在显示上次内容，点此重试
+                </Text>
+              ) : null}
+
+              {data?.rankList.map(item => (
+                <RankRow
+                  key={item.seriesId}
+                  item={item}
+                  width={size.width}
+                  onSelect={selected => onSelectSeries(selected.seriesId, selected.episodeVids?.[0])}
+                />
+              ))}
+
+              {data && data.rankList.length > 0 ? (
+                <VStack
+                  key={`rank-footer:${boardIndex}:${page}:${isLoading ? "refresh" : "ready"}`}
+                  spacing={8}
+                  frame={FILL_CENTER}
+                  padding={{ vertical: 12 }}
+                  onAppear={() => loadMore()}
+                >
+                  {loadMoreError ? (
+                    <Text font="caption" foregroundStyle="systemOrange" onTapGesture={() => loadMore(true)}>
+                      {`${loadMoreError}，点此重试`}
                     </Text>
-                  ) : null}
-
-                  {data.rankList.map(item => (
-                    <RankRow
-                      key={item.seriesId}
-                      item={item}
-                      width={size.width}
-                      onSelect={selected => onSelectSeries(selected.seriesId, selected.episodeVids?.[0])}
-                    />
-                  ))}
-
-                  <HStack spacing={8} alignment="center" padding={{ top: 16, bottom: 4 }} frame={FILL_CENTER}>
-                    <Image
-                      systemName="chevron.left"
-                      font={12}
-                      accessibilityLabel="上一页"
-                      foregroundStyle={page > 1 ? "secondaryLabel" : "tertiaryLabel"}
-                      frame={{ width: 32, height: 32 }}
-                      background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
-                      onTapGesture={() => { if (page > 1) load(boardIndex, page - 1) }}
-                    />
-                    {Array.from({ length: totalPages }, (_, index) => (
-                      <Text
-                        key={index + 1}
-                        font={14}
-                        foregroundStyle={page === index + 1 ? HEAT_COLOR : "secondaryLabel"}
-                        frame={{ width: 32, height: 32 }}
-                        multilineTextAlignment="center"
-                        onTapGesture={() => { if (page !== index + 1) load(boardIndex, index + 1) }}
-                      >
-                        {String(index + 1)}
+                  ) : isLoading || isLoadingMore || page < totalPages ? (
+                    <HStack spacing={8}>
+                      <ProgressView />
+                      <Text font="caption" foregroundStyle="secondaryLabel">
+                        {isLoading ? "正在更新榜单…" : "正在加载更多…"}
                       </Text>
-                    ))}
-                    <Image
-                      systemName="chevron.right"
-                      font={12}
-                      accessibilityLabel="下一页"
-                      foregroundStyle={page < totalPages ? "secondaryLabel" : "tertiaryLabel"}
-                      frame={{ width: 32, height: 32 }}
-                      background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
-                      onTapGesture={() => { if (page < totalPages) load(boardIndex, page + 1) }}
-                    />
-                  </HStack>
+                    </HStack>
+                  ) : (
+                    <Text font="caption" foregroundStyle="secondaryLabel">已全部加载</Text>
+                  )}
                 </VStack>
               ) : null}
-            </VStack>
+            </LazyVStack>
           </ScrollView>
         </VStack>
       )}
