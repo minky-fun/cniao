@@ -21,7 +21,6 @@ import {
   PAGE_FRAME,
   SERIES_SURFACE,
   SkeletonDetail,
-  TagChip,
   THEME_COLOR,
 } from "./Common"
 
@@ -135,14 +134,27 @@ export function DetailView({
                   <HStack
                     spacing={4}
                     foregroundStyle="secondaryLabel"
-                    padding={{ horizontal: 7, vertical: 4 }}
+                    padding={{ horizontal: 7 }}
+                    frame={{ height: 24 }}
                     background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 6 } }}
                   >
                     <Image systemName="trophy.fill" font={11} />
-                    <Text font={12}>{social.rank_label.replace(/^热播短剧榜第(\d+)名$/, "短剧热播榜 No.$1")}</Text>
+                    <Text font={12} lineLimit={1}>{social.rank_label.replace(/^热播短剧榜第(\d+)名$/, "短剧热播榜 No.$1")}</Text>
                   </HStack>
                 ) : null}
-                {detail.tags.slice(0, 1).map(tag => <TagChip key={tag} text={tag} />)}
+                {detail.tags.slice(0, 1).map(tag => (
+                  <Text
+                    key={tag}
+                    font={12}
+                    lineLimit={1}
+                    foregroundStyle="secondaryLabel"
+                    padding={{ horizontal: 7 }}
+                    frame={{ height: 24 }}
+                    background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 6 } }}
+                  >
+                    {tag}
+                  </Text>
+                ))}
               </FlowLayout>
             ) : null}
           </VStack>
@@ -154,18 +166,25 @@ export function DetailView({
               基本信息
             </Text>
             {detail.series_intro ? (
-              <VStack alignment="trailing" spacing={4} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
-                <Text font={14} foregroundStyle="secondaryLabel" lineLimit={introExpanded ? undefined : 2} frame={FILL_LEADING}>
+              <HStack alignment="lastTextBaseline" spacing={4} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
+                <Text
+                  font={14}
+                  foregroundStyle="secondaryLabel"
+                  lineLimit={introExpanded ? undefined : 2}
+                  fixedSize={{ horizontal: false, vertical: true }}
+                  frame={FILL_LEADING}
+                >
                   {detail.series_intro}
                 </Text>
                 <Button
                   title={introExpanded ? "收起" : "展开"}
                   action={() => setIntroExpanded(value => !value)}
                   buttonStyle="plain"
-                  font={12}
+                  font={14}
+                  fixedSize={{ horizontal: true, vertical: true }}
                   foregroundStyle={THEME_COLOR}
                 />
-              </VStack>
+              </HStack>
             ) : null}
             {detail.celebrities.length > 0 ? (
               <ScrollView axes="horizontal" scrollIndicator="hidden">
@@ -238,7 +257,7 @@ function SocialStats({ social }: { social: SeriesSocialInfo | null }) {
   )
 }
 
-/** 每 30 集分段，段内使用官网的单行横向选集，保留每集播放入口。 */
+/** 每 30 集分段，以单行等宽高方块展示选集并保留每集播放入口。 */
 function DetailEpisodes({ vids, onSelect }: { vids: string[]; onSelect: (vid: string) => void }) {
   const [rangeIndex, setRangeIndex] = useState(0)
   const start = rangeIndex * EPISODE_RANGE_SIZE
@@ -266,7 +285,7 @@ function DetailEpisodes({ vids, onSelect }: { vids: string[]; onSelect: (vid: st
               <Text
                 font={16}
                 foregroundStyle="label"
-                frame={{ width: 52, height: 70 }}
+                frame={{ width: 52, height: 52 }}
                 background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
               >
                 {String(start + index + 1)}
@@ -324,7 +343,7 @@ function ReviewCard({ review, expanded = false }: { review: Review; expanded?: b
   )
 }
 
-/** 按官网移动版展示灰色评分汇总和横向剧评卡片。 */
+/** 展示实际剧集评分、主题色星级和横向剧评卡片。 */
 export function ReviewList({
   reviews,
   totalCount,
@@ -385,7 +404,12 @@ export function ReviewList({
           <VStack frame={{ width: 1, height: 32 }} background="separator" />
           <HStack spacing={10} frame={{ maxWidth: "infinity", alignment: "center" }}>
             {[0, 1, 2, 3, 4].map(index => (
-              <Image key={index} systemName="star.fill" font={22} foregroundStyle="tertiaryLabel" />
+              <Image
+                key={index}
+                systemName={rating >= (index + 1) * 2 ? "star.fill" : rating > index * 2 ? "star.leadinghalf.filled" : "star"}
+                font={22}
+                foregroundStyle={rating > index * 2 ? THEME_COLOR : "tertiaryLabel"}
+              />
             ))}
           </HStack>
         </HStack>

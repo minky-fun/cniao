@@ -451,7 +451,7 @@ export function SkeletonHome({ sections = 2 }: { sections?: number }) {
   )
 }
 
-/** 按官网中间详情区的封面尺寸与分区间距展示加载占位。 */
+/** 按详情区封面、分区间距和正方形选集尺寸展示加载占位。 */
 export function SkeletonDetail() {
   const phase = useShimmerPhase()
 
@@ -484,7 +484,7 @@ export function SkeletonDetail() {
         <ScrollView axes="horizontal" scrollIndicator="hidden">
           <HStack spacing={8}>
             {[0, 1, 2, 3, 4, 5].map(index => (
-              <SkeletonBlock key={index} width={52} height={70} cornerRadius={8} phase={phase} />
+              <SkeletonBlock key={index} width={52} height={52} cornerRadius={8} phase={phase} />
             ))}
           </HStack>
         </ScrollView>
