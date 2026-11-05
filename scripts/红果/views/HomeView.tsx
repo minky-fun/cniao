@@ -21,7 +21,7 @@ import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, RankBadge,
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 // 推荐分区向上覆盖海报底部，不改变图片尺寸。
-const BANNER_CONTENT_OVERLAP = 72
+const BANNER_CONTENT_OVERLAP = 120
 const BANNER_BLEND_HEIGHT = 96
 
 const HOME_BACKGROUND = "systemBackground"
