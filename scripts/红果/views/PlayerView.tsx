@@ -34,7 +34,7 @@ import {
 } from "../core/playbackSource"
 import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
-import { BRAND_COLOR, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip } from "./Common"
+import { ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip, THEME_COLOR } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
 
 const PLAYER_HEIGHT = 220
@@ -500,6 +500,7 @@ export function PlayerView({
   )
 }
 
+/** 展示播放信息与选集，当前集数使用主题色高亮。 */
 function EpisodeInfoPanel({
   data,
   currentVid,
@@ -534,7 +535,7 @@ function EpisodeInfoPanel({
 
         <HStack spacing={10} alignment="center">
           {episodeLabel ? (
-            <Text font="caption" foregroundStyle={BRAND_COLOR}>
+            <Text font="caption" foregroundStyle={THEME_COLOR}>
               {episodeLabel}
             </Text>
           ) : null}

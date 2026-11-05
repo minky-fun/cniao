@@ -22,6 +22,7 @@ import { PlayerView } from "./PlayerView"
 import { RankView } from "./RankView"
 import { SearchView } from "./SearchView"
 import { SettingsView, type ThemeMode } from "./SettingsView"
+import { THEME_COLOR } from "./Common"
 import { pruneOfflineCache } from "../core/mediaCache"
 import { isPipPlaybackActive } from "../core/playbackState"
 
@@ -193,7 +194,7 @@ export function App() {
   return (
     <NavigationStack
       path={path}
-      tint="#fa7705"
+      tint={THEME_COLOR}
       preferredColorScheme={theme === "system" ? undefined : theme}
     >
       <TabView
