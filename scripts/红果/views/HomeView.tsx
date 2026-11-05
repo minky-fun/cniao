@@ -16,7 +16,7 @@ import {
 import { fetchHome } from "../core/api"
 import { loadCachedHome, saveCachedHome } from "../core/feedCache"
 import type { HomeBanner, HomeData, HomeSection, SeriesCard } from "../core/types"
-import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, SkeletonHome } from "./Common"
+import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, RankBadge, SkeletonHome } from "./Common"
 
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
@@ -36,7 +36,7 @@ const BANNER_SHADE = gradient("linear", {
   endPoint: "bottom",
 })
 
-/** 展示首页推荐海报，保持单行剧名和现有选剧入口。 */
+/** 展示首页推荐海报，复用榜单前三角标并保留单行剧名与选剧入口。 */
 function LandscapeCard({
   series,
   onSelect,
@@ -51,32 +51,11 @@ function LandscapeCard({
       frame={{ width: CARD_WIDTH }}
       onTapGesture={() => onSelect(series)}
     >
-      <ZStack frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
+      <ZStack alignment="topLeading" frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
         <CoverImage url={series.series_cover} width={CARD_WIDTH} height={CARD_COVER_HEIGHT} />
 
-        {series.rank !== undefined && series.rank <= 3 ? (
-          <VStack spacing={0} frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>
-            <HStack
-              alignment="center"
-              frame={{ width: CARD_WIDTH }}
-              padding={{ horizontal: 5, vertical: 5 }}
-            >
-              <Spacer />
-              <Text
-                font="caption"
-                bold
-                foregroundStyle="white"
-                padding={{ horizontal: 6, vertical: 2 }}
-                background={{
-                  style: BRAND_COLOR,
-                  shape: { type: "rect", cornerRadius: 4 },
-                }}
-              >
-                {`TOP ${series.rank}`}
-              </Text>
-            </HStack>
-            <Spacer />
-          </VStack>
+        {series.rank !== undefined && series.rank >= 1 && series.rank <= 3 ? (
+          <RankBadge rank={series.rank} />
         ) : null}
 
         <VStack spacing={0} frame={{ width: CARD_WIDTH, height: CARD_COVER_HEIGHT }}>

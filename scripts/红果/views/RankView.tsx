@@ -3,7 +3,7 @@ import { fetchRank } from "../core/api"
 import { RANK_BOARDS } from "../core/config"
 import { loadCachedRank, saveCachedRank } from "../core/feedCache"
 import type { RankData, RankItem } from "../core/types"
-import { CoverImage, EmptyView, ErrorView, FILL_CENTER, FILL_LEADING, PAGE_FRAME, SkeletonRankList } from "./Common"
+import { CoverImage, EmptyView, ErrorView, FILL_CENTER, FILL_LEADING, PAGE_FRAME, RankBadge, SkeletonRankList } from "./Common"
 
 // 官网榜单的热度与评分图标，使用模板渲染适配主题色。
 const HEAT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path d="M5.2932 1.5332C6.42786 2.28346 7.43112 4.07188 6.99492 5.88646C7.44857 5.61602 7.99818 4.80469 8.09395 4.25997C8.93149 4.82698 9.35039 5.78731 9.35039 7.14071C9.35039 9.17068 7.56565 10.4665 6.09884 10.4665C4.63177 10.4665 2.96171 9.59816 2.69149 7.78076C2.42154 5.96361 3.54115 5.11521 4.30382 3.93154C4.81262 3.14252 5.14215 2.34298 5.2932 1.5332Z" fill="black"></path></svg>'
@@ -27,12 +27,6 @@ const METRIC_STYLES = {
     background: "rgba(215,164,97,0.1)",
   },
 } as const
-// 使用网页版角标的金、银、铜渐变色。
-const RANK_BADGE_COLORS = [
-  ["#FFD25F", "#F3970B"],
-  ["#D4DBEC", "#7F86A6"],
-  ["#FFCFAA", "#D66A1E"],
-] as const
 
 interface RankViewState {
   boardIndex: number
@@ -42,31 +36,6 @@ interface RankViewState {
   errorMessage: string
   isLoadingMore: boolean
   loadMoreError: string
-}
-
-/** 复用网页版斜边角标轮廓与配色，第四名起使用半透明黑底。 */
-function RankBadge({ rank }: { rank: number }) {
-  const colors = RANK_BADGE_COLORS[rank - 1]
-  const path = rank === 1
-    ? "M0 8a8 8 0 0 1 8-8h14l-1.631 12.996A8 8 0 0 1 12.431 20H0z"
-    : "M0 8a8 8 0 0 1 8-8h14l-1.555 12.954A8 8 0 0 1 12.502 20H0z"
-  const background = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="0 0 22 20">
-    ${colors ? `<defs><linearGradient id="rank" gradientUnits="userSpaceOnUse" ${rank === 1
-      ? 'x1="11.366" x2="9.027" y1="0" y2="19.194"'
-      : 'x1="21.267" x2="9.167" y1="-0.526" y2="23.826"'}>
-      <stop stop-color="${colors[0]}"/><stop offset="1" stop-color="${colors[1]}"/>
-    </linearGradient></defs>` : ""}
-    <path d="${path}" fill="${colors ? "url(#rank)" : "black"}" fill-opacity="${colors ? 1 : 0.4}"/>
-  </svg>`
-
-  return (
-    <ZStack frame={{ width: 22, height: 20 }}>
-      <SVG code={background} frame={{ width: 22, height: 20 }} />
-      <Text font={12} bold foregroundStyle="white" multilineTextAlignment="center">
-        {String(rank)}
-      </Text>
-    </ZStack>
-  )
 }
 
 /** 按官网手机版排列剧名、热度、题材、简介和互动标签，整行可点击播放。 */

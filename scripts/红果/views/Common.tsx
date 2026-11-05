@@ -72,6 +72,38 @@ export function CoverImage({
   )
 }
 
+// 使用网页版角标的金、银、铜渐变色。
+const RANK_BADGE_COLORS = [
+  ["#FFD25F", "#F3970B"],
+  ["#D4DBEC", "#7F86A6"],
+  ["#FFCFAA", "#D66A1E"],
+] as const
+
+/** 复用网页版斜边角标轮廓与配色，第四名起使用半透明黑底。 */
+export function RankBadge({ rank }: { rank: number }) {
+  const colors = RANK_BADGE_COLORS[rank - 1]
+  const path = rank === 1
+    ? "M0 8a8 8 0 0 1 8-8h14l-1.631 12.996A8 8 0 0 1 12.431 20H0z"
+    : "M0 8a8 8 0 0 1 8-8h14l-1.555 12.954A8 8 0 0 1 12.502 20H0z"
+  const background = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="0 0 22 20">
+    ${colors ? `<defs><linearGradient id="rank" gradientUnits="userSpaceOnUse" ${rank === 1
+      ? 'x1="11.366" x2="9.027" y1="0" y2="19.194"'
+      : 'x1="21.267" x2="9.167" y1="-0.526" y2="23.826"'}>
+      <stop stop-color="${colors[0]}"/><stop offset="1" stop-color="${colors[1]}"/>
+    </linearGradient></defs>` : ""}
+    <path d="${path}" fill="${colors ? "url(#rank)" : "black"}" fill-opacity="${colors ? 1 : 0.4}"/>
+  </svg>`
+
+  return (
+    <ZStack frame={{ width: 22, height: 20 }}>
+      <SVG code={background} frame={{ width: 22, height: 20 }} />
+      <Text font={12} bold foregroundStyle="white" multilineTextAlignment="center">
+        {String(rank)}
+      </Text>
+    </ZStack>
+  )
+}
+
 function chunk<T>(items: T[], size: number): T[][] {
   const result: T[][] = []
   for (let i = 0; i < items.length; i += size) {
