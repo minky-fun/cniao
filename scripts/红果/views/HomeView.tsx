@@ -21,7 +21,7 @@ import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, RankBadge,
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 // 推荐分区向上覆盖海报底部，不改变图片尺寸。
-const BANNER_CONTENT_OVERLAP = 48
+const BANNER_CONTENT_OVERLAP = 72
 const BANNER_BLEND_HEIGHT = 96
 
 const HOME_BACKGROUND = "systemBackground"
@@ -85,7 +85,7 @@ function LandscapeCard({
   )
 }
 
-/** 保留海报与文案位置，将底部画面渐隐至页面背景，点击进入剧集详情。 */
+/** 保留海报尺寸，让文案与渐隐随推荐区覆盖高度上移，点击进入剧集详情。 */
 function BannerView({
   banner,
   width,
@@ -100,7 +100,8 @@ function BannerView({
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
-  // 固定渐隐高度，文案末行附近保留暗底，推荐标题处逐渐露出主题背景。
+  // 渐隐带以推荐区起点为中心，随覆盖高度移动，文案末行附近保留暗底。
+  const blendTop = height - BANNER_CONTENT_OVERLAP - BANNER_BLEND_HEIGHT / 2
   const artworkMask = gradient("linear", {
     stops: [
       { color: "black", location: 0 },
@@ -110,8 +111,8 @@ function BannerView({
       { color: "clear", location: 0.86 },
       { color: "clear", location: 1 },
     ],
-    startPoint: { x: 0.5, y: 1 - BANNER_BLEND_HEIGHT / height },
-    endPoint: "bottom",
+    startPoint: { x: 0.5, y: blendTop / height },
+    endPoint: { x: 0.5, y: (blendTop + BANNER_BLEND_HEIGHT) / height },
   })
 
   return (
@@ -140,7 +141,12 @@ function BannerView({
       </ZStack>
       <VStack spacing={0} frame={{ width, height }}>
         <Spacer />
-        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 64 }}>
+        <VStack
+          alignment="leading"
+          spacing={12}
+          frame={{ width: width - 48 }}
+          padding={{ bottom: BANNER_CONTENT_OVERLAP + 16 }}
+        >
           <HStack spacing={7}>
             <Image systemName="sparkles" foregroundStyle={BRAND_COLOR} font="caption" />
             <Text font="caption" bold foregroundStyle="rgba(255,255,255,0.85)">
