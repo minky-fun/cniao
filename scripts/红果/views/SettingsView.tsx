@@ -42,7 +42,7 @@ export function SettingsView({
       </Section>
 
       <Section header={<Text>数据管理</Text>}>
-        <Button title="缓存管理" systemImage="internaldrive" action={onOpenCache} />
+        <Button title="清理缓存" systemImage="internaldrive" action={onOpenCache} />
         <Button title="历史记录" systemImage="clock.arrow.circlepath" action={onOpenHistory} />
       </Section>
 

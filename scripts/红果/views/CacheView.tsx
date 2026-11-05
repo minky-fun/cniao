@@ -1,13 +1,14 @@
 import {
   Button,
+  GeometryReader,
   HStack,
   Image,
   LazyVStack,
-  ProgressView,
   ScrollView,
   Spacer,
   Text,
   VStack,
+  ZStack,
   useState,
 } from "scripting"
 import { PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "../core/config"
@@ -18,10 +19,11 @@ import {
   removeOfflineVideo,
   type CacheEntry,
 } from "../core/mediaCache"
-import { EmptyView, FILL_LEADING, PAGE_FRAME } from "./Common"
+import { FILL_LEADING, PAGE_FRAME } from "./Common"
 
-const CACHE_SURFACE = { light: "#FFFFFF", dark: "#131414" } as const
-const SUMMARY_SURFACE = { light: "#F6F6F6", dark: "#1D1E1E" } as const
+const CACHE_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
+const CARD_SURFACE = { light: "#FFFFFF", dark: "#1D1E1E" } as const
+const TRACK_SURFACE = { light: "#EFEFEF", dark: "#343535" } as const
 const ACCENT_COLOR = { light: "#B55200", dark: "#FA7705" } as const
 
 /** 使用缓存标签作为标题，未命名缓存保留现有的视频标识。 */
@@ -29,43 +31,46 @@ function entryTitle(entry: CacheEntry): string {
   return entry.label || entry.videoId
 }
 
-/** 以官网橙色展示容量与集数，进度条随容器宽度布局并适配深浅主题。 */
-function UsageSummary({ entries }: { entries: CacheEntry[] }) {
-  const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
+/** 按参考图展示实际剧集缓存与缓存额度，不将缓存上限当作设备存储容量。 */
+function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }) {
+  const ratio = Math.min(usedBytes / PLAYBACK_CACHE_MAX_BYTES, 1)
 
   return (
     <VStack
       alignment="leading"
-      spacing={14}
-      padding={18}
+      spacing={12}
+      padding={20}
       frame={FILL_LEADING}
-      background={{ style: SUMMARY_SURFACE, shape: { type: "rect", cornerRadius: 12 } }}
+      background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
     >
-      <Text font={13} foregroundStyle="secondaryLabel">已用缓存空间</Text>
-      <HStack spacing={8} alignment="firstTextBaseline" frame={FILL_LEADING}>
-        <Text font={32} fontWeight="semibold" foregroundStyle={ACCENT_COLOR} lineLimit={1} minScaleFactor={0.7}>
-          {formatBytes(usedBytes)}
-        </Text>
-        <Text font={12} foregroundStyle="secondaryLabel">
-          {`/ ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}`}
-        </Text>
-      </HStack>
-
-      <ProgressView
-        value={Math.min(usedBytes, PLAYBACK_CACHE_MAX_BYTES)}
-        total={PLAYBACK_CACHE_MAX_BYTES}
-        progressViewStyle="linear"
-        tint="#FA7705"
-        frame={FILL_LEADING}
-      />
-
+      <GeometryReader frame={{ height: 16 }}>
+        {({ size }) => (
+          <ZStack
+            alignment="leading"
+            frame={{ width: size.width, height: 16 }}
+            background={TRACK_SURFACE}
+            clipShape={{ type: "rect", cornerRadius: 4 }}
+          >
+            <VStack frame={{ width: size.width * ratio, height: 16 }} background="#FA7705" />
+          </ZStack>
+        )}
+      </GeometryReader>
       <HStack spacing={8} frame={FILL_LEADING}>
-        <Text font={12} foregroundStyle="secondaryLabel">{`已缓存 ${entries.length} 集`}</Text>
+        <HStack spacing={6}>
+          <VStack frame={{ width: 7, height: 7 }} background="#FA7705" clipShape="circle" />
+          <Text font={12} foregroundStyle="secondaryLabel">剧集缓存</Text>
+        </HStack>
         <Spacer />
-        <Text font={12} foregroundStyle="secondaryLabel">{`最多 ${PLAYBACK_CACHE_MAX_ENTRIES} 集`}</Text>
+        <HStack spacing={6}>
+          <VStack frame={{ width: 7, height: 7 }} background={TRACK_SURFACE} clipShape="circle" />
+          <Text font={12} foregroundStyle="secondaryLabel">剩余缓存额度</Text>
+        </HStack>
       </HStack>
-      <Text font={12} foregroundStyle="secondaryLabel" frame={FILL_LEADING}>
-        超出上限时，自动清理最久未观看的剧集。
+      <Text font={32} fontWeight="semibold" lineLimit={1} minScaleFactor={0.7} padding={{ top: 12 }}>
+        {formatBytes(usedBytes)}
+      </Text>
+      <Text font={14} frame={FILL_LEADING}>
+        {`已缓存 ${count} 集，上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}`}
       </Text>
     </VStack>
   )
@@ -116,12 +121,21 @@ function CacheRow({
   )
 }
 
-/** 展示主题自适应的缓存概览与列表，保留刷新和删除前确认。 */
+/** 按参考图展示缓存概览和一键清理，逐集明细按需展开并保留删除确认。 */
 export function CacheView() {
   const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
+  const [showDetails, setShowDetails] = useState(false)
+  const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
 
-  /** 重新读取现有缓存，不触发下载或修改缓存策略。 */
-  const refresh = () => setEntries(listOfflineCache())
+  /** 重新读取现有缓存，清空后收起明细，不触发下载或修改缓存策略。 */
+  const refresh = () => {
+    const currentEntries = listOfflineCache()
+    setEntries(currentEntries)
+    if (currentEntries.length === 0) setShowDetails(false)
+  }
+
+  /** 展开或收起真实缓存明细，不改变缓存文件。 */
+  const toggleDetails = () => setShowDetails(!showDetails)
 
   /** 确认后删除指定缓存，并更新容量与列表。 */
   const handleRemove = async (entry: CacheEntry) => {
@@ -141,11 +155,10 @@ export function CacheView() {
   const handleClear = async () => {
     if (entries.length === 0) return
 
-    const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
     const confirmed = await Dialog.confirm({
-      title: "清空缓存",
-      message: `将删除全部 ${entries.length} 集离线缓存，释放 ${formatBytes(usedBytes)}。`,
-      confirmLabel: "清空",
+      title: "清理缓存",
+      message: `将删除全部 ${entries.length} 集缓存，释放 ${formatBytes(usedBytes)}。再次播放时需要重新下载，播放历史和主题设置会保留。`,
+      confirmLabel: "清理",
       cancelLabel: "取消",
     })
     if (!confirmed) return
@@ -161,39 +174,71 @@ export function CacheView() {
       frame={PAGE_FRAME}
       background={CACHE_SURFACE}
       foregroundStyle="label"
-      navigationTitle="缓存管理"
+      navigationTitle="清理缓存"
       navigationBarTitleDisplayMode="inline"
       toolbarBackground={{ style: CACHE_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       onAppear={refresh}
     >
       <ScrollView scrollIndicator="hidden">
-        <VStack alignment="leading" spacing={22} padding={{ horizontal: 16, top: 16, bottom: 32 }} frame={FILL_LEADING}>
-          <UsageSummary entries={entries} />
+        <VStack alignment="leading" spacing={16} padding={{ horizontal: 16, top: 20, bottom: 32 }} frame={FILL_LEADING}>
+          <UsageSummary usedBytes={usedBytes} count={entries.length} />
 
-          <HStack spacing={16} alignment="center" frame={FILL_LEADING}>
-            <Text font={18} fontWeight="medium">离线剧集</Text>
-            <Spacer />
-            <Button action={refresh} buttonStyle="plain">
-              <HStack spacing={4} frame={{ minHeight: 44 }} foregroundStyle={ACCENT_COLOR}>
-                <Image systemName="arrow.clockwise" font={12} />
-                <Text font={13}>刷新</Text>
-              </HStack>
-            </Button>
-            <Button action={handleClear} buttonStyle="plain" role="destructive" disabled={entries.length === 0}>
-              <Text font={13} foregroundStyle="secondaryLabel" frame={{ minHeight: 44 }}>清空</Text>
-            </Button>
-          </HStack>
-
-          {entries.length === 0 ? (
-            <EmptyView text="暂无离线缓存" />
-          ) : (
-            <LazyVStack alignment="leading" spacing={0} frame={FILL_LEADING}>
-              {entries.map(entry => (
-                <CacheRow key={entry.videoId} entry={entry} onRemove={handleRemove} />
-              ))}
-            </LazyVStack>
-          )}
+          <VStack
+            alignment="leading"
+            spacing={0}
+            padding={20}
+            frame={FILL_LEADING}
+            background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
+          >
+            <HStack spacing={12} alignment="center" frame={FILL_LEADING}>
+              <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
+                {formatBytes(usedBytes)}
+              </Text>
+              <Button action={handleClear} buttonStyle="plain" role="destructive" disabled={entries.length === 0}>
+                <Text
+                  font={14}
+                  fontWeight="medium"
+                  foregroundStyle={entries.length > 0 ? "white" : "secondaryLabel"}
+                  frame={{ minHeight: 44 }}
+                  padding={{ horizontal: 12 }}
+                  background={{
+                    style: entries.length > 0 ? "#FA7705" : TRACK_SURFACE,
+                    shape: { type: "rect", cornerRadius: 9 },
+                  }}
+                >
+                  一键清理
+                </Text>
+              </Button>
+            </HStack>
+            <Text font={16} padding={{ top: 8 }}>可清理的缓存</Text>
+            <Text font={13} foregroundStyle="secondaryLabel" padding={{ top: 14, bottom: 20 }} frame={FILL_LEADING}>
+              播放时保存的剧集文件，清理后再次播放需重新下载。播放历史和主题设置会保留。
+            </Text>
+            <VStack frame={{ maxWidth: "infinity", height: 0.5 }} background="separator" />
+            <HStack spacing={12} padding={{ top: 8 }} frame={FILL_LEADING}>
+              <Text font={13} foregroundStyle="secondaryLabel">{`共 ${entries.length} 集`}</Text>
+              <Spacer />
+              <Button action={refresh} buttonStyle="plain">
+                <Text font={13} foregroundStyle="secondaryLabel" frame={{ minHeight: 44 }}>刷新</Text>
+              </Button>
+              <Button action={toggleDetails} buttonStyle="plain" disabled={entries.length === 0}>
+                <Text font={13} foregroundStyle={ACCENT_COLOR} frame={{ minHeight: 44 }}>
+                  {showDetails ? "收起明细" : "查看明细"}
+                </Text>
+              </Button>
+            </HStack>
+            {showDetails && entries.length > 0 ? (
+              <LazyVStack alignment="leading" spacing={0} frame={FILL_LEADING}>
+                {entries.map(entry => (
+                  <CacheRow key={entry.videoId} entry={entry} onRemove={handleRemove} />
+                ))}
+              </LazyVStack>
+            ) : null}
+          </VStack>
+          <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 4 }} frame={FILL_LEADING}>
+            {`最多保留 ${PLAYBACK_CACHE_MAX_ENTRIES} 集，超出上限时自动清理最久未观看的剧集。`}
+          </Text>
         </VStack>
       </ScrollView>
     </VStack>
