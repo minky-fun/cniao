@@ -196,7 +196,7 @@ export function App() {
 
       <Tab title="榜单" systemImage="chart.bar.fill" value={1}>
         <TabStack
-          title="排行榜"
+          title="榜单"
           onClose={close}
           render={push => (
             <RankView onSelectSeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
