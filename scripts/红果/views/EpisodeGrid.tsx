@@ -1,27 +1,16 @@
 import {
-  HStack,
-  Image,
-  TabView,
-  Text,
-  VStack,
-  useEffect,
-  useMemo,
-  useState,
+  Button, HStack, Image, ScrollView, ScrollViewReader, TabView, Text, VStack,
+  ZStack, useEffect, useMemo, useRef, useState, type ScrollViewProxy,
 } from "scripting"
 import { listCachedVideoIds, onCacheChanged } from "../core/mediaCache"
 import { CONTENT_WIDTH, FILL_LEADING, THEME_COLOR } from "./Common"
 
-const EPISODE_COLUMN_COUNT = 5
+const EPISODE_COLUMN_COUNT = 6
 const EPISODE_GRID_SPACING = 8
-
-const EPISODE_BUTTON_HEIGHT = 34
-
 const EPISODE_VISIBLE_ROWS = 3
+const EPISODE_PAGE_SIZE = 15
 
-const EPISODE_PAGE_SIZE = EPISODE_COLUMN_COUNT * EPISODE_VISIBLE_ROWS
-
-const MAX_PAGE_DOTS = 12
-
+/** 按指定数量分组，供选集分页和行布局使用。 */
 export function chunk<T>(items: T[], size: number): T[][] {
   const result: T[][] = []
   for (let i = 0; i < items.length; i += size) {
@@ -30,37 +19,23 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return result
 }
 
+/** 读取当前剧集列表中已经缓存的视频。 */
 function filterCachedIds(vids: string[]): Set<string> {
   const cached = listCachedVideoIds()
-  const relevant = new Set<string>()
-  for (const vid of vids) {
-    if (cached.has(vid)) relevant.add(vid)
-  }
-  return relevant
+  return new Set(vids.filter(vid => cached.has(vid)))
 }
 
-export function EpisodeGrid({
-  vids,
-  onSelect,
-  currentVid,
-}: {
+/** 每十五集分段，以六列方块展示选集并同步缓存和当前播放状态。 */
+export function EpisodeGrid({ vids, onSelect, currentVid }: {
   vids: string[]
   onSelect: (vid: string, index: number) => void
   currentVid?: string
 }) {
-
   const pages = useMemo(() => chunk(vids, EPISODE_PAGE_SIZE), [vids])
-  const hasPaging = pages.length > 1
-
-  const initialPage = (() => {
-    if (!currentVid) return 0
-    const idx = vids.indexOf(currentVid)
-    return idx >= 0 ? Math.floor(idx / EPISODE_PAGE_SIZE) : 0
-  })()
-
-  const [pageIndex, setPageIndex] = useState(initialPage)
-
+  const currentIndex = currentVid ? vids.indexOf(currentVid) : -1
+  const [pageIndex, setPageIndex] = useState(currentIndex >= 0 ? Math.floor(currentIndex / EPISODE_PAGE_SIZE) : 0)
   const [cachedVidSet, setCachedVidSet] = useState<Set<string>>(() => filterCachedIds(vids))
+  const rangeProxy = useRef<ScrollViewProxy>()
 
   useEffect(() => {
     setCachedVidSet(filterCachedIds(vids))
@@ -70,183 +45,117 @@ export function EpisodeGrid({
     return onCacheChanged((videoId, action) => {
       setCachedVidSet(prev => {
         const next = new Set(prev)
-        if (action === "added") {
-          next.add(videoId)
-        } else if (action === "removed") {
-          next.delete(videoId)
-        } else if (action === "cleared") {
-          next.clear()
-        }
+        if (action === "added") next.add(videoId)
+        else if (action === "removed") next.delete(videoId)
+        else if (action === "cleared") next.clear()
         return next
       })
     })
   }, [])
 
   useEffect(() => {
-    if (!currentVid) return
-    const idx = vids.indexOf(currentVid)
-    if (idx >= 0) {
-      const targetPage = Math.floor(idx / EPISODE_PAGE_SIZE)
-      if (targetPage !== pageIndex) setPageIndex(targetPage)
-    }
-  }, [currentVid])
+    setPageIndex(currentIndex >= 0 ? Math.floor(currentIndex / EPISODE_PAGE_SIZE) : 0)
+  }, [currentVid, vids])
 
-  const gridWidth = CONTENT_WIDTH
+  useEffect(() => {
+    rangeProxy.current?.scrollTo(`range-${pageIndex}`, "center")
+  }, [pageIndex])
 
   const buttonWidth = Math.floor(
-    (gridWidth - EPISODE_GRID_SPACING * (EPISODE_COLUMN_COUNT - 1)) / EPISODE_COLUMN_COUNT
+    (CONTENT_WIDTH - EPISODE_GRID_SPACING * (EPISODE_COLUMN_COUNT - 1)) / EPISODE_COLUMN_COUNT
   )
-
-  const pageHeight =
-    EPISODE_VISIBLE_ROWS * EPISODE_BUTTON_HEIGHT + (EPISODE_VISIBLE_ROWS - 1) * EPISODE_GRID_SPACING
+  const pageHeight = EPISODE_VISIBLE_ROWS * buttonWidth + (EPISODE_VISIBLE_ROWS - 1) * EPISODE_GRID_SPACING
+  const pageViews = pages.map((page, index) => (
+    <VStack
+      key={index} tag={index} alignment="leading" spacing={EPISODE_GRID_SPACING}
+      frame={{ width: CONTENT_WIDTH, height: pageHeight, alignment: "topLeading" }}
+    >
+      {chunk(page, EPISODE_COLUMN_COUNT).map((row, rowIndex) => (
+        <HStack
+          key={rowIndex} spacing={EPISODE_GRID_SPACING}
+          frame={{ width: CONTENT_WIDTH, height: buttonWidth, alignment: "leading" }}
+        >
+          {row.map((vid, columnIndex) => {
+            const episodeIndex = index * EPISODE_PAGE_SIZE + rowIndex * EPISODE_COLUMN_COUNT + columnIndex
+            return (
+              <EpisodeButton
+                key={vid} episodeIndex={episodeIndex} isCurrent={vid === currentVid}
+                isCached={cachedVidSet.has(vid)} width={buttonWidth}
+                onSelect={() => onSelect(vid, episodeIndex)}
+              />
+            )
+          })}
+        </HStack>
+      ))}
+    </VStack>
+  ))
 
   return (
-    <VStack alignment="leading" spacing={8} frame={FILL_LEADING}>
-      {hasPaging ? (
-        <TabView
-          tabIndex={pageIndex}
-          onTabIndexChanged={setPageIndex}
-          tabViewStyle="pageNeverDisplayIndex"
-          frame={{ width: gridWidth, height: pageHeight }}
-        >
-          {pages.map((page, pageIndexValue) => (
-            <VStack
-              key={pageIndexValue}
-              tag={pageIndexValue}
-              alignment="leading"
-              spacing={EPISODE_GRID_SPACING}
-              frame={{ width: gridWidth, height: pageHeight, alignment: "topLeading" }}
-            >
-              {chunk(page, EPISODE_COLUMN_COUNT).map((row, rowIndex) => (
-                <HStack
-                  key={rowIndex}
-                  spacing={EPISODE_GRID_SPACING}
-                  alignment="center"
-                  frame={{ width: gridWidth, height: EPISODE_BUTTON_HEIGHT }}
-                >
-                  {row.map((vid, columnIndex) => {
-                    const episodeIndex =
-                      pageIndexValue * EPISODE_PAGE_SIZE +
-                      rowIndex * EPISODE_COLUMN_COUNT +
-                      columnIndex
-                    const isCached = cachedVidSet.has(vid)
-                    const needsPrepare = !isCached
-                    return (
-                      <EpisodeButton
-                        key={vid}
-                        episodeIndex={episodeIndex}
-                        isCurrent={vid === currentVid}
-                        needsPrepare={needsPrepare}
-                        width={buttonWidth}
-                        onSelect={() => onSelect(vid, episodeIndex)}
-                      />
-                    )
-                  })}
-                </HStack>
-              ))}
-            </VStack>
-          ))}
-        </TabView>
-      ) : (
-        <VStack
-          alignment="leading"
-          spacing={EPISODE_GRID_SPACING}
-          frame={{ width: gridWidth, alignment: "topLeading" }}
-        >
-          {chunk(pages[0] ?? [], EPISODE_COLUMN_COUNT).map((row, rowIndex) => (
-            <HStack
-              key={rowIndex}
-              spacing={EPISODE_GRID_SPACING}
-              alignment="center"
-              frame={{ width: gridWidth, height: EPISODE_BUTTON_HEIGHT }}
-            >
-              {row.map((vid, columnIndex) => {
-                const episodeIndex = rowIndex * EPISODE_COLUMN_COUNT + columnIndex
-                const isCached = cachedVidSet.has(vid)
-                const needsPrepare = !isCached
-                return (
-                  <EpisodeButton
-                    key={vid}
-                    episodeIndex={episodeIndex}
-                    isCurrent={vid === currentVid}
-                    needsPrepare={needsPrepare}
-                    width={buttonWidth}
-                    onSelect={() => onSelect(vid, episodeIndex)}
+    <VStack alignment="leading" spacing={18} frame={FILL_LEADING}>
+      <ScrollViewReader>
+        {proxy => {
+          rangeProxy.current = proxy
+          return (
+            <ScrollView axes="horizontal" scrollIndicator="hidden">
+              <HStack spacing={32}>
+                {pages.map((_, index) => (
+                  <Button
+                    key={`range-${index}`}
+                    title={`${index * EPISODE_PAGE_SIZE + 1}–${Math.min((index + 1) * EPISODE_PAGE_SIZE, vids.length)}`}
+                    action={() => setPageIndex(index)} buttonStyle="plain" font={14}
+                    foregroundStyle={index === pageIndex ? THEME_COLOR : "secondaryLabel"}
                   />
-                )
-              })}
-            </HStack>
-          ))}
-        </VStack>
-      )}
-
-      {hasPaging ? <PageIndicator pageIndex={pageIndex} totalPages={pages.length} /> : null}
+                ))}
+              </HStack>
+            </ScrollView>
+          )
+        }}
+      </ScrollViewReader>
+      {pages.length > 1 ? (
+        <TabView
+          tabIndex={pageIndex} onTabIndexChanged={setPageIndex}
+          tabViewStyle="pageNeverDisplayIndex"
+          frame={{ width: CONTENT_WIDTH, height: pageHeight }}
+        >
+          {pageViews}
+        </TabView>
+      ) : pageViews[0]}
     </VStack>
   )
 }
 
-/** 展示单集与缓存状态，当前播放集使用主题色背景。 */
-function EpisodeButton({
-  episodeIndex,
-  isCurrent,
-  needsPrepare,
-  width,
-  onSelect,
-}: {
+/** 展示方形集数按钮，左上角为缓存状态，右上角标记当前播放。 */
+function EpisodeButton({ episodeIndex, isCurrent, isCached, width, onSelect }: {
   episodeIndex: number
   isCurrent: boolean
-  needsPrepare: boolean
+  isCached: boolean
   width: number
   onSelect: () => void
 }) {
   return (
-    <HStack
-      spacing={2}
-      alignment="center"
-      frame={{ width, height: EPISODE_BUTTON_HEIGHT }}
+    <ZStack
+      alignment="topLeading" frame={{ width, height: width }}
       background={{
-        style: isCurrent ? THEME_COLOR : "secondarySystemBackground",
-        shape: { type: "rect", cornerRadius: 7 },
+        style: isCurrent ? "rgba(250,119,5,0.14)" : "secondarySystemBackground",
+        shape: { type: "rect", cornerRadius: 8 },
       }}
       onTapGesture={onSelect}
     >
       <Text
-        font="footnote"
-        foregroundStyle={isCurrent ? "white" : needsPrepare ? "secondaryLabel" : "label"}
-        lineLimit={1}
+        font={14} foregroundStyle={isCurrent ? THEME_COLOR : "label"}
+        frame={{ width, height: width, alignment: "center" }} lineLimit={1}
       >
         {String(episodeIndex + 1)}
       </Text>
-      {needsPrepare ? (
-        <Image
-          systemName="arrow.down.circle"
-          font="caption2"
-          foregroundStyle={isCurrent ? "white" : "tertiaryLabel"}
-        />
+      <Image
+        systemName={isCached ? "checkmark.circle.fill" : "arrow.down.circle"} font={9}
+        foregroundStyle={isCached ? THEME_COLOR : "tertiaryLabel"} padding={4}
+      />
+      {isCurrent ? (
+        <ZStack alignment="topTrailing" frame={{ width, height: width }}>
+          <Image systemName="waveform" font={10} foregroundStyle={THEME_COLOR} padding={5} />
+        </ZStack>
       ) : null}
-    </HStack>
-  )
-}
-
-/** 展示选集页码，并用主题色标记当前分页。 */
-function PageIndicator({ pageIndex, totalPages }: { pageIndex: number; totalPages: number }) {
-  return (
-    <HStack spacing={8} alignment="center" frame={FILL_LEADING}>
-      <Text font="caption2" foregroundStyle="secondaryLabel" lineLimit={1}>
-        {`第 ${pageIndex + 1}/${totalPages} 页`}
-      </Text>
-      {totalPages <= MAX_PAGE_DOTS ? (
-        <HStack spacing={4} alignment="center">
-          {Array.from({ length: totalPages }, (_, index) => (
-            <VStack
-              key={index}
-              frame={{ width: index === pageIndex ? 14 : 6, height: 6 }}
-              background={index === pageIndex ? THEME_COLOR : "tertiaryLabel"}
-              clipShape={{ type: "rect", cornerRadius: 3 }}
-            />
-          ))}
-        </HStack>
-      ) : null}
-    </HStack>
+    </ZStack>
   )
 }

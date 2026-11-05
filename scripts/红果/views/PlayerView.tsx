@@ -24,7 +24,7 @@ import {
   type PrepareProgress,
 } from "../core/mediaCache"
 import { savePlayHistoryItem } from "../core/history"
-import { formatDuration, formatEpisodeLabel } from "../core/format"
+import { formatEpisodeLabel } from "../core/format"
 import {
   applyOfflineSource,
   durationSeconds,
@@ -34,7 +34,7 @@ import {
 } from "../core/playbackSource"
 import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
-import { ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, TagChip, THEME_COLOR } from "./Common"
+import { CoverImage, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, SERIES_SURFACE } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
 
 const PLAYER_HEIGHT = 220
@@ -417,6 +417,7 @@ export function PlayerView({
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
+      background={SERIES_SURFACE}
       navigationTitle="红果剧场"
       navigationBarTitleDisplayMode="inline"
       toolbar={{
@@ -486,7 +487,6 @@ export function PlayerView({
           <EpisodeInfoPanel
             data={data}
             currentVid={currentVid}
-            activeDuration={activeDuration}
             errorMessage={errorMessage}
             onSwitch={switchEpisode}
           />
@@ -500,53 +500,34 @@ export function PlayerView({
   )
 }
 
-/** 展示播放信息与选集，当前集数使用主题色高亮。 */
+/** 按封面简介、分段选集的顺序展示视频下方信息。 */
 function EpisodeInfoPanel({
   data,
   currentVid,
-  activeDuration,
   errorMessage,
   onSwitch,
 }: {
   data: PlayerData
   currentVid: string
-  activeDuration?: number
   errorMessage: string
   onSwitch: (vid: string) => void
 }) {
   const detail = data.seriesDetail
-  const currentIndex = detail.vid_list.indexOf(currentVid)
-  const episodeLabel = currentIndex >= 0 ? `第 ${currentIndex + 1} 集` : ""
-
-  const displayDuration =
-    activeDuration && activeDuration > 0
-      ? activeDuration
-      : data.playerInfo.duration
-
-  const isSpecReady = Boolean(data.playerInfo.main_url)
 
   return (
-    <VStack alignment="leading" spacing={16} padding={{ bottom: 24 }} frame={FILL_LEADING}>
-
-      <VStack alignment="leading" spacing={6} padding={{ horizontal: 16, top: 12 }} frame={FILL_LEADING}>
-        <Text font="title3" bold lineLimit={2} frame={FILL_LEADING}>
-          {detail.series_name}
-        </Text>
-
-        <HStack spacing={10} alignment="center">
-          {episodeLabel ? (
-            <Text font="caption" foregroundStyle={THEME_COLOR}>
-              {episodeLabel}
+    <VStack alignment="leading" spacing={40} padding={{ horizontal: 16, top: 16, bottom: 24 }} frame={FILL_LEADING}>
+      <VStack alignment="leading" spacing={12} frame={FILL_LEADING}>
+        <HStack alignment="top" spacing={12} frame={FILL_LEADING}>
+          <CoverImage url={detail.series_cover} width={56} height={76} cornerRadius={6} />
+          <VStack alignment="leading" spacing={4} frame={FILL_LEADING}>
+            <Text font={16} fontWeight="semibold" lineLimit={2} frame={FILL_LEADING}>
+              {detail.series_name}
             </Text>
-          ) : null}
-          <Text font="caption" foregroundStyle="secondaryLabel">
-            {isSpecReady ? formatDuration(displayDuration) : "--:--"}
-          </Text>
-          <Text font="caption" foregroundStyle="secondaryLabel">
-            {isSpecReady ? `${data.playerInfo.width}×${data.playerInfo.height}` : "--"}
-          </Text>
+            <Text font={14} foregroundStyle="secondaryLabel" lineLimit={2} frame={FILL_LEADING}>
+              {detail.series_intro}
+            </Text>
+          </VStack>
         </HStack>
-
         {errorMessage ? (
           <Text font="caption" foregroundStyle="systemOrange">
             {errorMessage}
@@ -554,44 +535,10 @@ function EpisodeInfoPanel({
         ) : null}
       </VStack>
 
-      {detail.tags.length > 0 ? (
-        <HStack spacing={4} alignment="center" padding={{ horizontal: 16 }}>
-          {detail.tags.slice(0, 5).map(tag => (
-            <TagChip key={tag} text={tag} />
-          ))}
-        </HStack>
-      ) : null}
-
-      <VStack alignment="leading" spacing={10} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
-        <HStack spacing={8} alignment="center" frame={FILL_LEADING}>
-          <Text font="headline" bold>
-            选集
-          </Text>
-          <Text font="caption" foregroundStyle="tertiaryLabel">
-            {`共 ${detail.vid_list.length} 集`}
-          </Text>
-        </HStack>
-        <Text font="caption2" foregroundStyle="secondaryLabel" frame={FILL_LEADING}>
-          剧集首次播放均需下载并解密，带 ↓ 标记的表示尚未缓存
-        </Text>
-
-        <EpisodeGrid
-          vids={detail.vid_list}
-          currentVid={currentVid}
-          onSelect={onSwitch}
-        />
+      <VStack alignment="leading" spacing={18} frame={FILL_LEADING}>
+        <Text font={16} fontWeight="semibold">选集</Text>
+        <EpisodeGrid vids={detail.vid_list} currentVid={currentVid} onSelect={onSwitch} />
       </VStack>
-
-      {detail.series_intro ? (
-        <VStack alignment="leading" spacing={6} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
-          <Text font="headline" bold>
-            剧情简介
-          </Text>
-          <Text font="footnote" foregroundStyle="secondaryLabel" frame={FILL_LEADING}>
-            {detail.series_intro}
-          </Text>
-        </VStack>
-      ) : null}
     </VStack>
   )
 }
