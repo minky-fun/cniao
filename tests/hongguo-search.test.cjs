@@ -67,6 +67,20 @@ test('搜索区分空结果和响应格式异常', async () => {
   await assert.rejects(invalid.api.fetchSearch('测试'), /搜索结果格式异常/)
 })
 
+/** 真实接口的数字字符串应转换为数字，损坏总数不能当作空结果。 */
+test('搜索接受数字字符串总数并拒绝无效总数', async () => {
+  for (const totalCount of ['92', '0', 92, 0]) {
+    const run = runtime(() => ({ searchList: [], totalCount }))
+    const result = await run.api.fetchSearch('长征')
+    assert.equal(result.totalCount, Number(totalCount))
+  }
+
+  for (const totalCount of [null, undefined, true, '', ' ', 'abc', '-1', '1.5', '1e2', -1, 1.5, '9007199254740992']) {
+    const run = runtime(() => ({ searchList: [], totalCount }))
+    await assert.rejects(run.api.fetchSearch('测试'), /搜索结果格式异常/)
+  }
+})
+
 /** 联想词使用当前 JSON 接口和实际返回字段。 */
 test('搜索联想使用当前接口', async () => {
   const run = runtime(() => ({

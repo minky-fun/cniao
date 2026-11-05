@@ -51,7 +51,7 @@ interface PlayerEntry {
 
 interface SearchEntry {
   searchList: SearchResultItem[]
-  totalCount: number
+  totalCount: number | string
 }
 
 interface CategoryEntry {
@@ -192,7 +192,14 @@ export async function fetchPlayer(seriesId: string, vid: string): Promise<Player
 export async function fetchSearch(keyword: string): Promise<SearchData> {
   const url = `${WEB_BASE}/api/search/result?query=${encodeURIComponent(keyword)}`
   const entry = await getJson(url) as SearchEntry
-  if (!entry || !Array.isArray(entry.searchList) || typeof entry.totalCount !== "number") {
+  if (!entry || !Array.isArray(entry.searchList)) {
+    throw new HttpError("搜索结果格式异常", 0)
+  }
+  // 接口会将命中总数返回为十进制字符串，页面内部统一使用数字。
+  const totalCount = typeof entry.totalCount === "string" && /^\d+$/.test(entry.totalCount)
+    ? Number(entry.totalCount)
+    : entry.totalCount
+  if (typeof totalCount !== "number" || !Number.isSafeInteger(totalCount) || totalCount < 0) {
     throw new HttpError("搜索结果格式异常", 0)
   }
 
@@ -206,7 +213,7 @@ export async function fetchSearch(keyword: string): Promise<SearchData> {
   return {
     query: keyword,
     searchList: results,
-    totalCount: entry.totalCount,
+    totalCount,
     isRelevant: results.length > 0,
   }
 }
