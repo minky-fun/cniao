@@ -103,28 +103,35 @@ function LandscapeCard({
   )
 }
 
-/** 将推荐海报铺满轮播页，点击海报进入剧集详情。 */
+/** 按原尺寸绘制海报并裁切底部，点击可进入剧集详情。 */
 function BannerView({
   banner,
   width,
   height,
+  imageHeight,
   onSelect,
 }: {
   banner: HomeBanner
   width: number
   height: number
+  imageHeight: number
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
 
   return (
-    <ZStack frame={{ width, height }} clipped onTapGesture={() => onSelect(banner.series_id)}>
+    <ZStack
+      alignment="top"
+      frame={{ width, height, alignment: "top" }}
+      clipped
+      onTapGesture={() => onSelect(banner.series_id)}
+    >
       {cover ? (
         <Image
           imageUrl={cover}
           resizable
           scaleToFill
-          frame={{ width, height }}
+          frame={{ width, height: imageHeight }}
           clipped
         />
       ) : null}
@@ -169,8 +176,9 @@ function HeroCarousel({
 }) {
   const selection = useObservable(0)
   const [visible, setVisible] = useState(false)
-  // 收起原按钮及控制条占用的高度，保持海报文案在屏幕上的原有位置。
-  const height = Math.min(560, Math.max(440, width * 1.35)) - 92
+  // 只收起轮播布局，保留海报原尺寸和文案在屏幕上的位置。
+  const imageHeight = Math.min(560, Math.max(440, width * 1.35))
+  const height = imageHeight - 92
   const index = selection.value
 
   useEffect(() => {
@@ -195,6 +203,7 @@ function HeroCarousel({
             banner={banner}
             width={width}
             height={height}
+            imageHeight={imageHeight}
             onSelect={onSelect}
           />
         ))}
