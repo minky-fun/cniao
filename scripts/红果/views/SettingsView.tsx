@@ -1,8 +1,9 @@
-import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, VStack } from "scripting"
+import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
 
 export type ThemeMode = "system" | "light" | "dark"
 
+const AUTO_UPDATE_STORAGE_KEY = "hongguo-auto-update"
 const SETTINGS_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
 const CARD_BACKGROUND = {
   style: { light: "#FFFFFF", dark: "#1D1E1E" },
@@ -35,7 +36,7 @@ function SettingsRow({ title, value, disclosure = false }: {
   )
 }
 
-/** 以贯穿安全区的主题背景展示圆角设置卡片，正文继续遵守安全区布局。 */
+/** 展示圆角设置卡片，并保存自动更新开关的用户选择。 */
 export function SettingsView({
   theme,
   themeError,
@@ -52,6 +53,20 @@ export function SettingsView({
   onExit: () => void
 }) {
   const { version, author, contributors } = Script.metadata
+  // 首次使用默认关闭，重新打开设置页时恢复已保存的选择。
+  const [autoUpdate, setAutoUpdate] = useState(() => Storage.get<boolean>(AUTO_UPDATE_STORAGE_KEY) ?? false)
+  const [autoUpdateError, setAutoUpdateError] = useState("")
+
+  /** 保存自动更新偏好，保存失败时保持原开关状态并提示原因。 */
+  const changeAutoUpdate = (enabled: boolean) => {
+    try {
+      if (!Storage.set(AUTO_UPDATE_STORAGE_KEY, enabled)) throw new Error("自动更新设置保存失败，请重试")
+      setAutoUpdate(enabled)
+      setAutoUpdateError("")
+    } catch (error) {
+      setAutoUpdateError(error instanceof Error ? error.message : String(error))
+    }
+  }
 
   return (
     <VStack
@@ -98,6 +113,20 @@ export function SettingsView({
               关于红果
             </Text>
             <SettingsRow title="版本号" value={version} />
+            <Toggle
+              value={autoUpdate}
+              onChanged={changeAutoUpdate}
+              toggleStyle="switch"
+              padding={{ horizontal: 20 }}
+              frame={{ maxWidth: "infinity", minHeight: 52 }}
+            >
+              <Text font={14} foregroundStyle="label">自动更新</Text>
+            </Toggle>
+            {autoUpdateError ? (
+              <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+                {autoUpdateError}
+              </Text>
+            ) : null}
             {author ? <SettingsRow title="作者" value={author.name} /> : null}
             {author?.homepage ? (
               <Link url={author.homepage} buttonStyle="plain" frame={FILL_LEADING}>
