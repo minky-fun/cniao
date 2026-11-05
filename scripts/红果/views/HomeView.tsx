@@ -86,7 +86,7 @@ function LandscapeCard({
   )
 }
 
-/** 用海报副本填充状态栏，主图下移至安全区，保留原有底部渐隐和文案位置。 */
+/** 用轻微模糊的海报副本填充状态栏，主图下移至安全区，保留底部渐隐和文案位置。 */
 function BannerView({
   banner,
   width,
@@ -145,6 +145,7 @@ function BannerView({
                   resizable
                   scaleToFill
                   frame={{ width, height: imageHeight }}
+                  blur={6}
                 />
               </ZStack>
             ) : null}
