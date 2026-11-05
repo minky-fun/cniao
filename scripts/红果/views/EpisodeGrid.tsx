@@ -1,5 +1,5 @@
 import {
-  Button, HStack, Image, ScrollView, ScrollViewReader, TabView, Text, VStack,
+  Button, HStack, Image, ScrollView, ScrollViewReader, Spacer, TabView, Text, VStack,
   ZStack, useEffect, useMemo, useRef, useState, type ScrollViewProxy,
 } from "scripting"
 import { listCachedVideoIds, onCacheChanged } from "../core/mediaCache"
@@ -124,7 +124,7 @@ export function EpisodeGrid({ vids, onSelect, currentVid }: {
   )
 }
 
-/** 展示方形集数按钮，左上角为缓存状态，右上角标记当前播放。 */
+/** 展示方形集数按钮，顶部独立排列缓存和播放标记，避免遮挡中央集数。 */
 function EpisodeButton({ episodeIndex, isCurrent, isCached, width, onSelect }: {
   episodeIndex: number
   isCurrent: boolean
@@ -147,15 +147,23 @@ function EpisodeButton({ episodeIndex, isCurrent, isCached, width, onSelect }: {
       >
         {String(episodeIndex + 1)}
       </Text>
-      <Image
-        systemName={isCached ? "checkmark.circle.fill" : "arrow.down.circle"} font={9}
-        foregroundStyle={isCached ? THEME_COLOR : "tertiaryLabel"} padding={4}
-      />
-      {isCurrent ? (
-        <ZStack alignment="topTrailing" frame={{ width, height: width }}>
-          <Image systemName="waveform" font={10} foregroundStyle={THEME_COLOR} padding={5} />
-        </ZStack>
-      ) : null}
+      <VStack spacing={0} frame={{ width, height: width }}>
+        <HStack spacing={0} padding={{ horizontal: 4, top: 4 }}>
+          <Image
+            systemName={isCached ? "checkmark.circle.fill" : "arrow.down.circle"} font={9}
+            foregroundStyle={isCached ? THEME_COLOR : "tertiaryLabel"}
+            frame={{ width: 10, height: 10 }}
+          />
+          <Spacer />
+          {isCurrent ? (
+            <Image
+              systemName="waveform" font={10} foregroundStyle={THEME_COLOR}
+              frame={{ width: 10, height: 10 }}
+            />
+          ) : null}
+        </HStack>
+        <Spacer />
+      </VStack>
     </ZStack>
   )
 }
