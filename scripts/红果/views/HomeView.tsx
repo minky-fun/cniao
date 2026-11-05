@@ -86,7 +86,7 @@ function LandscapeCard({
   )
 }
 
-/** 用单张海报铺满顶部，顶部短渐隐融入页面背景，保留底部渐隐和文案位置。 */
+/** 单张海报从状态栏下方开始，顶部短渐隐融入背景，保留底部渐隐和文案位置。 */
 function BannerView({
   banner,
   width,
@@ -103,15 +103,16 @@ function BannerView({
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
-  const topBlendHeight = Math.min(80, topInset + 24)
+  const topBlendHeight = 48
   // 渐隐带以推荐区起点为中心，随覆盖高度移动，文案末行附近保留暗底。
   const blendTop = height - BANNER_CONTENT_OVERLAP - BANNER_BLEND_HEIGHT / 2
   const artworkMask = gradient("linear", {
     stops: [
       { color: "clear", location: 0 },
-      { color: "rgba(0,0,0,0.4)", location: topBlendHeight * 0.35 / height },
-      { color: "rgba(0,0,0,0.92)", location: topBlendHeight * 0.75 / height },
-      { color: "black", location: topBlendHeight / height },
+      { color: "clear", location: topInset / height },
+      { color: "rgba(0,0,0,0.4)", location: (topInset + topBlendHeight * 0.35) / height },
+      { color: "rgba(0,0,0,0.92)", location: (topInset + topBlendHeight * 0.75) / height },
+      { color: "black", location: (topInset + topBlendHeight) / height },
       { color: "black", location: blendTop / height },
       { color: "rgba(0,0,0,0.92)", location: (blendTop + BANNER_BLEND_HEIGHT / 3) / height },
       { color: "rgba(0,0,0,0.4)", location: (blendTop + BANNER_BLEND_HEIGHT * 0.5) / height },
@@ -141,8 +142,9 @@ function BannerView({
             imageUrl={cover}
             resizable
             scaleToFill
-            frame={{ width, height: imageHeight + topInset }}
+            frame={{ width, height: imageHeight }}
             clipped
+            offset={{ x: 0, y: topInset }}
           />
         ) : null}
         <VStack frame={{ width, height }} background={BANNER_SHADE} />
@@ -195,7 +197,7 @@ function HeroCarousel({
   onSelect: (seriesId: string) => void
 }) {
   const [visible, setVisible] = useState(false)
-  // 单张海报延伸至顶部安全区，轮播及推荐区高度沿用原布局。
+  // 顶部安全区留给状态栏，轮播及推荐区高度沿用原布局。
   const imageHeight = Math.min(560, Math.max(440, width * 1.35))
   const height = imageHeight - 92 + topInset
   const index = selection.value
@@ -256,7 +258,7 @@ function SectionRow({
   )
 }
 
-/** 海报延伸到状态栏并渐隐，沿用主题、离线快照和重试。 */
+/** 海报从状态栏下方开始并渐隐，沿用主题、离线快照和重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
