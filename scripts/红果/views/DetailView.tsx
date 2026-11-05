@@ -3,6 +3,7 @@ import {
   FlowLayout,
   HStack,
   Image,
+  NavigationLink,
   ScrollView,
   Spacer,
   Text,
@@ -11,7 +12,7 @@ import {
   useState,
 } from "scripting"
 import { fetchDetail } from "../core/api"
-import { formatCount, formatRelativeTime } from "../core/format"
+import { formatCount } from "../core/format"
 import type { Review, SeriesDetail, SeriesSocialInfo } from "../core/types"
 import {
   CoverImage,
@@ -23,11 +24,10 @@ import {
   TagChip,
   THEME_COLOR,
 } from "./Common"
-import { EpisodeGrid } from "./EpisodeGrid"
 
 const COVER_WIDTH = 98
 const COVER_HEIGHT = 140
-const EPISODE_PAGE_SIZE = 15
+const EPISODE_RANGE_SIZE = 30
 
 /** 参照官网中间内容区展示详情，保留主题适配和原有选集播放入口。 */
 export function DetailView({
@@ -90,8 +90,6 @@ export function DetailView({
 
   const episodeCount = detail.vid_list.length
 
-  const remaining = episodeCount - EPISODE_PAGE_SIZE
-
   return (
     <ScrollView
       navigationTitle="红果剧场"
@@ -141,10 +139,10 @@ export function DetailView({
                     background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 6 } }}
                   >
                     <Image systemName="trophy.fill" font={11} />
-                    <Text font={12}>{social.rank_label}</Text>
+                    <Text font={12}>{social.rank_label.replace(/^热播短剧榜第(\d+)名$/, "短剧热播榜 No.$1")}</Text>
                   </HStack>
                 ) : null}
-                {detail.tags.map(tag => <TagChip key={tag} text={tag} />)}
+                {detail.tags.slice(0, 1).map(tag => <TagChip key={tag} text={tag} />)}
               </FlowLayout>
             ) : null}
           </VStack>
@@ -195,27 +193,22 @@ export function DetailView({
           </VStack>
         ) : null}
 
-        <VStack alignment="leading" spacing={10} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
-          <HStack spacing={8} alignment="center" frame={FILL_LEADING}>
+        <VStack alignment="leading" spacing={18} frame={FILL_LEADING}>
+          <HStack spacing={8} alignment="center" padding={{ horizontal: 16 }} frame={FILL_LEADING}>
             <Text font={16} fontWeight="medium">
               剧集
             </Text>
             <Spacer />
             <Text font="caption" foregroundStyle="tertiaryLabel">
-              {`共 ${episodeCount} 集`}
+              {`共${episodeCount}集`}
             </Text>
           </HStack>
 
-          <EpisodeGrid
+          <DetailEpisodes
+            key={detail.series_id}
             vids={detail.vid_list}
             onSelect={vid => onPlayEpisode(detail.series_id, vid)}
           />
-
-          {remaining > 0 ? (
-            <Text font="caption2" foregroundStyle="tertiaryLabel" frame={FILL_LEADING}>
-              {`左右滑动翻页查看全部 ${episodeCount} 集`}
-            </Text>
-          ) : null}
         </VStack>
 
         <ReviewList
@@ -229,14 +222,13 @@ export function DetailView({
   )
 }
 
-/** 参照官网在剧名下以灰色文字展示真实收藏、点赞和热度数据。 */
+/** 按官网移动版只展示收藏与点赞，不混入桌面版热度。 */
 function SocialStats({ social }: { social: SeriesSocialInfo | null }) {
   if (!social) return null
 
   const parts: string[] = []
   if (social.series_favorite_count) parts.push(`${formatCount(social.series_favorite_count)}收藏`)
   if (social.series_like_count) parts.push(`${formatCount(social.series_like_count)}次点赞`)
-  if (social.hot_score_data?.text) parts.push(social.hot_score_data.text)
   if (parts.length === 0) return null
 
   return (
@@ -246,7 +238,93 @@ function SocialStats({ social }: { social: SeriesSocialInfo | null }) {
   )
 }
 
-/** 按官网剧评区排列评分汇总和评论，只展示接口实际返回的评分与人数。 */
+/** 每 30 集分段，段内使用官网的单行横向选集，保留每集播放入口。 */
+function DetailEpisodes({ vids, onSelect }: { vids: string[]; onSelect: (vid: string) => void }) {
+  const [rangeIndex, setRangeIndex] = useState(0)
+  const start = rangeIndex * EPISODE_RANGE_SIZE
+
+  return (
+    <VStack alignment="leading" spacing={16} frame={FILL_LEADING}>
+      <ScrollView axes="horizontal" scrollIndicator="hidden">
+        <HStack spacing={32} padding={{ horizontal: 16 }}>
+          {Array.from({ length: Math.ceil(vids.length / EPISODE_RANGE_SIZE) }, (_, index) => (
+            <Button
+              key={index}
+              title={`${index * EPISODE_RANGE_SIZE + 1}–${Math.min((index + 1) * EPISODE_RANGE_SIZE, vids.length)}`}
+              action={() => setRangeIndex(index)}
+              buttonStyle="plain"
+              font={14}
+              foregroundStyle={index === rangeIndex ? THEME_COLOR : "tertiaryLabel"}
+            />
+          ))}
+        </HStack>
+      </ScrollView>
+      <ScrollView key={rangeIndex} axes="horizontal" scrollIndicator="hidden">
+        <HStack spacing={8} padding={{ horizontal: 16 }}>
+          {vids.slice(start, start + EPISODE_RANGE_SIZE).map((vid, index) => (
+            <Button key={vid} action={() => onSelect(vid)} buttonStyle="plain">
+              <Text
+                font={16}
+                foregroundStyle="label"
+                frame={{ width: 52, height: 70 }}
+                background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 8 } }}
+              >
+                {String(start + index + 1)}
+              </Text>
+            </Button>
+          ))}
+        </HStack>
+      </ScrollView>
+    </VStack>
+  )
+}
+
+/** 参照官网展示日期、两行正文及底部用户、星级与点赞数。 */
+function ReviewCard({ review, expanded = false }: { review: Review; expanded?: boolean }) {
+  const date = new Date(Number(review.create_time) * 1000)
+  const rating = review.rating
+  const publishedAt = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+  return (
+    <VStack
+      alignment="leading"
+      spacing={6}
+      padding={{ horizontal: 16, top: 14, bottom: 12 }}
+      frame={expanded ? FILL_LEADING : { width: 320, height: 128, alignment: "topLeading" }}
+      background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 12 } }}
+    >
+      <Text font={12} foregroundStyle="tertiaryLabel">{publishedAt}</Text>
+      <Text
+        font={16}
+        lineLimit={expanded ? undefined : 2}
+        frame={expanded ? FILL_LEADING : { height: 52, alignment: "topLeading" }}
+      >
+        {review.content}
+      </Text>
+      <HStack spacing={6} frame={FILL_LEADING}>
+        <Image imageUrl={review.user_avatar} frame={{ width: 16, height: 16 }} clipShape="circle" resizable scaleToFill />
+        <Text font={12} foregroundStyle="tertiaryLabel" lineLimit={1}>{review.user_name}</Text>
+        {typeof rating === "number" ? (
+          <HStack spacing={2}>
+            {[0, 1, 2, 3, 4].map(index => (
+              <Image
+                key={index}
+                systemName={rating >= (index + 1) * 2 ? "star.fill" : rating > index * 2 ? "star.leadinghalf.filled" : "star"}
+                font={10}
+                foregroundStyle={THEME_COLOR}
+              />
+            ))}
+          </HStack>
+        ) : null}
+        <Spacer minLength={4} />
+        <Image systemName="heart" font={14} />
+        <Text font={12}>{formatCount(review.digg_count)}</Text>
+      </HStack>
+    </VStack>
+  )
+}
+
+/** 按官网移动版展示灰色评分汇总和横向剧评卡片。 */
 export function ReviewList({
   reviews,
   totalCount,
@@ -262,19 +340,40 @@ export function ReviewList({
   if (reviews.length === 0 && !hasRating) return null
 
   return (
-    <VStack alignment="leading" spacing={18} padding={{ horizontal: 16 }} frame={FILL_LEADING}>
-      <Text font={16} fontWeight="medium" frame={FILL_LEADING}>
-        {totalCount !== undefined ? `剧评 · ${formatCount(totalCount)}` : "剧评"}
-      </Text>
+    <VStack alignment="leading" spacing={18} frame={FILL_LEADING}>
+      <HStack padding={{ horizontal: 16 }} frame={FILL_LEADING}>
+        <Text font={16} fontWeight="medium">
+          {totalCount !== undefined ? `剧评 · ${totalCount}` : "剧评"}
+        </Text>
+        <Spacer />
+        {reviews.length > 0 ? (
+          <NavigationLink buttonStyle="plain" destination={
+            <ScrollView
+              navigationTitle="剧评"
+              navigationBarTitleDisplayMode="inline"
+              background={SERIES_SURFACE}
+            >
+              <VStack spacing={16} padding={16} frame={FILL_LEADING}>
+                {reviews.map((review, index) => <ReviewCard key={index} review={review} expanded />)}
+              </VStack>
+            </ScrollView>
+          }>
+            <HStack spacing={4} foregroundStyle="tertiaryLabel">
+              <Text font={12}>全部</Text>
+              <Image systemName="chevron.right" font={10} />
+            </HStack>
+          </NavigationLink>
+        ) : null}
+      </HStack>
 
       {hasRating ? (
         <HStack
-          spacing={16}
-          padding={{ horizontal: 18, vertical: 16 }}
+          spacing={18}
           frame={FILL_LEADING}
           background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 12 } }}
+          padding={{ horizontal: 16 }}
         >
-          <VStack alignment="leading" spacing={4}>
+          <VStack alignment="leading" spacing={4} padding={{ leading: 18, vertical: 12 }}>
             <HStack spacing={2} alignment="firstTextBaseline">
               <Text font={26} bold>{String(rating)}</Text>
               <Text font={12}>分</Text>
@@ -283,52 +382,28 @@ export function ReviewList({
               <Text font={12} foregroundStyle="tertiaryLabel">{`${formatCount(ratingCount)}人评分`}</Text>
             ) : null}
           </VStack>
-          <Spacer />
-          <HStack spacing={8}>
+          <VStack frame={{ width: 1, height: 32 }} background="separator" />
+          <HStack spacing={10} frame={{ maxWidth: "infinity", alignment: "center" }}>
             {[0, 1, 2, 3, 4].map(index => (
-              <Image
-                key={index}
-                systemName={rating >= (index + 1) * 2 ? "star.fill" : rating > index * 2 ? "star.leadinghalf.filled" : "star"}
-                font={20}
-                foregroundStyle={THEME_COLOR}
-              />
+              <Image key={index} systemName="star.fill" font={22} foregroundStyle="tertiaryLabel" />
             ))}
           </HStack>
         </HStack>
       ) : null}
 
-      {reviews.map((review, index) => (
-        <HStack key={`${review.user_name}-${index}`} spacing={10} alignment="top" frame={FILL_LEADING}>
-          <Image
-            imageUrl={review.user_avatar}
-            frame={{ width: 32, height: 32 }}
-            clipShape="circle"
-            resizable={true}
-            scaleToFill={true}
-          />
-
-          <VStack alignment="leading" spacing={4} frame={FILL_LEADING}>
-            <HStack spacing={8} alignment="center">
-              <Text font="caption" foregroundStyle="secondaryLabel">
-                {review.user_name}
-              </Text>
-              <Text font="caption2" foregroundStyle="tertiaryLabel">
-                {formatRelativeTime(review.create_time)}
-              </Text>
-            </HStack>
-
-            <Text font="footnote" frame={FILL_LEADING}>
-              {review.content}
-            </Text>
-
-            {review.digg_count ? (
-              <Text font="caption2" foregroundStyle="tertiaryLabel">
-                {`${formatCount(review.digg_count)} 赞`}
-              </Text>
-            ) : null}
-          </VStack>
+      <ScrollView axes="horizontal" scrollIndicator="hidden" scrollTargetBehavior="viewAligned">
+        <HStack spacing={16} padding={{ horizontal: 16 }} scrollTargetLayout>
+          {reviews.map((review, index) => (
+            <NavigationLink key={index} destination={
+              <ScrollView navigationTitle="剧评" navigationBarTitleDisplayMode="inline" background={SERIES_SURFACE}>
+                <VStack padding={16}><ReviewCard review={review} expanded /></VStack>
+              </ScrollView>
+            } buttonStyle="plain">
+              <ReviewCard review={review} />
+            </NavigationLink>
+          ))}
         </HStack>
-      ))}
+      </ScrollView>
     </VStack>
   )
 }

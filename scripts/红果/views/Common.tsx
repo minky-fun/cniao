@@ -457,12 +457,6 @@ export function SkeletonDetail() {
 
   const headTextWidth = CONTENT_WIDTH - 98 - 16
 
-  const episodeSpacing = 8
-  const episodeCols = 5
-  const episodeBtnWidth = Math.floor(
-    (CONTENT_WIDTH - episodeSpacing * (episodeCols - 1)) / episodeCols
-  )
-
   return (
     <VStack alignment="leading" spacing={28} padding={{ top: 16, bottom: 28 }} frame={FILL_LEADING}>
 
@@ -484,21 +478,16 @@ export function SkeletonDetail() {
 
       <VStack alignment="leading" spacing={10} padding={{ horizontal: PAGE_H_PADDING }} frame={FILL_LEADING}>
         <SkeletonBlock width={60} height={18} phase={phase} />
-        <VStack alignment="leading" spacing={episodeSpacing} frame={FILL_LEADING}>
-          {Array.from({ length: 3 }, (_, rowIndex) => (
-            <HStack key={rowIndex} spacing={episodeSpacing} alignment="center" frame={FILL_LEADING}>
-              {Array.from({ length: episodeCols }, (_, colIndex) => (
-                <SkeletonBlock
-                  key={colIndex}
-                  width={episodeBtnWidth}
-                  height={34}
-                  cornerRadius={6}
-                  phase={phase}
-                />
-              ))}
-            </HStack>
-          ))}
-        </VStack>
+        <HStack spacing={24}>
+          {[0, 1, 2, 3].map(index => <SkeletonBlock key={index} width={44} height={14} phase={phase} />)}
+        </HStack>
+        <ScrollView axes="horizontal" scrollIndicator="hidden">
+          <HStack spacing={8}>
+            {[0, 1, 2, 3, 4, 5].map(index => (
+              <SkeletonBlock key={index} width={52} height={70} cornerRadius={8} phase={phase} />
+            ))}
+          </HStack>
+        </ScrollView>
       </VStack>
     </VStack>
   )
