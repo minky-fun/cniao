@@ -35,7 +35,7 @@ function SettingsRow({ title, value, disclosure = false }: {
   )
 }
 
-/** 按参考图展示圆角设置卡片，保留主题、缓存、历史和真实脚本信息。 */
+/** 以贯穿安全区的主题背景展示圆角设置卡片，正文继续遵守安全区布局。 */
 export function SettingsView({
   theme,
   themeError,
@@ -54,7 +54,20 @@ export function SettingsView({
   const { version, author, contributors } = Script.metadata
 
   return (
-    <VStack spacing={0} frame={PAGE_FRAME} background={SETTINGS_SURFACE} foregroundStyle="label">
+    <VStack
+      spacing={0}
+      frame={PAGE_FRAME}
+      background={
+        <VStack
+          frame={PAGE_FRAME}
+          background={SETTINGS_SURFACE}
+          ignoresSafeArea={{ regions: "container" }}
+        />
+      }
+      foregroundStyle="label"
+      toolbarBackground={{ style: SETTINGS_SURFACE, bars: ["navigationBar", "tabBar"] }}
+      toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
+    >
       <Text font={18} fontWeight="semibold" frame={{ maxWidth: "infinity", height: 52 }}>设置</Text>
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
