@@ -11,6 +11,8 @@ const INDEX_VERSION = 1
 
 const MAX_ENTRIES_STORAGE_KEY = "hongguo-cache-max-entries"
 
+const AUTO_CACHE_STORAGE_KEY = "hongguo-auto-cache"
+
 function cacheDirectory(): string {
   return `${FileManager.appGroupDocumentsDirectory}/${PLAYBACK_CACHE_DIR}`
 }
@@ -220,6 +222,18 @@ export interface CacheLimits {
   maxBytes: number
 
   maxEntries: number
+}
+
+/** 自动缓存默认开启，重新运行脚本时恢复用户保存的选择。 */
+export function getAutoCacheEnabled(): boolean {
+  return Storage.get<boolean>(AUTO_CACHE_STORAGE_KEY) ?? true
+}
+
+/** 保存自动缓存开关，保存失败时保留原配置并提示原因。 */
+export function setAutoCacheEnabled(enabled: boolean): void {
+  if (!Storage.set(AUTO_CACHE_STORAGE_KEY, enabled)) {
+    throw new Error("自动缓存设置保存失败，请重试")
+  }
 }
 
 /** 读取用户设置的保留集数，尚未设置或旧数据无效时使用原有默认值。 */
@@ -445,12 +459,12 @@ export async function prepareOfflineVideo(
   return task
 }
 
-/** 预加载剧集并传递真实剧集信息，失败时保留现有静默跳过行为。 */
+/** 开关开启时预加载剧集并保存真实剧集信息，关闭或失败时停止后续预加载。 */
 export async function preloadOfflineVideo(
   videoId: string,
   options: { label?: string; cover?: string; seriesId?: string; seriesTitle?: string; protectedVideoIds?: string[] } = {}
 ): Promise<boolean> {
-  if (!videoId) return false
+  if (!videoId || !getAutoCacheEnabled()) return false
   if (isOfflineVideoCached(videoId)) return true
 
   try {

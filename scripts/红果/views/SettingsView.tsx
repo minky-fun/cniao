@@ -1,5 +1,7 @@
 import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
+import { AUTO_CACHE_EPISODE_COUNT } from "../core/config"
+import { getAutoCacheEnabled, setAutoCacheEnabled } from "../core/mediaCache"
 
 export type ThemeMode = "system" | "light" | "dark"
 
@@ -36,7 +38,7 @@ function SettingsRow({ title, value, disclosure = false }: {
   )
 }
 
-/** 展示圆角设置卡片，并保存自动更新开关的用户选择。 */
+/** 展示圆角设置卡片，并保存自动缓存及自动更新开关的用户选择。 */
 export function SettingsView({
   theme,
   themeError,
@@ -56,6 +58,19 @@ export function SettingsView({
   // 首次使用默认关闭，重新打开设置页时恢复已保存的选择。
   const [autoUpdate, setAutoUpdate] = useState(() => Storage.get<boolean>(AUTO_UPDATE_STORAGE_KEY) ?? false)
   const [autoUpdateError, setAutoUpdateError] = useState("")
+  const [autoCache, setAutoCache] = useState(getAutoCacheEnabled)
+  const [autoCacheError, setAutoCacheError] = useState("")
+
+  /** 保存自动缓存偏好，保存失败时保持原开关状态并提示原因。 */
+  const changeAutoCache = (enabled: boolean) => {
+    try {
+      setAutoCacheEnabled(enabled)
+      setAutoCache(enabled)
+      setAutoCacheError("")
+    } catch (error) {
+      setAutoCacheError(error instanceof Error ? error.message : String(error))
+    }
+  }
 
   /** 保存自动更新偏好，保存失败时保持原开关状态并提示原因。 */
   const changeAutoUpdate = (enabled: boolean) => {
@@ -87,6 +102,23 @@ export function SettingsView({
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Toggle
+              value={autoCache}
+              onChanged={changeAutoCache}
+              toggleStyle="switch"
+              padding={{ horizontal: 20 }}
+              frame={{ maxWidth: "infinity", minHeight: 52 }}
+            >
+              <Text font={14} foregroundStyle="label">自动缓存</Text>
+            </Toggle>
+            <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+              {`开启后自动缓存后续 ${AUTO_CACHE_EPISODE_COUNT} 集，受缓存上限限制；关闭后仅加载当前播放集。`}
+            </Text>
+            {autoCacheError ? (
+              <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+                {autoCacheError}
+              </Text>
+            ) : null}
             <Button action={onOpenCache} buttonStyle="plain" frame={FILL_LEADING}>
               <SettingsRow title="清理缓存" disclosure />
             </Button>
