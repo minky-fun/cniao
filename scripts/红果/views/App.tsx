@@ -13,6 +13,7 @@ import {
   useState,
 } from "scripting"
 import { CacheView } from "./CacheView"
+import { CacheManagerView } from "./CacheManagerView"
 import { CategoryView } from "./CategoryView"
 import { DetailView } from "./DetailView"
 import { HistoryView } from "./HistoryView"
@@ -35,6 +36,7 @@ function routePlayer(seriesId: string, vid?: string): string {
 }
 
 const CACHE_ROUTE = "cache"
+const CACHE_MANAGER_ROUTE = "cache-manager"
 const HISTORY_ROUTE = "history"
 const SEARCH_ROUTE = "search"
 const THEME_STORAGE_KEY = "hongguo-theme"
@@ -43,6 +45,7 @@ type Route =
   | { kind: "detail"; seriesId: string }
   | { kind: "player"; seriesId: string; vid?: string }
   | { kind: "cache" }
+  | { kind: "cache-manager" }
   | { kind: "history" }
   | { kind: "search" }
 
@@ -51,6 +54,7 @@ export function decodeRoute(raw: string): Route | null {
   if (!raw) return null
 
   if (raw === CACHE_ROUTE) return { kind: "cache" }
+  if (raw === CACHE_MANAGER_ROUTE) return { kind: "cache-manager" }
   if (raw === HISTORY_ROUTE) return { kind: "history" }
   if (raw === SEARCH_ROUTE) return { kind: "search" }
 
@@ -64,13 +68,14 @@ export function decodeRoute(raw: string): Route | null {
 }
 
 /** 按路径构建搜索、详情、播放和数据管理页面。 */
-function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void) {
+function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void, pop: () => void) {
   if (!route) return <VStack />
 
   if (route.kind === "search") {
     return <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
   }
-  if (route.kind === "cache") return <CacheView />
+  if (route.kind === "cache") return <CacheView onOpenManager={() => push(CACHE_MANAGER_ROUTE)} />
+  if (route.kind === "cache-manager") return <CacheManagerView onDone={pop} />
   if (route.kind === "history") {
     return <HistoryView onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
   }
@@ -117,6 +122,8 @@ function TabStack({
   const path = useObservable<string[]>([])
   /** 在当前标签内追加导航路径。 */
   const push = (raw: string) => path.setValue([...path.value, raw])
+  /** 管理完成后只返回上一页，保留当前标签的导航历史。 */
+  const pop = () => path.setValue(path.value.slice(0, -1))
 
   return (
     <NavigationStack path={path}>
@@ -136,7 +143,7 @@ function TabStack({
           ],
         }}
         navigationDestination={
-          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, onClose)}</NavigationDestination>
+          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, onClose, pop)}</NavigationDestination>
         }
       >
         {render(push)}

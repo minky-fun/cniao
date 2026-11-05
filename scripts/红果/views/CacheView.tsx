@@ -3,7 +3,6 @@ import {
   GeometryReader,
   HStack,
   Image,
-  LazyVStack,
   ScrollView,
   Spacer,
   Text,
@@ -11,30 +10,23 @@ import {
   useState,
 } from "scripting"
 import { PLAYBACK_CACHE_MAX_BYTES } from "../core/config"
-import { formatBytes, formatRelativeTime } from "../core/format"
-import { loadPlayHistory } from "../core/history"
+import { formatBytes } from "../core/format"
 import {
   clearOfflineCache,
   getPlaybackCacheMaxEntries,
   listOfflineCache,
-  removeOfflineVideo,
   setPlaybackCacheMaxEntries,
   type CacheEntry,
 } from "../core/mediaCache"
-import { CoverImage, FILL_LEADING, PAGE_FRAME } from "./Common"
+import { FILL_LEADING, PAGE_FRAME } from "./Common"
 
 const CACHE_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
 const CARD_SURFACE = { light: "#FFFFFF", dark: "#1D1E1E" } as const
 const TRACK_SURFACE = { light: "#EFEFEF", dark: "#343535" } as const
 const ACCENT_COLOR = { light: "#B55200", dark: "#FA7705" } as const
 
-/** 使用缓存标签作为标题，未命名缓存保留现有的视频标识。 */
-function entryTitle(entry: CacheEntry): string {
-  return entry.label || entry.videoId
-}
-
-/** 按参考图展示实际剧集缓存与缓存额度，不将缓存上限当作设备存储容量。 */
-function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }) {
+/** 展示实际剧集缓存与缓存额度，并在容量右侧提供紧凑的一键清理按钮。 */
+function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count: number; onClear: () => void }) {
   const ratio = Math.min(usedBytes / PLAYBACK_CACHE_MAX_BYTES, 1)
 
   return (
@@ -69,9 +61,26 @@ function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }
           <Text font={12} foregroundStyle="secondaryLabel">剩余缓存额度</Text>
         </HStack>
       </HStack>
-      <Text font={32} fontWeight="semibold" lineLimit={1} minScaleFactor={0.7} padding={{ top: 12 }}>
-        {formatBytes(usedBytes)}
-      </Text>
+      <HStack spacing={12} padding={{ top: 12 }} frame={FILL_LEADING}>
+        <Text font={32} fontWeight="semibold" lineLimit={1} minScaleFactor={0.7} frame={FILL_LEADING}>
+          {formatBytes(usedBytes)}
+        </Text>
+        {/* 缩小橙色外观，外层仍保留 44 点触控高度。 */}
+        <Button action={onClear} buttonStyle="plain" role="destructive" disabled={count === 0} frame={{ height: 44 }}>
+          <Text
+            font={12}
+            fontWeight="medium"
+            foregroundStyle={count > 0 ? "white" : "secondaryLabel"}
+            frame={{ width: 72, height: 28 }}
+            background={{
+              style: count > 0 ? "#FA7705" : TRACK_SURFACE,
+              shape: { type: "rect", cornerRadius: 8 },
+            }}
+          >
+            一键清理
+          </Text>
+        </Button>
+      </HStack>
       <Text font={14} frame={FILL_LEADING}>
         {`已缓存 ${count} 集，上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}`}
       </Text>
@@ -79,66 +88,17 @@ function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }
   )
 }
 
-/** 以真实剧集封面展示缓存标题、体积和使用时间，删除按钮独立响应。 */
-function CacheRow({
-  entry,
-  cover,
-  onRemove,
-}: {
-  entry: CacheEntry
-  cover: string
-  onRemove: (entry: CacheEntry) => void
-}) {
-  return (
-    <VStack alignment="leading" spacing={0} frame={FILL_LEADING}>
-      <HStack spacing={12} alignment="center" padding={{ vertical: 14 }} frame={FILL_LEADING}>
-        <CoverImage url={cover} width={48} height={67} cornerRadius={6} />
-        <VStack alignment="leading" spacing={8} frame={FILL_LEADING}>
-          <Text font={14} fontWeight="medium" foregroundStyle="label" lineLimit={2} frame={FILL_LEADING}>
-            {entryTitle(entry)}
-          </Text>
-          <HStack spacing={8} alignment="center">
-            <Text
-              font={11}
-              foregroundStyle={ACCENT_COLOR}
-              padding={{ horizontal: 5, vertical: 2 }}
-              background={{ style: "rgba(250,119,5,0.1)", shape: { type: "rect", cornerRadius: 4 } }}
-            >
-              {formatBytes(entry.sizeBytes)}
-            </Text>
-            <Text font={11} foregroundStyle="secondaryLabel" lineLimit={1}>
-              {formatRelativeTime(Math.floor(entry.lastUsedAt / 1000))}
-            </Text>
-          </HStack>
-        </VStack>
-        <Button action={() => onRemove(entry)} buttonStyle="plain" role="destructive">
-          <Image systemName="trash" font={16} foregroundStyle="secondaryLabel" frame={{ width: 44, height: 44 }} />
-        </Button>
-      </HStack>
-      <VStack frame={{ maxWidth: "infinity", height: 0.5 }} background="separator" />
-    </VStack>
-  )
-}
-
-/** 展示缓存与清理操作，支持保存保留集数，默认显示带封面的逐集明细。 */
-export function CacheView() {
+/** 展示缓存清理与保留集数设置，通过独立管理页选择要删除的缓存。 */
+export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
   const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
-  const [history, setHistory] = useState(loadPlayHistory)
-  const [showDetails, setShowDetails] = useState(true)
   const [maxEntries, setMaxEntries] = useState(getPlaybackCacheMaxEntries)
   const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
 
-  /** 重新读取缓存及保留集数，清空后收起明细，不触发下载。 */
+  /** 返回页面时重新读取容量及保留集数，不触发下载。 */
   const refresh = () => {
-    const currentEntries = listOfflineCache()
-    setEntries(currentEntries)
-    setHistory(loadPlayHistory())
+    setEntries(listOfflineCache())
     setMaxEntries(getPlaybackCacheMaxEntries())
-    if (currentEntries.length === 0) setShowDetails(false)
   }
-
-  /** 展开或收起真实缓存明细，不改变缓存文件。 */
-  const toggleDetails = () => setShowDetails(!showDetails)
 
   /** 输入不小于两集的整数并保存，后续自动清理使用新配置，取消时不修改。 */
   const changeMaxEntries = async () => {
@@ -162,20 +122,6 @@ export function CacheView() {
         message: error instanceof Error ? error.message : String(error),
       })
     }
-  }
-
-  /** 确认后删除指定缓存，并更新容量与列表。 */
-  const handleRemove = async (entry: CacheEntry) => {
-    const confirmed = await Dialog.confirm({
-      title: "删除缓存",
-      message: `确定删除「${entryTitle(entry)}」的离线缓存？删除后再次播放需要重新下载解密。`,
-      confirmLabel: "删除",
-      cancelLabel: "取消",
-    })
-    if (!confirmed) return
-
-    removeOfflineVideo(entry.videoId)
-    refresh()
   }
 
   /** 展示将释放的空间，仅在确认后清空缓存。 */
@@ -203,13 +149,15 @@ export function CacheView() {
       foregroundStyle="label"
       navigationTitle="清理缓存"
       navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility="visible"
+      tabBarVisibility="visible"
       toolbarBackground={{ style: CACHE_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       onAppear={refresh}
     >
       <ScrollView scrollIndicator="hidden">
         <VStack alignment="leading" spacing={16} padding={{ horizontal: 16, top: 20, bottom: 32 }} frame={FILL_LEADING}>
-          <UsageSummary usedBytes={usedBytes} count={entries.length} />
+          <UsageSummary usedBytes={usedBytes} count={entries.length} onClear={handleClear} />
 
           <VStack
             alignment="leading"
@@ -218,26 +166,9 @@ export function CacheView() {
             frame={FILL_LEADING}
             background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
           >
-            <HStack spacing={12} alignment="center" frame={FILL_LEADING}>
-              <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
-                {formatBytes(usedBytes)}
-              </Text>
-              {/* 缩小橙色外观，外层仍保留 44 点触控高度。 */}
-              <Button action={handleClear} buttonStyle="plain" role="destructive" disabled={entries.length === 0} frame={{ height: 44 }}>
-                <Text
-                  font={12}
-                  fontWeight="medium"
-                  foregroundStyle={entries.length > 0 ? "white" : "secondaryLabel"}
-                  frame={{ width: 72, height: 28 }}
-                  background={{
-                    style: entries.length > 0 ? "#FA7705" : TRACK_SURFACE,
-                    shape: { type: "rect", cornerRadius: 8 },
-                  }}
-                >
-                  一键清理
-                </Text>
-              </Button>
-            </HStack>
+            <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
+              {formatBytes(usedBytes)}
+            </Text>
             <Text font={16} padding={{ top: 8 }}>可清理的缓存</Text>
             <Text font={13} foregroundStyle="secondaryLabel" padding={{ top: 14, bottom: 20 }} frame={FILL_LEADING}>
               播放时保存的剧集文件，清理后再次播放需重新下载。播放历史和主题设置会保留。
@@ -249,25 +180,18 @@ export function CacheView() {
               <Button action={refresh} buttonStyle="plain">
                 <Text font={13} foregroundStyle="secondaryLabel" frame={{ minHeight: 44 }}>刷新</Text>
               </Button>
-              <Button action={toggleDetails} buttonStyle="plain" disabled={entries.length === 0}>
-                <Text font={13} foregroundStyle={ACCENT_COLOR} frame={{ minHeight: 44 }}>
-                  {showDetails ? "收起明细" : "查看明细"}
+              <Button action={onOpenManager} buttonStyle="plain" frame={{ height: 44 }}>
+                <Text
+                  font={12}
+                  fontWeight="medium"
+                  foregroundStyle="label"
+                  frame={{ width: 72, height: 28 }}
+                  background={{ style: TRACK_SURFACE, shape: { type: "rect", cornerRadius: 8 } }}
+                >
+                  前往管理
                 </Text>
               </Button>
             </HStack>
-            {showDetails && entries.length > 0 ? (
-              <LazyVStack alignment="leading" spacing={0} frame={FILL_LEADING}>
-                {entries.map(entry => (
-                  <CacheRow
-                    key={entry.videoId}
-                    entry={entry}
-                    // 旧缓存未保存封面时，只使用视频 ID 完全匹配的本地历史。
-                    cover={entry.cover || history.find(record => record.lastVid === entry.videoId)?.cover || ""}
-                    onRemove={handleRemove}
-                  />
-                ))}
-              </LazyVStack>
-            ) : null}
           </VStack>
           <VStack
             padding={{ horizontal: 20, vertical: 8 }}

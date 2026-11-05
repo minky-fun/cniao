@@ -20,7 +20,7 @@ export interface ResolvedPlaybackSource {
   meta?: CachedVideoMeta
 }
 
-/** 切集时从已知剧集详情传递标题与封面，复用现有播放缓存。 */
+/** 切集时保存真实剧集标识、标题与封面，复用现有播放缓存。 */
 export async function resolvePlaybackSource(
   seriesId: string,
   detail: SeriesDetail,
@@ -29,10 +29,16 @@ export async function resolvePlaybackSource(
 ): Promise<ResolvedPlaybackSource> {
   const episodeIndex = detail.vid_list.indexOf(vid)
   const label = options.label ?? formatEpisodeLabel(detail.series_name, episodeIndex)
-  return resolveOfflineSource(vid, { ...options, label, cover: detail.series_cover })
+  return resolveOfflineSource(vid, {
+    ...options,
+    label,
+    cover: detail.series_cover,
+    seriesId,
+    seriesTitle: detail.series_name,
+  })
 }
 
-/** 首次加载详情后，将真实剧集封面一并保存到播放缓存索引。 */
+/** 首次加载详情后，将真实剧集标识、标题及封面保存到缓存索引。 */
 export async function loadOfflinePlayerData(
   seriesId: string,
   vid: string,
@@ -50,6 +56,8 @@ export async function loadOfflinePlayerData(
     ...prepareOptions,
     label,
     cover: result.detail.series_cover,
+    seriesId,
+    seriesTitle: result.detail.series_name,
   })
 
   return {

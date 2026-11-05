@@ -36,6 +36,10 @@ interface IndexRecord {
 
   cover?: string
 
+  seriesId?: string
+
+  seriesTitle?: string
+
   lastUsedAt: number
 
   duration?: number
@@ -49,6 +53,8 @@ export interface CacheEntry {
   videoId: string
   label: string
   cover?: string
+  seriesId?: string
+  seriesTitle?: string
   sizeBytes: number
   lastUsedAt: number
 }
@@ -85,7 +91,7 @@ function writeIndex(index: CacheIndex): void {
   }
 }
 
-/** 读取实际缓存文件及索引中的封面；兼容没有封面字段的旧索引。 */
+/** 读取实际缓存文件及索引中的剧集信息，兼容缺少元数据的旧索引。 */
 export function listOfflineCache(): CacheEntry[] {
   const directory = cacheDirectory()
   if (!FileManager.existsSync(directory)) return []
@@ -112,6 +118,8 @@ export function listOfflineCache(): CacheEntry[] {
       videoId,
       label: record?.label ?? "",
       cover: record?.cover,
+      seriesId: record?.seriesId,
+      seriesTitle: record?.seriesTitle,
       sizeBytes: stat.size,
 
       lastUsedAt: record?.lastUsedAt ?? stat.modificationDate,
@@ -125,17 +133,19 @@ export function offlineCacheSize(): number {
   return listOfflineCache().reduce((sum, entry) => sum + entry.sizeBytes, 0)
 }
 
-/** 更新使用时间及可用的标题、封面和视频参数，保留未重新提供的元数据。 */
+/** 更新使用时间、剧集信息和视频参数，保留未重新提供的元数据。 */
 function markUsed(
   videoId: string,
   label?: string,
-  meta?: { cover?: string; duration?: number; width?: number; height?: number }
+  meta?: { cover?: string; seriesId?: string; seriesTitle?: string; duration?: number; width?: number; height?: number }
 ): void {
   const index = readIndex()
   const existing = index[videoId]
   index[videoId] = {
     label: label ?? existing?.label ?? "",
     cover: meta?.cover ?? existing?.cover,
+    seriesId: meta?.seriesId ?? existing?.seriesId,
+    seriesTitle: meta?.seriesTitle ?? existing?.seriesTitle,
     lastUsedAt: Date.now(),
     duration: meta?.duration ?? existing?.duration,
     width: meta?.width ?? existing?.width,
@@ -275,6 +285,10 @@ export interface PrepareOptions {
 
   cover?: string
 
+  seriesId?: string
+
+  seriesTitle?: string
+
   onProgress?: (progress: PrepareProgress) => void
 
   protectedVideoIds?: string[]
@@ -318,18 +332,18 @@ function notifyCacheChanged(videoId: string, action: "added" | "removed" | "clea
 
 const inflightPrepares = new Map<string, Promise<string>>()
 
-/** 准备可播放缓存，并在下载、复用和并发等待完成时保存已知封面。 */
+/** 准备可播放缓存，并在下载、复用和并发等待完成时保存已知剧集信息。 */
 export async function prepareOfflineVideo(
   videoId: string,
   options: PrepareOptions = {}
 ): Promise<string> {
-  const { label, cover, onProgress, protectedVideoIds } = options
+  const { label, cover, seriesId, seriesTitle, onProgress, protectedVideoIds } = options
   ensureCacheDirectory()
 
   const target = cachePath(videoId)
 
   if (FileManager.existsSync(target)) {
-    markUsed(videoId, label, { cover })
+    markUsed(videoId, label, { cover, seriesId, seriesTitle })
     onProgress?.({ stage: "done", progress: 1 })
     return target
   }
@@ -337,7 +351,7 @@ export async function prepareOfflineVideo(
   const existingTask = inflightPrepares.get(videoId)
   if (existingTask) {
     const result = await existingTask
-    markUsed(videoId, label, { cover })
+    markUsed(videoId, label, { cover, seriesId, seriesTitle })
     onProgress?.({ stage: "done", progress: 1 })
     return result
   }
@@ -366,6 +380,8 @@ export async function prepareOfflineVideo(
 
       markUsed(videoId, label, {
         cover,
+        seriesId,
+        seriesTitle,
         duration: stream.duration,
         width: stream.width,
         height: stream.height,
@@ -387,10 +403,10 @@ export async function prepareOfflineVideo(
   return task
 }
 
-/** 预加载剧集并传递已知封面，失败时保留现有静默跳过行为。 */
+/** 预加载剧集并传递真实剧集信息，失败时保留现有静默跳过行为。 */
 export async function preloadOfflineVideo(
   videoId: string,
-  options: { label?: string; cover?: string; protectedVideoIds?: string[] } = {}
+  options: { label?: string; cover?: string; seriesId?: string; seriesTitle?: string; protectedVideoIds?: string[] } = {}
 ): Promise<boolean> {
   if (!videoId) return false
   if (isOfflineVideoCached(videoId)) return true
@@ -399,6 +415,8 @@ export async function preloadOfflineVideo(
     await prepareOfflineVideo(videoId, {
       label: options.label,
       cover: options.cover,
+      seriesId: options.seriesId,
+      seriesTitle: options.seriesTitle,
       protectedVideoIds: options.protectedVideoIds,
     })
     return true
