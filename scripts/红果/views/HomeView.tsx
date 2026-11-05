@@ -1,5 +1,4 @@
 import {
-  Button,
   GeometryReader,
   HStack,
   Image,
@@ -104,7 +103,7 @@ function LandscapeCard({
   )
 }
 
-/** 将推荐海报铺满轮播页，用渐变遮罩承托剧名、简介和剧集入口。 */
+/** 将推荐海报铺满轮播页，点击海报进入剧集详情。 */
 function BannerView({
   banner,
   width,
@@ -119,7 +118,7 @@ function BannerView({
   const cover = banner.background_cover ?? banner.series_cover ?? ""
 
   return (
-    <ZStack frame={{ width, height }} clipped>
+    <ZStack frame={{ width, height }} clipped onTapGesture={() => onSelect(banner.series_id)}>
       {cover ? (
         <Image
           imageUrl={cover}
@@ -132,7 +131,7 @@ function BannerView({
       <VStack frame={{ width, height }} background={BANNER_SHADE} />
       <VStack spacing={0} frame={{ width, height }}>
         <Spacer />
-        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 78 }}>
+        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 40 }}>
           <HStack spacing={7}>
             <Image systemName="sparkles" foregroundStyle={BRAND_COLOR} font="caption" />
             <Text font="caption" bold foregroundStyle="rgba(255,255,255,0.85)">
@@ -152,20 +151,13 @@ function BannerView({
               {banner.series_intro}
             </Text>
           ) : null}
-          <Button action={() => onSelect(banner.series_id)} buttonStyle="plain">
-            <HStack spacing={9} padding={{ horizontal: 18, vertical: 12 }}
-              background={{ style: "white", shape: { type: "rect", cornerRadius: 24 } }}>
-              <Text font="subheadline" bold foregroundStyle={HOME_BACKGROUND}>查看剧集</Text>
-              <Image systemName="arrow.right" font="footnote" foregroundStyle={HOME_BACKGROUND} />
-            </HStack>
-          </Button>
         </VStack>
       </VStack>
     </ZStack>
   )
 }
 
-/** 使用原生分页轮播，支持滑动、点选和暂停；离开首页后清除自动切换计时。 */
+/** 使用原生分页轮播，支持滑动和自动切换；离开首页后清除切换计时。 */
 function HeroCarousel({
   banners,
   width,
@@ -176,16 +168,15 @@ function HeroCarousel({
   onSelect: (seriesId: string) => void
 }) {
   const selection = useObservable(0)
-  const [paused, setPaused] = useState(false)
   const [visible, setVisible] = useState(false)
   const height = Math.min(560, Math.max(440, width * 1.35))
   const index = selection.value
 
   useEffect(() => {
-    if (!visible || paused || banners.length < 2) return
+    if (!visible || banners.length < 2) return
     const timer = setTimeout(() => selection.setValue((index + 1) % banners.length), 8000)
     return () => clearTimeout(timer)
-  }, [visible, paused, index, banners.length])
+  }, [visible, index, banners.length])
 
   return (
     <ZStack
@@ -207,32 +198,6 @@ function HeroCarousel({
           />
         ))}
       </TabView>
-      <VStack spacing={0} frame={{ width, height }}>
-        <Spacer />
-        <HStack spacing={6} frame={{ width: width - 48, height: 44 }} padding={{ bottom: 16 }}>
-          {banners.map((banner, page) => (
-            <Button key={banner.series_id} action={() => selection.setValue(page)} buttonStyle="plain"
-              accessibilityLabel={`第 ${page + 1} 部：${banner.series_name}`}>
-              <VStack frame={{ width: 24, height: 44 }}>
-                <VStack frame={{ width: page === index ? 24 : 8, height: 3 }}
-                  background={page === index ? "white" : "rgba(255,255,255,0.3)"}
-                  clipShape={{ type: "rect", cornerRadius: 2 }} />
-              </VStack>
-            </Button>
-          ))}
-          <Spacer minLength={8} />
-          <Text font="caption" foregroundStyle="rgba(255,255,255,0.65)" lineLimit={1} minScaleFactor={0.8}>
-            {`${String(index + 1).padStart(2, "0")} / ${String(banners.length).padStart(2, "0")}`}
-          </Text>
-          {banners.length > 1 ? (
-            <Button action={() => setPaused(value => !value)} buttonStyle="plain"
-              accessibilityLabel={paused ? "开启自动轮播" : "暂停自动轮播"}>
-              <Image systemName={paused ? "play.fill" : "pause.fill"} font="caption"
-                foregroundStyle="white" frame={{ width: 36, height: 44 }} />
-            </Button>
-          ) : null}
-        </HStack>
-      </VStack>
     </ZStack>
   )
 }
