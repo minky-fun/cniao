@@ -23,7 +23,6 @@ const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 // 推荐分区向上覆盖海报底部，不改变图片尺寸。
 const BANNER_CONTENT_OVERLAP = 168
 const BANNER_BLEND_HEIGHT = 96
-const BANNER_TOP_BLEND_HEIGHT = 32
 
 const BANNER_BACKDROP_MASK = gradient("linear", {
   stops: [
@@ -96,7 +95,7 @@ function LandscapeCard({
   )
 }
 
-/** 保留海报位置，以顶部短渐隐衔接背景副本，底部渐隐随推荐区上移。 */
+/** 保留主海报顶部画面与位置，仅让底部渐隐随推荐区上移。 */
 function BannerView({
   banner,
   width,
@@ -115,8 +114,7 @@ function BannerView({
   const blendTop = height - BANNER_CONTENT_OVERLAP - BANNER_BLEND_HEIGHT / 2
   const artworkMask = gradient("linear", {
     stops: [
-      { color: "clear", location: 0 },
-      { color: "black", location: BANNER_TOP_BLEND_HEIGHT / height },
+      { color: "black", location: 0 },
       { color: "black", location: blendTop / height },
       { color: "rgba(0,0,0,0.92)", location: (blendTop + BANNER_BLEND_HEIGHT / 3) / height },
       { color: "rgba(0,0,0,0.4)", location: (blendTop + BANNER_BLEND_HEIGHT * 0.5) / height },
