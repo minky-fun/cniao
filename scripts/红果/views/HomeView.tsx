@@ -20,7 +20,7 @@ import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, SkeletonHo
 
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
-// 推荐分区向上覆盖海报底部，保留图片尺寸和海报文案位置。
+// 推荐分区向上覆盖海报底部，不改变图片尺寸。
 const BANNER_CONTENT_OVERLAP = 48
 
 const HOME_BACKGROUND = "systemBackground"
@@ -106,7 +106,7 @@ function LandscapeCard({
   )
 }
 
-/** 按原尺寸绘制海报并裁切底部，点击可进入剧集详情。 */
+/** 按原尺寸绘制海报并裁切底部，文案上移避开底部覆盖，点击进入剧集详情。 */
 function BannerView({
   banner,
   width,
@@ -141,7 +141,7 @@ function BannerView({
       <VStack frame={{ width, height }} background={BANNER_SHADE} />
       <VStack spacing={0} frame={{ width, height }}>
         <Spacer />
-        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 40 }}>
+        <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 64 }}>
           <HStack spacing={7}>
             <Image systemName="sparkles" foregroundStyle={BRAND_COLOR} font="caption" />
             <Text font="caption" bold foregroundStyle="rgba(255,255,255,0.85)">
@@ -179,7 +179,7 @@ function HeroCarousel({
 }) {
   const selection = useObservable(0)
   const [visible, setVisible] = useState(false)
-  // 只收起轮播布局，保留海报原尺寸和文案在屏幕上的位置。
+  // 只收起轮播布局，保留海报原尺寸，文案另设底部间距。
   const imageHeight = Math.min(560, Math.max(440, width * 1.35))
   const height = imageHeight - 92
   const index = selection.value
