@@ -32,6 +32,8 @@ interface IndexRecord {
 
   label: string
 
+  cover?: string
+
   lastUsedAt: number
 
   duration?: number
@@ -44,6 +46,7 @@ interface IndexRecord {
 export interface CacheEntry {
   videoId: string
   label: string
+  cover?: string
   sizeBytes: number
   lastUsedAt: number
 }
@@ -80,6 +83,7 @@ function writeIndex(index: CacheIndex): void {
   }
 }
 
+/** 读取实际缓存文件及索引中的封面；兼容没有封面字段的旧索引。 */
 export function listOfflineCache(): CacheEntry[] {
   const directory = cacheDirectory()
   if (!FileManager.existsSync(directory)) return []
@@ -105,6 +109,7 @@ export function listOfflineCache(): CacheEntry[] {
     entries.push({
       videoId,
       label: record?.label ?? "",
+      cover: record?.cover,
       sizeBytes: stat.size,
 
       lastUsedAt: record?.lastUsedAt ?? stat.modificationDate,
@@ -118,15 +123,17 @@ export function offlineCacheSize(): number {
   return listOfflineCache().reduce((sum, entry) => sum + entry.sizeBytes, 0)
 }
 
+/** 更新使用时间及可用的标题、封面和视频参数，保留未重新提供的元数据。 */
 function markUsed(
   videoId: string,
   label?: string,
-  meta?: { duration?: number; width?: number; height?: number }
+  meta?: { cover?: string; duration?: number; width?: number; height?: number }
 ): void {
   const index = readIndex()
   const existing = index[videoId]
   index[videoId] = {
     label: label ?? existing?.label ?? "",
+    cover: meta?.cover ?? existing?.cover,
     lastUsedAt: Date.now(),
     duration: meta?.duration ?? existing?.duration,
     width: meta?.width ?? existing?.width,
@@ -247,6 +254,8 @@ export interface PrepareOptions {
 
   label?: string
 
+  cover?: string
+
   onProgress?: (progress: PrepareProgress) => void
 
   protectedVideoIds?: string[]
@@ -290,17 +299,18 @@ function notifyCacheChanged(videoId: string, action: "added" | "removed" | "clea
 
 const inflightPrepares = new Map<string, Promise<string>>()
 
+/** 准备可播放缓存，并在下载、复用和并发等待完成时保存已知封面。 */
 export async function prepareOfflineVideo(
   videoId: string,
   options: PrepareOptions = {}
 ): Promise<string> {
-  const { label, onProgress, protectedVideoIds } = options
+  const { label, cover, onProgress, protectedVideoIds } = options
   ensureCacheDirectory()
 
   const target = cachePath(videoId)
 
   if (FileManager.existsSync(target)) {
-    markUsed(videoId, label)
+    markUsed(videoId, label, { cover })
     onProgress?.({ stage: "done", progress: 1 })
     return target
   }
@@ -308,6 +318,7 @@ export async function prepareOfflineVideo(
   const existingTask = inflightPrepares.get(videoId)
   if (existingTask) {
     const result = await existingTask
+    markUsed(videoId, label, { cover })
     onProgress?.({ stage: "done", progress: 1 })
     return result
   }
@@ -335,6 +346,7 @@ export async function prepareOfflineVideo(
       FileManager.writeAsBytesSync(target, playable)
 
       markUsed(videoId, label, {
+        cover,
         duration: stream.duration,
         width: stream.width,
         height: stream.height,
@@ -356,9 +368,10 @@ export async function prepareOfflineVideo(
   return task
 }
 
+/** 预加载剧集并传递已知封面，失败时保留现有静默跳过行为。 */
 export async function preloadOfflineVideo(
   videoId: string,
-  options: { label?: string; protectedVideoIds?: string[] } = {}
+  options: { label?: string; cover?: string; protectedVideoIds?: string[] } = {}
 ): Promise<boolean> {
   if (!videoId) return false
   if (isOfflineVideoCached(videoId)) return true
@@ -366,6 +379,7 @@ export async function preloadOfflineVideo(
   try {
     await prepareOfflineVideo(videoId, {
       label: options.label,
+      cover: options.cover,
       protectedVideoIds: options.protectedVideoIds,
     })
     return true

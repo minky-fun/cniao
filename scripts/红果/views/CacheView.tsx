@@ -8,18 +8,18 @@ import {
   Spacer,
   Text,
   VStack,
-  ZStack,
   useState,
 } from "scripting"
 import { PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "../core/config"
 import { formatBytes, formatRelativeTime } from "../core/format"
+import { loadPlayHistory } from "../core/history"
 import {
   clearOfflineCache,
   listOfflineCache,
   removeOfflineVideo,
   type CacheEntry,
 } from "../core/mediaCache"
-import { FILL_LEADING, PAGE_FRAME } from "./Common"
+import { CoverImage, FILL_LEADING, PAGE_FRAME } from "./Common"
 
 const CACHE_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
 const CARD_SURFACE = { light: "#FFFFFF", dark: "#1D1E1E" } as const
@@ -45,14 +45,15 @@ function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }
     >
       <GeometryReader frame={{ height: 16 }}>
         {({ size }) => (
-          <ZStack
-            alignment="leading"
-            frame={{ width: size.width, height: 16 }}
+          <HStack
+            spacing={0}
+            frame={{ width: size.width, height: 16, alignment: "leading" }}
             background={TRACK_SURFACE}
             clipShape={{ type: "rect", cornerRadius: 4 }}
           >
             <VStack frame={{ width: size.width * ratio, height: 16 }} background="#FA7705" />
-          </ZStack>
+            <VStack frame={{ width: size.width * (1 - ratio), height: 16 }} background={TRACK_SURFACE} />
+          </HStack>
         )}
       </GeometryReader>
       <HStack spacing={8} frame={FILL_LEADING}>
@@ -76,24 +77,20 @@ function UsageSummary({ usedBytes, count }: { usedBytes: number; count: number }
   )
 }
 
-/** 以紧凑列表展示真实缓存标题、体积和使用时间，删除按钮独立响应。 */
+/** 以真实剧集封面展示缓存标题、体积和使用时间，删除按钮独立响应。 */
 function CacheRow({
   entry,
+  cover,
   onRemove,
 }: {
   entry: CacheEntry
+  cover: string
   onRemove: (entry: CacheEntry) => void
 }) {
   return (
     <VStack alignment="leading" spacing={0} frame={FILL_LEADING}>
       <HStack spacing={12} alignment="center" padding={{ vertical: 14 }} frame={FILL_LEADING}>
-        <Image
-          systemName="play.rectangle.fill"
-          font={21}
-          foregroundStyle={ACCENT_COLOR}
-          frame={{ width: 44, height: 54 }}
-          background={{ style: "rgba(250,119,5,0.1)", shape: { type: "rect", cornerRadius: 10 } }}
-        />
+        <CoverImage url={cover} width={48} height={67} cornerRadius={6} />
         <VStack alignment="leading" spacing={8} frame={FILL_LEADING}>
           <Text font={14} fontWeight="medium" foregroundStyle="label" lineLimit={2} frame={FILL_LEADING}>
             {entryTitle(entry)}
@@ -121,16 +118,18 @@ function CacheRow({
   )
 }
 
-/** 按参考图展示缓存概览和一键清理，逐集明细按需展开并保留删除确认。 */
+/** 展示缓存概览和一键清理，默认显示带封面的逐集明细并保留删除确认。 */
 export function CacheView() {
   const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
-  const [showDetails, setShowDetails] = useState(false)
+  const [history, setHistory] = useState(loadPlayHistory)
+  const [showDetails, setShowDetails] = useState(true)
   const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
 
   /** 重新读取现有缓存，清空后收起明细，不触发下载或修改缓存策略。 */
   const refresh = () => {
     const currentEntries = listOfflineCache()
     setEntries(currentEntries)
+    setHistory(loadPlayHistory())
     if (currentEntries.length === 0) setShowDetails(false)
   }
 
@@ -231,7 +230,13 @@ export function CacheView() {
             {showDetails && entries.length > 0 ? (
               <LazyVStack alignment="leading" spacing={0} frame={FILL_LEADING}>
                 {entries.map(entry => (
-                  <CacheRow key={entry.videoId} entry={entry} onRemove={handleRemove} />
+                  <CacheRow
+                    key={entry.videoId}
+                    entry={entry}
+                    // 旧缓存未保存封面时，只使用视频 ID 完全匹配的本地历史。
+                    cover={entry.cover || history.find(record => record.lastVid === entry.videoId)?.cover || ""}
+                    onRemove={handleRemove}
+                  />
                 ))}
               </LazyVStack>
             ) : null}

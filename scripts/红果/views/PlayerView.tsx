@@ -49,6 +49,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
+/** 展示剧集播放页，向播放及预加载缓存传递当前剧集的真实封面。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -349,6 +350,7 @@ export function PlayerView({
         const label = formatEpisodeLabel(detail.series_name, targetIndex)
         const success = await preloadOfflineVideo(targetVid, {
           label,
+          cover: detail.series_cover,
           protectedVideoIds: [currentVid],
         })
 
