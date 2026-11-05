@@ -2,7 +2,6 @@ import { Button, HStack, Image, LazyVStack, ProgressView, ScrollView, Text, Text
 import { fetchSearch, fetchSuggest } from "../core/api"
 import type { SearchData, SuggestWord } from "../core/types"
 import {
-  BRAND_COLOR,
   EmptyView,
   ErrorView,
   FILL_CENTER,
@@ -178,7 +177,7 @@ export function SearchView({
           ) : null}
         </HStack>
 
-        <Text font="footnote" foregroundStyle={BRAND_COLOR} onTapGesture={() => search(keyword)}>
+        <Text font="footnote" foregroundStyle="#FA7705" onTapGesture={() => search(keyword)}>
           搜索
         </Text>
       </HStack>
