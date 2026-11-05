@@ -1,8 +1,36 @@
-import { Button, HStack, Link, List, Picker, Script, Section, Spacer, Text } from "scripting"
+import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, VStack } from "scripting"
+import { FILL_LEADING, PAGE_FRAME } from "./Common"
 
 export type ThemeMode = "system" | "light" | "dark"
 
-/** 管理全局主题，提供缓存与历史入口，并展示当前安装脚本的信息。 */
+const SETTINGS_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
+const CARD_BACKGROUND = {
+  style: { light: "#FFFFFF", dark: "#1D1E1E" },
+  shape: { type: "rect", cornerRadius: 12 },
+} as const
+const THEME_LABELS: Record<ThemeMode, string> = {
+  system: "跟随系统",
+  light: "浅色",
+  dark: "深色",
+}
+
+/** 统一设置行的间距、右侧说明和跳转箭头，可用于按钮、菜单及只读信息。 */
+function SettingsRow({ title, value, disclosure = false }: {
+  title: string
+  value?: string
+  disclosure?: boolean
+}) {
+  return (
+    <HStack spacing={8} padding={{ horizontal: 20 }} frame={{ maxWidth: "infinity", minHeight: 52 }}>
+      <Text font={14} foregroundStyle="label">{title}</Text>
+      <Spacer />
+      {value ? <Text font={14} foregroundStyle="secondaryLabel" lineLimit={2} multilineTextAlignment="trailing">{value}</Text> : null}
+      {disclosure ? <Image systemName="chevron.right" font={12} foregroundStyle="tertiaryLabel" /> : null}
+    </HStack>
+  )
+}
+
+/** 按参考图展示圆角设置卡片，保留主题、缓存、历史和真实脚本信息。 */
 export function SettingsView({
   theme,
   themeError,
@@ -19,55 +47,49 @@ export function SettingsView({
   const { version, author, contributors } = Script.metadata
 
   return (
-    <List navigationTitle="设置" navigationBarTitleDisplayMode="inline" listStyle="insetGroup">
-      <Section
-        header={<Text>外观</Text>}
-        footer={
-          <Text foregroundStyle={themeError ? "red" : "secondaryLabel"}>
-            {themeError || "主题立即应用到所有页面，并在下次启动时保留。"}
-          </Text>
-        }
-      >
-        <Picker
-          title="显示主题"
-          systemImage="circle.lefthalf.filled"
-          value={theme}
-          onChanged={(value: string) => onThemeChange(value as ThemeMode)}
-          pickerStyle="menu"
-        >
-          <Text tag="system">跟随系统</Text>
-          <Text tag="light">浅色</Text>
-          <Text tag="dark">深色</Text>
-        </Picker>
-      </Section>
+    <VStack spacing={0} frame={PAGE_FRAME} background={SETTINGS_SURFACE} foregroundStyle="label">
+      <Text font={18} fontWeight="semibold" frame={{ maxWidth: "infinity", height: 52 }}>设置</Text>
+      <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
+        <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
+          <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Button action={onOpenCache} buttonStyle="plain">
+              <SettingsRow title="清理缓存" disclosure />
+            </Button>
+          </VStack>
 
-      <Section header={<Text>数据管理</Text>}>
-        <Button title="清理缓存" systemImage="internaldrive" action={onOpenCache} />
-        <Button title="历史记录" systemImage="clock.arrow.circlepath" action={onOpenHistory} />
-      </Section>
+          <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain">
+              <Button title="跟随系统" systemImage={theme === "system" ? "checkmark" : undefined} action={() => onThemeChange("system")} />
+              <Button title="浅色" systemImage={theme === "light" ? "checkmark" : undefined} action={() => onThemeChange("light")} />
+              <Button title="深色" systemImage={theme === "dark" ? "checkmark" : undefined} action={() => onThemeChange("dark")} />
+            </Menu>
+            {themeError ? (
+              <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+                {themeError}
+              </Text>
+            ) : null}
+            <Button action={onOpenHistory} buttonStyle="plain">
+              <SettingsRow title="历史记录" disclosure />
+            </Button>
+          </VStack>
 
-      <Section header={<Text>关于红果</Text>}>
-        <HStack>
-          <Text>版本号</Text>
-          <Spacer />
-          <Text foregroundStyle="secondaryLabel">{version}</Text>
-        </HStack>
-        {author ? (
-          <HStack>
-            <Text>作者</Text>
-            <Spacer />
-            <Text foregroundStyle="secondaryLabel">{author.name}</Text>
-          </HStack>
-        ) : null}
-        {author?.homepage ? <Link url={author.homepage}>作者主页</Link> : null}
-        {contributors?.length ? (
-          <HStack>
-            <Text>贡献者</Text>
-            <Spacer />
-            <Text foregroundStyle="secondaryLabel">{contributors.map(person => person.name).join("、")}</Text>
-          </HStack>
-        ) : null}
-      </Section>
-    </List>
+          <VStack alignment="leading" spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Text font={14} fontWeight="medium" padding={{ horizontal: 20, top: 18, bottom: 6 }} frame={FILL_LEADING}>
+              关于红果
+            </Text>
+            <SettingsRow title="版本号" value={version} />
+            {author ? <SettingsRow title="作者" value={author.name} /> : null}
+            {author?.homepage ? (
+              <Link url={author.homepage} buttonStyle="plain">
+                <SettingsRow title="作者主页" disclosure />
+              </Link>
+            ) : null}
+            {contributors?.length ? (
+              <SettingsRow title="贡献者" value={contributors.map(person => person.name).join("、")} />
+            ) : null}
+          </VStack>
+        </VStack>
+      </ScrollView>
+    </VStack>
   )
 }
