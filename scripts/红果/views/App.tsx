@@ -125,7 +125,6 @@ function TabPage({
     <ZStack
       navigationTitle={title}
       navigationBarTitleDisplayMode="inline"
-      navigationBarVisibility="visible"
       toolbar={{
         cancellationAction: <Button title="关闭" action={onClose} />,
         topBarTrailing: [
@@ -143,7 +142,7 @@ function TabPage({
   )
 }
 
-/** 将标签页放在导航栈根部，后续页面不包含标签栏，并统一应用已保存的主题。 */
+/** 一级标签页隐藏系统导航栏以释放顶部空间，后续页面在标签栏之外展示并继承主题。 */
 export function App() {
   const selection = useObservable(0)
   const path = useObservable<string[]>([])
@@ -196,6 +195,7 @@ export function App() {
     >
       <TabView
         selection={selection}
+        navigationBarVisibility="hidden"
         navigationDestination={
           <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close, pop)}</NavigationDestination>
         }
