@@ -145,7 +145,7 @@ function BannerView({
                   resizable
                   scaleToFill
                   frame={{ width, height: imageHeight }}
-                  blur={6}
+                  blur={2}
                 />
               </ZStack>
             ) : null}
