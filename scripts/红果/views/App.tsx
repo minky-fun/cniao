@@ -109,63 +109,53 @@ function buildRoute(route: Route | null, push: (raw: string) => void, onClose: (
   )
 }
 
-/** 为每个标签维护独立导航栈，一级页面显示标签栏，所有后续页面统一隐藏。 */
-function TabStack({
+/** 展示一级标签内容及工具栏，后续页面由外层导航栈统一推入。 */
+function TabPage({
   title,
   render,
   onClose,
+  push,
 }: {
   title: string
   render: (push: (raw: string) => void) => JSX.Element
   onClose: () => void
+  push: (raw: string) => void
 }) {
-  const path = useObservable<string[]>([])
-  /** 在当前标签内追加导航路径。 */
-  const push = (raw: string) => path.setValue([...path.value, raw])
-  /** 管理完成后只返回上一页，保留当前标签的导航历史。 */
-  const pop = () => path.setValue(path.value.slice(0, -1))
-
   return (
-    <NavigationStack path={path}>
-
-      <ZStack
-        navigationTitle={title}
-        navigationBarTitleDisplayMode="inline"
-        tabBarVisibility="visible"
-        toolbar={{
-          cancellationAction: <Button title="关闭" action={onClose} />,
-          topBarTrailing: [
-            <Button
-              title=""
-              systemImage="clock.arrow.circlepath"
-              action={() => push(HISTORY_ROUTE)}
-            />,
-            <Button title="搜索" systemImage="magnifyingglass" action={() => push(SEARCH_ROUTE)} />,
-          ],
-        }}
-        navigationDestination={
-          <NavigationDestination>
-            {raw => (
-              <ZStack tabBarVisibility="hidden">
-                {buildRoute(decodeRoute(raw), push, onClose, pop)}
-              </ZStack>
-            )}
-          </NavigationDestination>
-        }
-      >
-        {render(push)}
-      </ZStack>
-    </NavigationStack>
+    <ZStack
+      navigationTitle={title}
+      navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility="visible"
+      toolbar={{
+        cancellationAction: <Button title="关闭" action={onClose} />,
+        topBarTrailing: [
+          <Button
+            title=""
+            systemImage="clock.arrow.circlepath"
+            action={() => push(HISTORY_ROUTE)}
+          />,
+          <Button title="搜索" systemImage="magnifyingglass" action={() => push(SEARCH_ROUTE)} />,
+        ],
+      }}
+    >
+      {render(push)}
+    </ZStack>
   )
 }
 
-/** 以橙色高亮主标签选中项，并在整个脚本界面应用已保存的主题。 */
+/** 将标签页放在导航栈根部，后续页面不包含标签栏，并统一应用已保存的主题。 */
 export function App() {
   const selection = useObservable(0)
+  const path = useObservable<string[]>([])
   const dismiss = Navigation.useDismiss()
   // 首次使用跟随系统，重新启动时恢复用户选择。
   const [theme, setTheme] = useState<ThemeMode>(() => Storage.get<ThemeMode>(THEME_STORAGE_KEY) ?? "system")
   const [themeError, setThemeError] = useState("")
+
+  /** 在标签页之外追加页面，保留根部标签的选择和内容状态。 */
+  const push = (raw: string) => path.setValue([...path.value, raw])
+  /** 完成管理后只返回上一页，系统返回手势也同步使用同一导航路径。 */
+  const pop = () => path.setValue(path.value.slice(0, -1))
 
   /** 保存主题后更新界面；保存失败时保留当前选择并提示原因。 */
   const changeTheme = (value: ThemeMode) => {
@@ -199,52 +189,63 @@ export function App() {
   }
 
   return (
-    <TabView
-      selection={selection}
+    <NavigationStack
+      path={path}
       tint="#fa7705"
       preferredColorScheme={theme === "system" ? undefined : theme}
     >
-      <Tab title="首页" systemImage="house.fill" value={0}>
-        <TabStack
-          title="红果剧场"
-          onClose={close}
-          render={push => <HomeView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
-        />
-      </Tab>
+      <TabView
+        selection={selection}
+        navigationDestination={
+          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close, pop)}</NavigationDestination>
+        }
+      >
+        <Tab title="首页" systemImage="house.fill" value={0}>
+          <TabPage
+            title="红果剧场"
+            push={push}
+            onClose={close}
+            render={push => <HomeView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
+          />
+        </Tab>
 
-      <Tab title="榜单" systemImage="chart.bar.fill" value={1}>
-        <TabStack
-          title="榜单"
-          onClose={close}
-          render={push => (
-            <RankView onSelectSeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
-          )}
-        />
-      </Tab>
+        <Tab title="榜单" systemImage="chart.bar.fill" value={1}>
+          <TabPage
+            title="榜单"
+            push={push}
+            onClose={close}
+            render={push => (
+              <RankView onSelectSeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
+            )}
+          />
+        </Tab>
 
-      <Tab title="分类" systemImage="square.grid.2x2.fill" value={2}>
-        <TabStack
-          title="分类"
-          onClose={close}
-          render={push => <CategoryView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
-        />
-      </Tab>
+        <Tab title="分类" systemImage="square.grid.2x2.fill" value={2}>
+          <TabPage
+            title="分类"
+            push={push}
+            onClose={close}
+            render={push => <CategoryView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
+          />
+        </Tab>
 
-      <Tab title="设置" systemImage="gearshape.fill" value={4}>
-        <TabStack
-          title="设置"
-          onClose={close}
-          render={push => (
-            <SettingsView
-              theme={theme}
-              themeError={themeError}
-              onThemeChange={changeTheme}
-              onOpenCache={() => push(CACHE_ROUTE)}
-              onOpenHistory={() => push(HISTORY_ROUTE)}
-            />
-          )}
-        />
-      </Tab>
-    </TabView>
+        <Tab title="设置" systemImage="gearshape.fill" value={4}>
+          <TabPage
+            title="设置"
+            push={push}
+            onClose={close}
+            render={push => (
+              <SettingsView
+                theme={theme}
+                themeError={themeError}
+                onThemeChange={changeTheme}
+                onOpenCache={() => push(CACHE_ROUTE)}
+                onOpenHistory={() => push(HISTORY_ROUTE)}
+              />
+            )}
+          />
+        </Tab>
+      </TabView>
+    </NavigationStack>
   )
 }
