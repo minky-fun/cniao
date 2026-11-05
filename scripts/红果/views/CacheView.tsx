@@ -89,7 +89,7 @@ function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count:
   )
 }
 
-/** 先展示页面，再异步读取缓存容量，保留清理、保留集数和管理入口。 */
+/** 以贯穿安全区的主题背景展示缓存页，异步读取容量并保留清理和管理入口。 */
 export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
   const [entries, setEntries] = useState<CacheEntry[]>([])
   const [maxEntries, setMaxEntries] = useState(getPlaybackCacheMaxEntries)
@@ -166,7 +166,13 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
-      background={CACHE_SURFACE}
+      background={
+        <VStack
+          frame={PAGE_FRAME}
+          background={CACHE_SURFACE}
+          ignoresSafeArea={{ regions: "container" }}
+        />
+      }
       foregroundStyle="label"
       navigationTitle="清理缓存"
       navigationBarTitleDisplayMode="inline"
