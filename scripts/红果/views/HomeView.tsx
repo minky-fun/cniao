@@ -16,7 +16,7 @@ import {
 import { fetchHome } from "../core/api"
 import { loadCachedHome, saveCachedHome } from "../core/feedCache"
 import type { HomeBanner, HomeData, HomeSection, SeriesCard } from "../core/types"
-import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, RankBadge, SkeletonHome } from "./Common"
+import { CoverImage, EmptyView, ErrorView, FILL_LEADING, RankBadge, SkeletonHome } from "./Common"
 
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
@@ -86,7 +86,7 @@ function LandscapeCard({
   )
 }
 
-/** 单张海报从状态栏下方开始，顶部短渐隐融入背景，保留底部渐隐和文案位置。 */
+/** 单张海报从状态栏下方开始，保留渐隐、剧名和简介，省略精选推荐标识。 */
 function BannerView({
   banner,
   width,
@@ -157,12 +157,6 @@ function BannerView({
           frame={{ width: width - 48 }}
           padding={{ bottom: BANNER_CONTENT_OVERLAP + 16 }}
         >
-          <HStack spacing={7}>
-            <Image systemName="sparkles" foregroundStyle={BRAND_COLOR} font="caption" />
-            <Text font="caption" bold foregroundStyle="rgba(255,255,255,0.85)">
-              精选推荐
-            </Text>
-          </HStack>
           <Text font={30} bold foregroundStyle="white" lineLimit={1} minScaleFactor={0.65}>
             {banner.series_name}
           </Text>
