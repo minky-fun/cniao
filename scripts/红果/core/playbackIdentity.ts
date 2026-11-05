@@ -1,6 +1,6 @@
 import { fetch } from "scripting"
 import { Buffer } from "node:buffer"
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto"
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto"
 import { gzipSync, gunzipSync } from "node:zlib"
 import { HttpError } from "./http"
 import { signGorgon } from "./playbackSign"
@@ -61,10 +61,19 @@ export function decodeRegistration(input: Uint8Array): string {
   return gunzipSync(plain.slice(64)).toString("utf8")
 }
 
+/** Generate an RFC 4122 v4 device UUID using Scripting's supported secure random bytes. */
+function createDeviceUuid(): string {
+  const bytes = randomBytes(16)
+  bytes[6] = (bytes[6] & 15) | 64
+  bytes[8] = (bytes[8] & 63) | 128
+  const hex = bytes.toString("hex")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 /** Register a real anonymous device instead of synthesizing unregistered device numbers. */
 async function registerIdentity(): Promise<PlaybackIdentity> {
   const stamp = Date.now(), seconds = Math.floor(stamp / 1000)
-  const cdid = randomUUID(), clientudid = randomUUID(), openudid = randomBytes(8).toString("hex")
+  const cdid = createDeviceUuid(), clientudid = createDeviceUuid(), openudid = randomBytes(8).toString("hex")
   const plain = JSON.stringify({ magic_tag: "ss_app_log", header: {
     aid: 8662, access: "wifi", app_version: "7.1.3.32", app_version_minor: "", channel: "update_64",
     device_brand: "Redmi", device_manufacturer: "Redmi", device_model: "25053RT47C", device_category: "phone",

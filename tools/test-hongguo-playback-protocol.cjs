@@ -6,7 +6,11 @@ const vm = require("node:vm")
 const crypto = require("node:crypto")
 const build = path.join(__dirname, "../work/hongguo-build/core")
 const vectors = require("./fixtures/hongguo-playback-vectors.json")
-const fixedCrypto = { ...crypto, randomBytes: size => Buffer.alloc(size) }
+const supportedCrypto = {
+  createHash: crypto.createHash, randomBytes: crypto.randomBytes,
+  createCipheriv: crypto.createCipheriv, createDecipheriv: crypto.createDecipheriv,
+}
+const fixedCrypto = { ...supportedCrypto, randomBytes: size => Buffer.alloc(size) }
 
 /** Load real protocol code with explicit host dependencies and optional deterministic randomness. */
 function load(name, dependencies = {}, globals = {}) {
@@ -17,6 +21,7 @@ function load(name, dependencies = {}, globals = {}) {
     require(name) {
       if (Object.hasOwn(dependencies, name)) return dependencies[name]
       assert.ok(name.startsWith("node:"), `Unexpected dependency: ${name}`)
+      if (name === "node:crypto") return supportedCrypto
       return require(name)
     },
     ...globals,
@@ -129,4 +134,21 @@ test("anonymous registration supports an absent token and rejects missing or rou
   await assert.rejects(host.api.getPlaybackIdentity(), /完整身份/)
   assert.equal(host.store.size, 0)
   assert.ok(await host.api.getPlaybackIdentity())
+})
+
+/** Exercise real registration with the reduced crypto adapter that has no randomUUID export. */
+test("registration generates distinct v4 device UUIDs without a randomUUID API", async () => {
+  assert.equal(supportedCrypto.randomUUID, undefined)
+  const { api, calls } = identityHost([registrationReply(), registrationReply("1000000000000000003", "1000000000000000004")])
+  const first = await api.getPlaybackIdentity()
+  await api.getPlaybackIdentity(first)
+  const uuids = calls.flatMap(call => {
+    const { header } = JSON.parse(api.decodeRegistration(new Uint8Array(call.options.body)))
+    assert.equal(new URL(call.url).searchParams.get("cdid"), header.cdid)
+    return [header.cdid, header.clientudid]
+  })
+  for (const uuid of uuids) {
+    assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+  }
+  assert.equal(new Set(uuids).size, 4)
 })

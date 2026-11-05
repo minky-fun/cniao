@@ -133,3 +133,18 @@ Node 兼容模块 `node:buffer`、`node:crypto`、`node:zlib` 及本地 dts。
 安装包仅引用这些已确认的内置模块，不依赖 npm 包或外部解析服务。
 最终 TypeScript 检查及 37 项回归测试通过，ZIP 完整性、包内版本与依赖源码一致性检查通过。
 仍需在 iPhone 安装 1.0.2 后验证该剧第 1 集播放、连续切集，以及配置 10 集后逐集补齐缓存。
+
+### 1.0.3 手机端 UUID 兼容修复
+
+手机截图确认当前 Scripting 的 `node:crypto` 没有实现 `randomUUID`，导致游客设备注册在发请求前中断。
+本地 dts 声明存在该方法，桌面 Node 也支持，不能据此认定手机运行时支持。
+按官方 Node API Compatibility 页面核对兼容范围后，改用已支持的 `randomBytes(16)`，
+设置 RFC 4122 v4 版本和 variant 位，再生成 `cdid` 与 `clientudid`。
+
+协议回归测试默认只注入生产路径使用的四项 crypto 方法：`createHash`、`randomBytes`、
+`createCipheriv`、`createDecipheriv`，不再将完整桌面 crypto 模块交给被测模块。
+新增无 `randomUUID` 环境下的真实注册代码回归，检查 UUID 格式、版本、variant、
+同次注册的两个标识以及更新注册后的标识不重复，并核对请求参数与注册载荷一致。
+
+TypeScript 检查和 38 项回归测试通过；安装包更新为 1.0.3。
+这些检查属于桌面编译和模拟运行，仍需手机覆盖安装后验证该剧第 1 集及连续缓存。

@@ -29,7 +29,7 @@
   "name" : "红果",
   "entry" : "index.tsx",
   "color" : "rgba(238, 92, 98,1)",
-  "version" : "1.0.2",
+  "version" : "1.0.3",
   "localizedNames" : {
     "es" : "Hongguo",
     "ja" : "紅果",
