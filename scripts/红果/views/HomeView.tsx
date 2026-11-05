@@ -20,6 +20,8 @@ import { BRAND_COLOR, CoverImage, EmptyView, ErrorView, FILL_LEADING, SkeletonHo
 
 const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
+// 推荐分区向上覆盖海报底部，保留图片尺寸和海报文案位置。
+const BANNER_CONTENT_OVERLAP = 24
 
 const HOME_BACKGROUND = "systemBackground"
 const BANNER_SHADE = gradient("linear", {
@@ -238,7 +240,7 @@ function SectionRow({
   )
 }
 
-/** 按系统外观加载首页，以通栏海报衔接推荐内容并保留离线快照与重试。 */
+/** 按系统外观加载首页，以推荐分区覆盖海报底部并保留离线快照与重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
@@ -301,7 +303,12 @@ export function HomeView({
           frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
           background={HOME_BACKGROUND}
         >
-          <VStack alignment="leading" spacing={0} frame={{ width: size.width }} padding={{ bottom: 28 }}>
+          <VStack
+            alignment="leading"
+            spacing={featured.length > 0 ? -BANNER_CONTENT_OVERLAP : 0}
+            frame={{ width: size.width }}
+            padding={{ bottom: 28 }}
+          >
             {featured.length > 0 ? (
               <HeroCarousel
                 key={featured.map(banner => banner.series_id).join(":")}
@@ -310,7 +317,13 @@ export function HomeView({
                 onSelect={onSelectSeries}
               />
             ) : null}
-            <VStack alignment="leading" spacing={26} frame={{ width: size.width }} padding={{ top: 8 }}>
+            <VStack
+              alignment="leading"
+              spacing={26}
+              frame={{ width: size.width }}
+              padding={{ top: 8 }}
+              background={HOME_BACKGROUND}
+            >
               {errorMessage ? (
                 <Text
                   font="caption"
