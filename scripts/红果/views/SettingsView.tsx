@@ -1,4 +1,4 @@
-import { Button, HStack, Image, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
+import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
 import { AUTO_CACHE_EPISODE_COUNT } from "../core/config"
 import { getAutoCacheEnabled, setAutoCacheEnabled } from "../core/mediaCache"
@@ -53,7 +53,7 @@ export function SettingsView({
   onOpenHistory: () => void
   onExit: () => void
 }) {
-  const { version, contributors } = Script.metadata
+  const { version, author, contributors } = Script.metadata
   const [autoCache, setAutoCache] = useState(getAutoCacheEnabled)
   const [autoCacheError, setAutoCacheError] = useState("")
 
@@ -130,6 +130,11 @@ export function SettingsView({
               关于红果
             </Text>
             <SettingsRow title="版本号" value={version} />
+            {author?.homepage ? (
+              <Link url={author.homepage} buttonStyle="plain" frame={FILL_LEADING}>
+                <SettingsRow title="作者主页" disclosure />
+              </Link>
+            ) : null}
             {contributors?.length ? (
               <SettingsRow title="贡献者" value={contributors.map(person => person.name).join("、")} />
             ) : null}
