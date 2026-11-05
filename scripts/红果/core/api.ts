@@ -1,7 +1,6 @@
-import { fetchLoaderEntry, fetchSuggestJson, HttpError } from "./http"
+import { fetchLoaderEntry, getJson, HttpError } from "./http"
 import {
   WEB_BASE,
-  SUGGEST_APP_ID,
   CATEGORY_PAGE_SIZE,
   RANK_TOTAL_PAGES,
 } from "./config"
@@ -51,9 +50,8 @@ interface PlayerEntry {
 }
 
 interface SearchEntry {
-  query?: string
-  searchList?: SearchResultItem[]
-  totalCount?: string | number
+  searchList: SearchResultItem[]
+  totalCount: number
 }
 
 interface CategoryEntry {
@@ -190,46 +188,38 @@ export async function fetchPlayer(seriesId: string, vid: string): Promise<Player
   }
 }
 
-function isSearchRelevant(query: string, items: SearchResultItem[]): boolean {
-  const needle = query.trim().toLowerCase()
-  if (needle.length === 0 || items.length === 0) return false
-
-  return items.some(item => {
-    const haystack = `${item.video_data?.series_title ?? ""}${item.name ?? ""}`.toLowerCase()
-    return haystack.includes(needle)
-  })
-}
-
+/** 请求网站当前的搜索结果接口，保留服务端返回的剧集排序。 */
 export async function fetchSearch(keyword: string): Promise<SearchData> {
-  const entry = await fetchLoaderEntry<SearchEntry | null>(
-    `/search/${encodeURIComponent(keyword)}`,
-    "search_(keyword)/page"
-  )
+  const url = `${WEB_BASE}/api/search/result?query=${encodeURIComponent(keyword)}`
+  const entry = await getJson(url) as SearchEntry
+  if (!entry || !Array.isArray(entry.searchList) || typeof entry.totalCount !== "number") {
+    throw new HttpError("搜索结果格式异常", 0)
+  }
 
-  const results = asArray(entry?.searchList)
+  const results = entry.searchList
     .filter((item): item is SearchResultItem => Boolean(item?.video_data?.series_id))
     .map(item => ({
       ...item,
       video_data: item.video_data ? normalizeCard(item.video_data) : null,
     }))
-  const query = entry?.query ?? keyword
 
   return {
-    query,
+    query: keyword,
     searchList: results,
-    totalCount: Number(entry?.totalCount ?? results.length),
-    isRelevant: isSearchRelevant(query, results),
+    totalCount: entry.totalCount,
+    isRelevant: results.length > 0,
   }
 }
 
+/** 获取网站当前搜索接口返回的联想词。 */
 export async function fetchSuggest(keyword: string): Promise<SuggestWord[]> {
-  const url =
-    `${WEB_BASE}/incent_resource/suggestion` +
-    `?app_id=${SUGGEST_APP_ID}&query=${encodeURIComponent(keyword)}&count=10`
+  const url = `${WEB_BASE}/api/search/suggestion?query=${encodeURIComponent(keyword)}`
 
-  const payload = await fetchSuggestJson(url)
-  const items = (payload as { suggest_list?: SuggestWord[] } | null)?.suggest_list
-  return asArray(items)
+  const payload = await getJson(url) as { suggestionList: SuggestWord[] }
+  if (!payload || !Array.isArray(payload.suggestionList)) {
+    throw new HttpError("搜索联想格式异常", 0)
+  }
+  return payload.suggestionList
 }
 
 export async function fetchCategory(
