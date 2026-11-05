@@ -86,7 +86,7 @@ function LandscapeCard({
   )
 }
 
-/** 用轻微模糊的海报副本填充状态栏，主图下移至安全区，保留底部渐隐和文案位置。 */
+/** 用单张海报铺满顶部，顶部短渐隐融入页面背景，保留底部渐隐和文案位置。 */
 function BannerView({
   banner,
   width,
@@ -103,11 +103,15 @@ function BannerView({
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
+  const topBlendHeight = Math.min(80, topInset + 24)
   // 渐隐带以推荐区起点为中心，随覆盖高度移动，文案末行附近保留暗底。
   const blendTop = height - BANNER_CONTENT_OVERLAP - BANNER_BLEND_HEIGHT / 2
   const artworkMask = gradient("linear", {
     stops: [
-      { color: "black", location: 0 },
+      { color: "clear", location: 0 },
+      { color: "rgba(0,0,0,0.4)", location: topBlendHeight * 0.35 / height },
+      { color: "rgba(0,0,0,0.92)", location: topBlendHeight * 0.75 / height },
+      { color: "black", location: topBlendHeight / height },
       { color: "black", location: blendTop / height },
       { color: "rgba(0,0,0,0.92)", location: (blendTop + BANNER_BLEND_HEIGHT / 3) / height },
       { color: "rgba(0,0,0,0.4)", location: (blendTop + BANNER_BLEND_HEIGHT * 0.5) / height },
@@ -133,31 +137,13 @@ function BannerView({
         mask={<VStack frame={{ width, height }} background={artworkMask} />}
       >
         {cover ? (
-          <>
-            {topInset > 0 ? (
-              <ZStack
-                alignment="top"
-                frame={{ width, height: topInset, alignment: "top" }}
-                clipped
-              >
-                <Image
-                  imageUrl={cover}
-                  resizable
-                  scaleToFill
-                  frame={{ width, height: imageHeight }}
-                  blur={4}
-                />
-              </ZStack>
-            ) : null}
-            <Image
-              imageUrl={cover}
-              resizable
-              scaleToFill
-              frame={{ width, height: imageHeight }}
-              clipped
-              offset={{ x: 0, y: topInset }}
-            />
-          </>
+          <Image
+            imageUrl={cover}
+            resizable
+            scaleToFill
+            frame={{ width, height: imageHeight + topInset }}
+            clipped
+          />
         ) : null}
         <VStack frame={{ width, height }} background={BANNER_SHADE} />
       </ZStack>
@@ -194,7 +180,7 @@ function BannerView({
   )
 }
 
-/** 同页轮播主图与顶部副本，预留安全区高度并保留文案和推荐区位置。 */
+/** 轮播单张渐隐海报，计入安全区高度并保留文案和推荐区位置。 */
 function HeroCarousel({
   banners,
   selection,
@@ -209,7 +195,7 @@ function HeroCarousel({
   onSelect: (seriesId: string) => void
 }) {
   const [visible, setVisible] = useState(false)
-  // 主图保留原尺寸，顶部空间由副本填充，不再让状态栏遮挡主图。
+  // 单张海报延伸至顶部安全区，轮播及推荐区高度沿用原布局。
   const imageHeight = Math.min(560, Math.max(440, width * 1.35))
   const height = imageHeight - 92 + topInset
   const index = selection.value
@@ -270,7 +256,7 @@ function SectionRow({
   )
 }
 
-/** 顶部副本延伸到状态栏，主图保留安全区，沿用主题、离线快照和重试。 */
+/** 海报延伸到状态栏并渐隐，沿用主题、离线快照和重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
