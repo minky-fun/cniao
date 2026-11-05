@@ -132,7 +132,6 @@ function TabStack({
               systemImage="clock.arrow.circlepath"
               action={() => push(HISTORY_ROUTE)}
             />,
-            <Button title="缓存" action={() => push(CACHE_ROUTE)} />,
             <Button title="搜索" systemImage="magnifyingglass" action={() => push(SEARCH_ROUTE)} />,
           ],
         }}
