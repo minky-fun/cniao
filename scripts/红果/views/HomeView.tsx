@@ -24,16 +24,6 @@ const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 const BANNER_CONTENT_OVERLAP = 168
 const BANNER_BLEND_HEIGHT = 96
 
-const BANNER_BACKDROP_MASK = gradient("linear", {
-  stops: [
-    { color: "rgba(0,0,0,0.28)", location: 0 },
-    { color: "rgba(0,0,0,0.45)", location: 0.55 },
-    { color: "clear", location: 1 },
-  ],
-  startPoint: "top",
-  endPoint: "bottom",
-})
-
 const HOME_BACKGROUND = "systemBackground"
 // 减淡海报顶部遮罩，底部继续保留文案所需的暗底。
 const BANNER_SHADE = gradient("linear", {
@@ -96,7 +86,7 @@ function LandscapeCard({
   )
 }
 
-/** 保留主海报顶部画面与位置，仅让底部渐隐随推荐区上移。 */
+/** 从 banner 顶部展示主海报，底部渐隐与推荐区覆盖位置同步。 */
 function BannerView({
   banner,
   width,
@@ -184,22 +174,24 @@ function BannerView({
   )
 }
 
-/** 与首页背景共享轮播选中项，支持滑动与自动切换，离开首页后清除计时。 */
+/** 主海报延伸到状态栏，增加顶部安全区高度以保留文案和推荐区位置。 */
 function HeroCarousel({
   banners,
   selection,
   width,
+  topInset,
   onSelect,
 }: {
   banners: HomeBanner[]
   selection: Observable<number>
   width: number
+  topInset: number
   onSelect: (seriesId: string) => void
 }) {
   const [visible, setVisible] = useState(false)
-  // 只收起轮播布局，保留海报原尺寸，文案另设底部间距。
+  // 海报尺寸不变，向上扩展的空间由轮播高度补回。
   const imageHeight = Math.min(560, Math.max(440, width * 1.35))
-  const height = imageHeight - 92
+  const height = imageHeight - 92 + topInset
   const index = selection.value
 
   useEffect(() => {
@@ -257,7 +249,7 @@ function SectionRow({
   )
 }
 
-/** 按系统外观加载首页，以轮播背景衔接导航栏，保留推荐覆盖、离线快照与重试。 */
+/** 主 banner 直接延伸到状态栏，保留底部安全区、主题、离线快照和重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
@@ -304,17 +296,13 @@ export function HomeView({
   if (!hasContent) return <EmptyView text="暂无内容" />
 
   const featured = banners.slice(0, 5)
-  const activeBanner = featured[bannerSelection.value]
-  const backdropCover = activeBanner?.background_cover ?? activeBanner?.series_cover
-
-  // 仅背景副本向上绘制到导航栏后方，主海报与滚动内容保留原有安全区。
   return (
     <GeometryReader
       background={HOME_BACKGROUND}
       foregroundStyle="label"
       toolbarBackground={{ style: HOME_BACKGROUND, bars: ["tabBar"] }}
       toolbarBackgroundVisibility={{
-        visibility: backdropCover ? "hidden" : "visible",
+        visibility: featured.length > 0 ? "hidden" : "visible",
         bars: ["navigationBar"],
       }}
     >
@@ -322,32 +310,9 @@ export function HomeView({
         <ScrollView
           scrollIndicator="hidden"
           frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+          ignoresSafeArea={featured.length > 0 ? { regions: "container", edges: "top" } : false}
           toolbarBackgroundVisibility={{ visibility: "visible", bars: ["tabBar"] }}
-          background={backdropCover ? {
-            alignment: "top",
-            content: (
-              <ZStack
-                alignment="top"
-                frame={{ width: size.width, height: safeAreaInsets.top + 160, alignment: "top" }}
-                clipped
-                mask={
-                  <VStack
-                    frame={{ width: size.width, height: safeAreaInsets.top + 160 }}
-                    background={BANNER_BACKDROP_MASK}
-                  />
-                }
-                offset={{ x: 0, y: -safeAreaInsets.top }}
-              >
-                <Image
-                  imageUrl={backdropCover}
-                  resizable
-                  scaleToFill
-                  frame={{ width: size.width + 64, height: Math.min(560, Math.max(440, size.width * 1.35)) }}
-                  blur={24}
-                />
-              </ZStack>
-            ),
-          } : HOME_BACKGROUND}
+          background={HOME_BACKGROUND}
         >
           <VStack
             alignment="leading"
@@ -361,6 +326,7 @@ export function HomeView({
                 banners={featured}
                 selection={bannerSelection}
                 width={size.width}
+                topInset={safeAreaInsets.top}
                 onSelect={onSelectSeries}
               />
             ) : null}
