@@ -22,6 +22,7 @@ const CARD_WIDTH = 112
 const CARD_COVER_HEIGHT = Math.round((CARD_WIDTH * 3) / 2)
 // 推荐分区向上覆盖海报底部，不改变图片尺寸。
 const BANNER_CONTENT_OVERLAP = 48
+const BANNER_BLEND_HEIGHT = 96
 
 const HOME_BACKGROUND = "systemBackground"
 const BANNER_SHADE = gradient("linear", {
@@ -29,8 +30,7 @@ const BANNER_SHADE = gradient("linear", {
     { color: "rgba(16,16,17,0.6)", location: 0 },
     { color: "rgba(16,16,17,0.05)", location: 0.3 },
     { color: "rgba(16,16,17,0.6)", location: 0.55 },
-    { color: "rgba(16,16,17,0.8)", location: 0.93 },
-    { color: HOME_BACKGROUND, location: 1 },
+    { color: "rgba(16,16,17,0.8)", location: 1 },
   ],
   startPoint: "top",
   endPoint: "bottom",
@@ -85,7 +85,7 @@ function LandscapeCard({
   )
 }
 
-/** 按原尺寸绘制海报并裁切底部，文案上移避开底部覆盖，点击进入剧集详情。 */
+/** 保留海报与文案位置，将底部画面渐隐至页面背景，点击进入剧集详情。 */
 function BannerView({
   banner,
   width,
@@ -100,6 +100,19 @@ function BannerView({
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
+  // 固定渐隐高度，文案末行附近保留暗底，推荐标题处逐渐露出主题背景。
+  const artworkMask = gradient("linear", {
+    stops: [
+      { color: "black", location: 0 },
+      { color: "rgba(0,0,0,0.92)", location: 1 / 3 },
+      { color: "rgba(0,0,0,0.4)", location: 0.5 },
+      { color: "rgba(0,0,0,0.06)", location: 0.7 },
+      { color: "clear", location: 0.86 },
+      { color: "clear", location: 1 },
+    ],
+    startPoint: { x: 0.5, y: 1 - BANNER_BLEND_HEIGHT / height },
+    endPoint: "bottom",
+  })
 
   return (
     <ZStack
@@ -108,16 +121,23 @@ function BannerView({
       clipped
       onTapGesture={() => onSelect(banner.series_id)}
     >
-      {cover ? (
-        <Image
-          imageUrl={cover}
-          resizable
-          scaleToFill
-          frame={{ width, height: imageHeight }}
-          clipped
-        />
-      ) : null}
-      <VStack frame={{ width, height }} background={BANNER_SHADE} />
+      <ZStack
+        alignment="top"
+        frame={{ width, height, alignment: "top" }}
+        clipped
+        mask={<VStack frame={{ width, height }} background={artworkMask} />}
+      >
+        {cover ? (
+          <Image
+            imageUrl={cover}
+            resizable
+            scaleToFill
+            frame={{ width, height: imageHeight }}
+            clipped
+          />
+        ) : null}
+        <VStack frame={{ width, height }} background={BANNER_SHADE} />
+      </ZStack>
       <VStack spacing={0} frame={{ width, height }}>
         <Spacer />
         <VStack alignment="leading" spacing={12} frame={{ width: width - 48 }} padding={{ bottom: 64 }}>
@@ -219,7 +239,7 @@ function SectionRow({
   )
 }
 
-/** 按系统外观加载首页，以推荐分区覆盖海报底部并保留离线快照与重试。 */
+/** 按系统外观加载首页，让推荐分区融入海报底部并保留离线快照与重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
@@ -301,7 +321,6 @@ export function HomeView({
               spacing={26}
               frame={{ width: size.width }}
               padding={{ top: 8 }}
-              background={HOME_BACKGROUND}
             >
               {errorMessage ? (
                 <Text
