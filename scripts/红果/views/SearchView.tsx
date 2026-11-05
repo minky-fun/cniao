@@ -82,7 +82,13 @@ export function SearchView({
   const showSuggestions = suggestions.length > 0 && keyword.trim() !== submittedKeyword
 
   return (
-    <VStack alignment="leading" spacing={0} frame={PAGE_FRAME}>
+    <VStack
+      alignment="leading"
+      spacing={0}
+      frame={PAGE_FRAME}
+      navigationTitle="搜索"
+      navigationBarTitleDisplayMode="inline"
+    >
 
       <HStack spacing={8} alignment="center" padding={{ horizontal: 16, vertical: 10 }}>
         <HStack

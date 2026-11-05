@@ -36,6 +36,7 @@ function routePlayer(seriesId: string, vid?: string): string {
 
 const CACHE_ROUTE = "cache"
 const HISTORY_ROUTE = "history"
+const SEARCH_ROUTE = "search"
 const THEME_STORAGE_KEY = "hongguo-theme"
 
 type Route =
@@ -43,6 +44,7 @@ type Route =
   | { kind: "player"; seriesId: string; vid?: string }
   | { kind: "cache" }
   | { kind: "history" }
+  | { kind: "search" }
 
 /** 将导航路径解析为现有页面参数。 */
 export function decodeRoute(raw: string): Route | null {
@@ -50,6 +52,7 @@ export function decodeRoute(raw: string): Route | null {
 
   if (raw === CACHE_ROUTE) return { kind: "cache" }
   if (raw === HISTORY_ROUTE) return { kind: "history" }
+  if (raw === SEARCH_ROUTE) return { kind: "search" }
 
   const [kind, seriesId, vid] = raw.split(":")
   if (!seriesId) return null
@@ -60,10 +63,13 @@ export function decodeRoute(raw: string): Route | null {
   return null
 }
 
-/** 按路径构建详情、播放和数据管理页面。 */
+/** 按路径构建搜索、详情、播放和数据管理页面。 */
 function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void) {
   if (!route) return <VStack />
 
+  if (route.kind === "search") {
+    return <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
+  }
   if (route.kind === "cache") return <CacheView />
   if (route.kind === "history") {
     return <HistoryView onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
@@ -127,6 +133,7 @@ function TabStack({
               action={() => push(HISTORY_ROUTE)}
             />,
             <Button title="缓存" action={() => push(CACHE_ROUTE)} />,
+            <Button title="搜索" systemImage="magnifyingglass" action={() => push(SEARCH_ROUTE)} />,
           ],
         }}
         navigationDestination={
@@ -203,14 +210,6 @@ export function App() {
           title="分类"
           onClose={close}
           render={push => <CategoryView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
-        />
-      </Tab>
-
-      <Tab title="搜索" systemImage="magnifyingglass" value={3} role="search">
-        <TabStack
-          title="搜索"
-          onClose={close}
-          render={push => <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
         />
       </Tab>
 
