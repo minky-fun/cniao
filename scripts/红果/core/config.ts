@@ -23,10 +23,10 @@ export const CATEGORY_ROUTES = [
 ] as const
 
 export const RANK_BOARDS = [
-  { board: "hot-drama", label: "热播短剧榜" },
-  { board: "hot-real-drama", label: "热播真人剧榜" },
-  { board: "hot-comic-drama", label: "热播漫剧榜" },
-  { board: "hot-ai-drama", label: "热播 AI 剧榜" },
+  { board: "hot-drama", label: "热播榜" },
+  { board: "hot-real-drama", label: "真人剧热播榜" },
+  { board: "hot-ai-drama", label: "AI剧热播榜" },
+  { board: "hot-comic-drama", label: "漫剧热播榜" },
 ] as const
 
 export const APP_BASE = "https://api5-normal-sinfonlineb.fqnovel.com"

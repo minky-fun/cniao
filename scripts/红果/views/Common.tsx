@@ -197,17 +197,25 @@ export const GRID_CARD_WIDTH = Math.floor(
   (CONTENT_WIDTH - GRID_SPACING * (GRID_COLUMN_COUNT - 1)) / GRID_COLUMN_COUNT
 )
 
-const SKELETON_BASE = "#E6E6EE"
+const SKELETON_BASE = { light: "#E6E6EE", dark: "#242426" } as const
 const SKELETON_SHINE = "rgba(255,255,255,0.45)"
 
 const SHIMMER_DURATION = 1.6
 
-const SHIMMER_GRADIENT = gradient("linear", {
-  colors: ["rgba(255,255,255,0)", SKELETON_SHINE, "rgba(255,255,255,0)"],
-  startPoint: "leading",
-  endPoint: "trailing",
-})
+const SHIMMER_GRADIENT = {
+  light: gradient("linear", {
+    colors: ["rgba(255,255,255,0)", SKELETON_SHINE, "rgba(255,255,255,0)"],
+    startPoint: "leading",
+    endPoint: "trailing",
+  }),
+  dark: gradient("linear", {
+    colors: ["rgba(255,255,255,0)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"],
+    startPoint: "leading",
+    endPoint: "trailing",
+  }),
+}
 
+/** 绘制随深浅主题变化的骨架块，并保留现有扫光动画。 */
 export function SkeletonBlock({
   width,
   height,
@@ -325,34 +333,46 @@ export function SkeletonGrid({
   )
 }
 
-/** 将榜单角标占位叠在封面左上角，使加载前后的列宽一致。 */
-export function SkeletonRankList({ count = 5 }: { count?: number }) {
+/** 按榜单容器宽度匹配官网封面、标题热度行和互动标签的占位布局。 */
+export function SkeletonRankList({ width, count = 5 }: { width: number; count?: number }) {
   const phase = useShimmerPhase()
 
-  const textWidth = CONTENT_WIDTH - 72 - 12
+  const textWidth = width - 24 - 72 - 12
 
   return (
-    <VStack alignment="leading" spacing={0} frame={FILL_LEADING}>
+    <VStack alignment="leading" spacing={24} frame={FILL_LEADING}>
       {Array.from({ length: count }, (_, index) => (
         <HStack
           key={index}
           spacing={12}
           alignment="top"
-          padding={{ horizontal: PAGE_H_PADDING, vertical: 10 }}
+          padding={{ horizontal: 12 }}
           frame={FILL_LEADING}
         >
-          <ZStack alignment="topLeading" frame={{ width: 72, height: 100 }}>
-            <SkeletonBlock width={72} height={100} cornerRadius={8} phase={phase} />
+          <ZStack alignment="topLeading" frame={{ width: 72, height: 102 }}>
+            <SkeletonBlock width={72} height={102} cornerRadius={8} phase={phase} />
             <SVG
               code={'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" viewBox="0 0 22 20"><path d="M0 8a8 8 0 0 1 8-8h14l-1.555 12.954A8 8 0 0 1 12.502 20H0z" fill="black" fill-opacity="0.15"/></svg>'}
               frame={{ width: 22, height: 20 }}
             />
           </ZStack>
 
-          <VStack alignment="leading" spacing={8} frame={{ width: textWidth }}>
-            <SkeletonBlock width={textWidth} height={16} phase={phase} />
-            <SkeletonBlock width={textWidth} height={12} phase={phase} />
-            <SkeletonBlock width={Math.round(textWidth * 0.55)} height={12} phase={phase} />
+          <VStack alignment="leading" spacing={0} frame={{ width: textWidth }} padding={{ top: 6 }}>
+            <HStack spacing={4} frame={{ width: textWidth, height: 20 }}>
+              <SkeletonBlock width={textWidth * 0.65 - 4} height={20} phase={phase} />
+              <SkeletonBlock width={textWidth * 0.35} height={16} phase={phase} />
+            </HStack>
+            <VStack padding={{ top: 6 }} frame={FILL_LEADING}>
+              <SkeletonBlock width={textWidth * 0.6} height={16} phase={phase} />
+            </VStack>
+            <VStack padding={{ top: 2 }}>
+              <SkeletonBlock width={textWidth} height={16} phase={phase} />
+            </VStack>
+            <HStack spacing={4} padding={{ top: 6 }}>
+              <SkeletonBlock width={textWidth * 0.28} height={18} cornerRadius={4} phase={phase} />
+              <SkeletonBlock width={textWidth * 0.28} height={18} cornerRadius={4} phase={phase} />
+              <SkeletonBlock width={textWidth * 0.28} height={18} cornerRadius={4} phase={phase} />
+            </HStack>
           </VStack>
         </HStack>
       ))}
