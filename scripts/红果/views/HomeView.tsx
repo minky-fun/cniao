@@ -86,18 +86,20 @@ function LandscapeCard({
   )
 }
 
-/** 从 banner 顶部展示主海报，底部渐隐与推荐区覆盖位置同步。 */
+/** 用海报副本填充状态栏，主图下移至安全区，保留原有底部渐隐和文案位置。 */
 function BannerView({
   banner,
   width,
   height,
   imageHeight,
+  topInset,
   onSelect,
 }: {
   banner: HomeBanner
   width: number
   height: number
   imageHeight: number
+  topInset: number
   onSelect: (seriesId: string) => void
 }) {
   const cover = banner.background_cover ?? banner.series_cover ?? ""
@@ -131,13 +133,30 @@ function BannerView({
         mask={<VStack frame={{ width, height }} background={artworkMask} />}
       >
         {cover ? (
-          <Image
-            imageUrl={cover}
-            resizable
-            scaleToFill
-            frame={{ width, height: imageHeight }}
-            clipped
-          />
+          <>
+            {topInset > 0 ? (
+              <ZStack
+                alignment="top"
+                frame={{ width, height: topInset, alignment: "top" }}
+                clipped
+              >
+                <Image
+                  imageUrl={cover}
+                  resizable
+                  scaleToFill
+                  frame={{ width, height: imageHeight }}
+                />
+              </ZStack>
+            ) : null}
+            <Image
+              imageUrl={cover}
+              resizable
+              scaleToFill
+              frame={{ width, height: imageHeight }}
+              clipped
+              offset={{ x: 0, y: topInset }}
+            />
+          </>
         ) : null}
         <VStack frame={{ width, height }} background={BANNER_SHADE} />
       </ZStack>
@@ -174,7 +193,7 @@ function BannerView({
   )
 }
 
-/** 主海报延伸到状态栏，增加顶部安全区高度以保留文案和推荐区位置。 */
+/** 同页轮播主图与顶部副本，预留安全区高度并保留文案和推荐区位置。 */
 function HeroCarousel({
   banners,
   selection,
@@ -189,7 +208,7 @@ function HeroCarousel({
   onSelect: (seriesId: string) => void
 }) {
   const [visible, setVisible] = useState(false)
-  // 海报尺寸不变，向上扩展的空间由轮播高度补回。
+  // 主图保留原尺寸，顶部空间由副本填充，不再让状态栏遮挡主图。
   const imageHeight = Math.min(560, Math.max(440, width * 1.35))
   const height = imageHeight - 92 + topInset
   const index = selection.value
@@ -216,6 +235,7 @@ function HeroCarousel({
             width={width}
             height={height}
             imageHeight={imageHeight}
+            topInset={topInset}
             onSelect={onSelect}
           />
         ))}
@@ -249,7 +269,7 @@ function SectionRow({
   )
 }
 
-/** 主 banner 直接延伸到状态栏，保留底部安全区、主题、离线快照和重试。 */
+/** 顶部副本延伸到状态栏，主图保留安全区，沿用主题、离线快照和重试。 */
 export function HomeView({
   onSelectSeries,
 }: {
