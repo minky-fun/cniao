@@ -7,6 +7,7 @@ import {
   Spacer,
   Text,
   VStack,
+  useObservable,
   useState,
 } from "scripting"
 import { PLAYBACK_CACHE_MAX_BYTES } from "../core/config"
@@ -14,11 +15,11 @@ import { formatBytes } from "../core/format"
 import {
   clearOfflineCache,
   getPlaybackCacheMaxEntries,
-  listOfflineCache,
+  listOfflineCacheAsync,
   setPlaybackCacheMaxEntries,
   type CacheEntry,
 } from "../core/mediaCache"
-import { FILL_LEADING, PAGE_FRAME } from "./Common"
+import { ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME } from "./Common"
 
 const CACHE_SURFACE = { light: "#F6F6F6", dark: "#131414" } as const
 const CARD_SURFACE = { light: "#FFFFFF", dark: "#1D1E1E" } as const
@@ -88,16 +89,36 @@ function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count:
   )
 }
 
-/** 展示缓存清理与保留集数设置，通过独立管理页选择要删除的缓存。 */
+/** 先展示页面，再异步读取缓存容量，保留清理、保留集数和管理入口。 */
 export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
-  const [entries, setEntries] = useState<CacheEntry[]>(() => listOfflineCache())
+  const [entries, setEntries] = useState<CacheEntry[]>([])
   const [maxEntries, setMaxEntries] = useState(getPlaybackCacheMaxEntries)
+  const [isLoading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+  const refreshRequest = useObservable(0)
   const usedBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
 
-  /** 返回页面时重新读取容量及保留集数，不触发下载。 */
-  const refresh = () => {
-    setEntries(listOfflineCache())
-    setMaxEntries(getPlaybackCacheMaxEntries())
+  /** 页面出现后异步读取容量，仅接受最新一次刷新，失败时保留重试入口。 */
+  const refresh = async () => {
+    const requestId = refreshRequest.value + 1
+    refreshRequest.setValue(requestId)
+    setLoading(true)
+    setLoadError("")
+    try {
+      const currentEntries = await listOfflineCacheAsync()
+      if (requestId !== refreshRequest.value) return
+      setEntries(currentEntries)
+      setMaxEntries(getPlaybackCacheMaxEntries())
+    } catch (error) {
+      if (requestId === refreshRequest.value) setLoadError(error instanceof Error ? error.message : String(error))
+    } finally {
+      if (requestId === refreshRequest.value) setLoading(false)
+    }
+  }
+
+  /** 离开页面后使未完成的读取失效，避免返回时被旧结果覆盖。 */
+  const stopRefresh = () => {
+    refreshRequest.setValue(refreshRequest.value + 1)
   }
 
   /** 输入不小于两集的整数并保存，后续自动清理使用新配置，取消时不修改。 */
@@ -126,7 +147,7 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
 
   /** 展示将释放的空间，仅在确认后清空缓存。 */
   const handleClear = async () => {
-    if (entries.length === 0) return
+    if (isLoading || loadError || entries.length === 0) return
 
     const confirmed = await Dialog.confirm({
       title: "清理缓存",
@@ -137,7 +158,7 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
     if (!confirmed) return
 
     clearOfflineCache()
-    refresh()
+    await refresh()
   }
 
   return (
@@ -153,63 +174,66 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
       toolbarBackground={{ style: CACHE_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       onAppear={refresh}
+      onDisappear={stopRefresh}
     >
       <ScrollView scrollIndicator="hidden">
-        <VStack alignment="leading" spacing={16} padding={{ horizontal: 16, top: 20, bottom: 32 }} frame={FILL_LEADING}>
-          <UsageSummary usedBytes={usedBytes} count={entries.length} onClear={handleClear} />
+        {isLoading ? <LoadingView text="正在读取缓存…" /> : loadError ? <ErrorView message={loadError} onRetry={refresh} /> : (
+          <VStack alignment="leading" spacing={16} padding={{ horizontal: 16, top: 20, bottom: 32 }} frame={FILL_LEADING}>
+            <UsageSummary usedBytes={usedBytes} count={entries.length} onClear={handleClear} />
 
-          <VStack
-            alignment="leading"
-            spacing={0}
-            padding={20}
-            frame={FILL_LEADING}
-            background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
-          >
-            <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
-              {formatBytes(usedBytes)}
-            </Text>
-            <Text font={16} padding={{ top: 8 }}>可清理的缓存</Text>
-            <Text font={13} foregroundStyle="secondaryLabel" padding={{ top: 14, bottom: 20 }} frame={FILL_LEADING}>
-              播放时保存的剧集文件，清理后再次播放需重新下载。播放历史和主题设置会保留。
-            </Text>
-            <VStack frame={{ maxWidth: "infinity", height: 0.5 }} background="separator" />
-            <HStack spacing={12} padding={{ top: 8 }} frame={FILL_LEADING}>
-              <Text font={13} foregroundStyle="secondaryLabel">{`共 ${entries.length} 集`}</Text>
-              <Spacer />
-              <Button action={refresh} buttonStyle="plain">
-                <Text font={13} foregroundStyle="secondaryLabel" frame={{ minHeight: 44 }}>刷新</Text>
-              </Button>
-              <Button action={onOpenManager} buttonStyle="plain" frame={{ height: 44 }}>
-                <Text
-                  font={12}
-                  fontWeight="medium"
-                  foregroundStyle="label"
-                  frame={{ width: 72, height: 28 }}
-                  background={{ style: TRACK_SURFACE, shape: { type: "rect", cornerRadius: 8 } }}
-                >
-                  前往管理
-                </Text>
-              </Button>
-            </HStack>
-          </VStack>
-          <VStack
-            padding={{ horizontal: 20, vertical: 8 }}
-            frame={FILL_LEADING}
-            background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
-          >
-            <Button action={changeMaxEntries} buttonStyle="plain">
-              <HStack spacing={8} frame={{ maxWidth: "infinity", minHeight: 44 }}>
-                <Text font={14}>最多保留</Text>
+            <VStack
+              alignment="leading"
+              spacing={0}
+              padding={20}
+              frame={FILL_LEADING}
+              background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
+            >
+              <Text font={30} fontWeight="semibold" lineLimit={1} minScaleFactor={0.6} frame={FILL_LEADING}>
+                {formatBytes(usedBytes)}
+              </Text>
+              <Text font={16} padding={{ top: 8 }}>可清理的缓存</Text>
+              <Text font={13} foregroundStyle="secondaryLabel" padding={{ top: 14, bottom: 20 }} frame={FILL_LEADING}>
+                播放时保存的剧集文件，清理后再次播放需重新下载。播放历史和主题设置会保留。
+              </Text>
+              <VStack frame={{ maxWidth: "infinity", height: 0.5 }} background="separator" />
+              <HStack spacing={12} padding={{ top: 8 }} frame={FILL_LEADING}>
+                <Text font={13} foregroundStyle="secondaryLabel">{`共 ${entries.length} 集`}</Text>
                 <Spacer />
-                <Text font={14} foregroundStyle={ACCENT_COLOR}>{`${maxEntries} 集`}</Text>
-                <Image systemName="chevron.right" font={11} foregroundStyle="secondaryLabel" />
+                <Button action={refresh} buttonStyle="plain">
+                  <Text font={13} foregroundStyle="secondaryLabel" frame={{ minHeight: 44 }}>刷新</Text>
+                </Button>
+                <Button action={onOpenManager} buttonStyle="plain" frame={{ height: 44 }}>
+                  <Text
+                    font={12}
+                    fontWeight="medium"
+                    foregroundStyle="label"
+                    frame={{ width: 72, height: 28 }}
+                    background={{ style: TRACK_SURFACE, shape: { type: "rect", cornerRadius: 8 } }}
+                  >
+                    前往管理
+                  </Text>
+                </Button>
               </HStack>
-            </Button>
+            </VStack>
+            <VStack
+              padding={{ horizontal: 20, vertical: 8 }}
+              frame={FILL_LEADING}
+              background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
+            >
+              <Button action={changeMaxEntries} buttonStyle="plain">
+                <HStack spacing={8} frame={{ maxWidth: "infinity", minHeight: 44 }}>
+                  <Text font={14}>最多保留</Text>
+                  <Spacer />
+                  <Text font={14} foregroundStyle={ACCENT_COLOR}>{`${maxEntries} 集`}</Text>
+                  <Image systemName="chevron.right" font={11} foregroundStyle="secondaryLabel" />
+                </HStack>
+              </Button>
+            </VStack>
+            <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 4 }} frame={FILL_LEADING}>
+              {`最多保留 ${maxEntries} 集，容量上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}。后续写入缓存和下次启动时，自动清理最久未观看的剧集。`}
+            </Text>
           </VStack>
-          <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 4 }} frame={FILL_LEADING}>
-            {`最多保留 ${maxEntries} 集，容量上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}。后续写入缓存和下次启动时，自动清理最久未观看的剧集。`}
-          </Text>
-        </VStack>
+        )}
       </ScrollView>
     </VStack>
   )

@@ -37,12 +37,14 @@ export function SettingsView({
   onThemeChange,
   onOpenCache,
   onOpenHistory,
+  onExit,
 }: {
   theme: ThemeMode
   themeError: string
   onThemeChange: (theme: ThemeMode) => void
   onOpenCache: () => void
   onOpenHistory: () => void
+  onExit: () => void
 }) {
   const { version, author, contributors } = Script.metadata
 
@@ -88,6 +90,16 @@ export function SettingsView({
               <SettingsRow title="贡献者" value={contributors.map(person => person.name).join("、")} />
             ) : null}
           </VStack>
+          <Button action={onExit} buttonStyle="plain" role="destructive" frame={FILL_LEADING}>
+            <Text
+              font={14}
+              foregroundStyle="systemRed"
+              frame={{ maxWidth: "infinity", minHeight: 52 }}
+              background={CARD_BACKGROUND}
+            >
+              关闭并退出
+            </Text>
+          </Button>
         </VStack>
       </ScrollView>
     </VStack>

@@ -172,7 +172,13 @@ export function App() {
     if (removed > 0) console.log(`[cache] 启动清理淘汰 ${removed} 集`)
   }, [])
 
-  /** 画中画播放时优先最小化，否则关闭并结束脚本。 */
+  /** 主动退出时关闭界面并结束脚本，包括当前仍在播放的画中画会话。 */
+  const exit = () => {
+    dismiss()
+    setTimeout(() => Script.exit(), 800)
+  }
+
+  /** 普通关闭保留画中画最小化行为，否则关闭并结束脚本。 */
   const close = async () => {
     if (isPipPlaybackActive() && Script.supportsMinimization()) {
       try {
@@ -183,8 +189,7 @@ export function App() {
       }
     }
 
-    dismiss()
-    setTimeout(() => Script.exit(), 800)
+    exit()
   }
 
   return (
@@ -241,6 +246,7 @@ export function App() {
                 onThemeChange={changeTheme}
                 onOpenCache={() => push(CACHE_ROUTE)}
                 onOpenHistory={() => push(HISTORY_ROUTE)}
+                onExit={exit}
               />
             )}
           />

@@ -10,15 +10,15 @@ import {
   Text,
   VStack,
   ZStack,
+  useObservable,
   useState,
 } from "scripting"
 import {
   clearPlayHistory,
-  loadPlayHistory,
   removePlayHistoryItem,
   type HistoryRecord,
 } from "../core/history"
-import { CoverImage, EmptyView, FILL_LEADING, PAGE_FRAME } from "./Common"
+import { CoverImage, EmptyView, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME } from "./Common"
 
 const HISTORY_SURFACE = { light: "#FFFFFF", dark: "#131414" } as const
 const FILTER_SURFACE = { light: "#F6F6F6", dark: "#202121" } as const
@@ -85,11 +85,14 @@ function HistoryCard({ record, width, isEditing, selected, onSelect, onRemove }:
   )
 }
 
-/** 以三列网格展示本地历史，支持按已记录集数筛选、续播及确认后删除。 */
+/** 页面出现后异步读取历史，保留三列网格、集数筛选、续播及确认后删除。 */
 export function HistoryView({ onPlaySeries }: {
   onPlaySeries: (seriesId: string, vid?: string) => void
 }) {
-  const [records, setRecords] = useState<HistoryRecord[]>(() => loadPlayHistory())
+  const [records, setRecords] = useState<HistoryRecord[]>([])
+  const [isLoading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+  const refreshRequest = useObservable(0)
   const [filter, setFilter] = useState<HistoryFilter>("all")
   const [isEditing, setEditing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -101,10 +104,29 @@ export function HistoryView({ onPlaySeries }: {
     return filter === "last" ? reachedLast : !reachedLast
   })
 
-  /** 重新读取历史并清空旧勾选，避免删除或返回页面后保留过期选择。 */
-  const refresh = () => {
-    setRecords(loadPlayHistory())
+  /** 异步读取 history.ts 写入的同一文件，清空勾选且只接受最新一次刷新。 */
+  const refresh = async () => {
+    const requestId = refreshRequest.value + 1
+    refreshRequest.setValue(requestId)
+    setLoading(true)
+    setLoadError("")
     setSelectedIds([])
+    try {
+      const path = `${FileManager.appGroupDocumentsDirectory}/hongguo-history.json`
+      const list: HistoryRecord[] = await FileManager.exists(path) ? JSON.parse(await FileManager.readAsString(path)) : []
+      if (!Array.isArray(list)) throw new Error("播放历史格式异常，请重试")
+      list.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+      if (requestId === refreshRequest.value) setRecords(list)
+    } catch (error) {
+      if (requestId === refreshRequest.value) setLoadError(error instanceof Error ? error.message : String(error))
+    } finally {
+      if (requestId === refreshRequest.value) setLoading(false)
+    }
+  }
+
+  /** 离开页面后忽略未完成的读取，避免旧历史覆盖重新进入后的结果。 */
+  const stopRefresh = () => {
+    refreshRequest.setValue(refreshRequest.value + 1)
   }
 
   /** 切换集数筛选时清空勾选，防止删除已隐藏的记录。 */
@@ -147,7 +169,7 @@ export function HistoryView({ onPlaySeries }: {
     })
     if (!confirmed) return
     removePlayHistoryItem(record.seriesId)
-    refresh()
+    await refresh()
   }
 
   /** 仅删除当前已勾选的记录，确认前保留全部播放历史。 */
@@ -162,12 +184,12 @@ export function HistoryView({ onPlaySeries }: {
     })
     if (!confirmed) return
     for (const record of selectedRecords) removePlayHistoryItem(record.seriesId)
-    refresh()
+    await refresh()
   }
 
   /** 确认清空的记录总数后删除全部历史。 */
   const handleClear = async () => {
-    if (records.length === 0) return
+    if (isLoading || loadError || records.length === 0) return
     const confirmed = await Dialog.confirm({
       title: "清空历史",
       message: `确定清空全部 ${records.length} 条播放历史记录？`,
@@ -176,7 +198,7 @@ export function HistoryView({ onPlaySeries }: {
     })
     if (!confirmed) return
     clearPlayHistory()
-    refresh()
+    await refresh()
   }
 
   return (
@@ -188,6 +210,7 @@ export function HistoryView({ onPlaySeries }: {
       toolbarBackground={{ style: HISTORY_SURFACE, bars: ["navigationBar", "tabBar"] }}
       toolbarBackgroundVisibility={{ visibility: "visible", bars: ["navigationBar", "tabBar"] }}
       onAppear={refresh}
+      onDisappear={stopRefresh}
     >
       {({ size }) => {
         const cardWidth = (size.width - 32 - 16) / 3
@@ -214,7 +237,7 @@ export function HistoryView({ onPlaySeries }: {
                   ))}
                 </HStack>
               </ScrollView>
-              <Button action={toggleEditing} buttonStyle="plain" disabled={records.length === 0 && !isEditing}>
+              <Button action={toggleEditing} buttonStyle="plain" disabled={isLoading || !!loadError || (records.length === 0 && !isEditing)}>
                 <Text font={14} foregroundStyle={isEditing ? ACCENT_COLOR : "label"} frame={{ width: 44, height: 44 }}>
                   {isEditing ? "完成" : "编辑"}
                 </Text>
@@ -237,7 +260,7 @@ export function HistoryView({ onPlaySeries }: {
                 action={isEditing ? handleRemoveSelected : handleClear}
                 buttonStyle="plain"
                 role="destructive"
-                disabled={isEditing ? selectedIds.length === 0 : records.length === 0}
+                disabled={isLoading || !!loadError || (isEditing ? selectedIds.length === 0 : records.length === 0)}
               >
                 <Text font={12} foregroundStyle={isEditing ? "systemRed" : "secondaryLabel"} frame={{ minHeight: 44 }}>
                   {isEditing ? "删除所选" : "清空历史"}
@@ -246,7 +269,7 @@ export function HistoryView({ onPlaySeries }: {
             </HStack>
 
             <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
-              {visibleRecords.length === 0 ? (
+              {isLoading ? <LoadingView text="正在读取历史…" /> : loadError ? <ErrorView message={loadError} onRetry={refresh} /> : visibleRecords.length === 0 ? (
                 <EmptyView text={records.length === 0 ? "暂无播放历史，去看看短剧吧" : "暂无符合筛选条件的记录"} />
               ) : (
                 <LazyVGrid

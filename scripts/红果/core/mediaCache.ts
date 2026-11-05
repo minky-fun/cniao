@@ -129,6 +129,48 @@ export function listOfflineCache(): CacheEntry[] {
   return entries
 }
 
+/** 为页面异步读取索引与文件大小，避免同步逐文件扫描阻塞导航动画。 */
+export async function listOfflineCacheAsync(): Promise<CacheEntry[]> {
+  const directory = cacheDirectory()
+  if (!await FileManager.exists(directory)) return []
+
+  const names = await FileManager.readDirectory(directory)
+  let index: CacheIndex = {}
+  const indexPath = indexFilePath()
+  if (await FileManager.exists(indexPath)) {
+    const raw = await FileManager.readAsString(indexPath)
+    try {
+      const parsed = JSON.parse(raw) as { version?: number; entries?: CacheIndex }
+      if (parsed?.version === INDEX_VERSION && parsed.entries) index = parsed.entries
+    } catch (error) {
+      console.warn("[cache] 索引解析失败，已忽略元数据", error)
+    }
+  }
+
+  const entries = await Promise.all(names.filter(name => name.endsWith(CACHE_FILE_EXTENSION)).map(async name => {
+    let stat: FileStat
+    try {
+      stat = await FileManager.stat(`${directory}/${name}`)
+    } catch (error) {
+      console.warn(`[cache] 跳过无法读取的条目 ${name}`, error)
+      return null
+    }
+    if (stat.type === "notFound") return null
+    const videoId = name.slice(0, -CACHE_FILE_EXTENSION.length)
+    const record = index[videoId]
+    return {
+      videoId,
+      label: record?.label ?? "",
+      cover: record?.cover,
+      seriesId: record?.seriesId,
+      seriesTitle: record?.seriesTitle,
+      sizeBytes: stat.size,
+      lastUsedAt: record?.lastUsedAt ?? stat.modificationDate,
+    }
+  }))
+  return entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+}
+
 export function offlineCacheSize(): number {
   return listOfflineCache().reduce((sum, entry) => sum + entry.sizeBytes, 0)
 }
