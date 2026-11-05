@@ -142,7 +142,7 @@ function TabPage({
   )
 }
 
-/** 一级标签页隐藏系统导航栏以释放顶部空间，后续页面在标签栏之外展示并继承主题。 */
+/** 一级页面使用原生标签栏和独立搜索标签，后续页面在标签栏之外展示并继承主题。 */
 export function App() {
   const selection = useObservable(0)
   const path = useObservable<string[]>([])
@@ -250,6 +250,10 @@ export function App() {
               />
             )}
           />
+        </Tab>
+
+        <Tab title="搜索" systemImage="magnifyingglass" value={3} role="search">
+          <SearchView onSelectSeries={seriesId => push(routeDetail(seriesId))} />
         </Tab>
       </TabView>
     </NavigationStack>
