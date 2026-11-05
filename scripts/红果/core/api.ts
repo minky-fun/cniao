@@ -52,6 +52,9 @@ interface PlayerEntry {
 interface SearchEntry {
   searchList: SearchResultItem[]
   totalCount: number | string
+  pageNum: number
+  totalPages: number
+  hasMore: boolean
 }
 
 interface CategoryEntry {
@@ -188,9 +191,11 @@ export async function fetchPlayer(seriesId: string, vid: string): Promise<Player
   }
 }
 
-/** 请求网站当前的搜索结果接口，保留服务端返回的剧集排序。 */
-export async function fetchSearch(keyword: string): Promise<SearchData> {
-  const url = `${WEB_BASE}/api/search/result?query=${encodeURIComponent(keyword)}`
+/** 按官网的 page 参数读取搜索分页，校验页码并保留服务端剧集排序。 */
+export async function fetchSearch(keyword: string, page = 1): Promise<SearchData> {
+  if (!Number.isSafeInteger(page) || page < 1) throw new HttpError("搜索页码无效", 0)
+  const suffix = page > 1 ? `&page=${page}` : ""
+  const url = `${WEB_BASE}/api/search/result?query=${encodeURIComponent(keyword)}${suffix}`
   const entry = await getJson(url) as SearchEntry
   if (!entry || !Array.isArray(entry.searchList)) {
     throw new HttpError("搜索结果格式异常", 0)
@@ -202,6 +207,10 @@ export async function fetchSearch(keyword: string): Promise<SearchData> {
   if (typeof totalCount !== "number" || !Number.isSafeInteger(totalCount) || totalCount < 0) {
     throw new HttpError("搜索结果格式异常", 0)
   }
+  if (entry.pageNum !== page || !Number.isSafeInteger(entry.totalPages) || entry.totalPages < 0 ||
+      typeof entry.hasMore !== "boolean" || (entry.hasMore && entry.pageNum >= entry.totalPages)) {
+    throw new HttpError("搜索分页格式异常", 0)
+  }
 
   const results = entry.searchList
     .filter((item): item is SearchResultItem => Boolean(item?.video_data?.series_id))
@@ -209,11 +218,15 @@ export async function fetchSearch(keyword: string): Promise<SearchData> {
       ...item,
       video_data: item.video_data ? normalizeCard(item.video_data) : null,
     }))
+  if (entry.hasMore && results.length === 0) throw new HttpError("搜索分页返回空结果，请重试", 0)
 
   return {
     query: keyword,
     searchList: results,
     totalCount,
+    pageNum: entry.pageNum,
+    totalPages: entry.totalPages,
+    hasMore: entry.hasMore,
     isRelevant: results.length > 0,
   }
 }

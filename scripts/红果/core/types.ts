@@ -114,6 +114,9 @@ export interface SearchData {
   query: string
   searchList: SearchResultItem[]
   totalCount: number
+  pageNum: number
+  totalPages: number
+  hasMore: boolean
 
   isRelevant: boolean
 }
