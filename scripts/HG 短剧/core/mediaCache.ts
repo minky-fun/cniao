@@ -1,0 +1,494 @@
+import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./appApi"
+import { decryptToPlayableAsync } from "./mp4"
+import { AUTO_CACHE_EPISODE_COUNT, PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES } from "./config"
+import { HttpError } from "./http"
+
+const CACHE_FILE_EXTENSION = ".mp4"
+
+const INDEX_FILE_NAME = "cache-index.json"
+
+const INDEX_VERSION = 1
+
+const MAX_BYTES_STORAGE_KEY = "hongguo-cache-max-bytes"
+
+const AUTO_CACHE_STORAGE_KEY = "hongguo-auto-cache"
+
+const AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY = "hongguo-auto-cache-episode-count"
+
+function cacheDirectory(): string {
+  return `${FileManager.appGroupDocumentsDirectory}/${PLAYBACK_CACHE_DIR}`
+}
+
+function ensureCacheDirectory(): void {
+  const directory = cacheDirectory()
+  if (!FileManager.existsSync(directory)) {
+    FileManager.createDirectorySync(directory, true)
+  }
+}
+
+function cachePath(videoId: string): string {
+  return `${cacheDirectory()}/${videoId}${CACHE_FILE_EXTENSION}`
+}
+
+function indexFilePath(): string {
+  return `${cacheDirectory()}/${INDEX_FILE_NAME}`
+}
+
+interface IndexRecord {
+
+  label: string
+
+  cover?: string
+
+  seriesId?: string
+
+  seriesTitle?: string
+
+  lastUsedAt: number
+
+  duration?: number
+
+  width?: number
+
+  height?: number
+}
+
+export interface CacheEntry {
+  videoId: string
+  label: string
+  cover?: string
+  seriesId?: string
+  seriesTitle?: string
+  sizeBytes: number
+  lastUsedAt: number
+}
+
+type CacheIndex = Record<string, IndexRecord>
+
+function readIndex(): CacheIndex {
+  const path = indexFilePath()
+  if (!FileManager.existsSync(path)) return {}
+
+  try {
+    const parsed = JSON.parse(FileManager.readAsStringSync(path)) as {
+      version?: number
+      entries?: CacheIndex
+    }
+    if (parsed?.version !== INDEX_VERSION || !parsed.entries) return {}
+    return parsed.entries
+  } catch (error) {
+
+    console.warn("[cache] 索引解析失败，已重建", error)
+    return {}
+  }
+}
+
+function writeIndex(index: CacheIndex): void {
+  try {
+    FileManager.writeAsStringSync(
+      indexFilePath(),
+      JSON.stringify({ version: INDEX_VERSION, entries: index })
+    )
+  } catch (error) {
+
+    console.warn("[cache] 索引写入失败", error)
+  }
+}
+
+/** 读取实际缓存文件及索引中的剧集信息，兼容缺少元数据的旧索引。 */
+export function listOfflineCache(): CacheEntry[] {
+  const directory = cacheDirectory()
+  if (!FileManager.existsSync(directory)) return []
+
+  const index = readIndex()
+  const entries: CacheEntry[] = []
+
+  for (const name of FileManager.readDirectorySync(directory)) {
+    if (!name.endsWith(CACHE_FILE_EXTENSION)) continue
+
+    const path = `${directory}/${name}`
+    let stat: FileStat
+    try {
+      stat = FileManager.statSync(path)
+    } catch (error) {
+      console.warn(`[cache] 跳过无法读取的条目 ${name}`, error)
+      continue
+    }
+
+    const videoId = name.slice(0, -CACHE_FILE_EXTENSION.length)
+    const record = index[videoId]
+
+    entries.push({
+      videoId,
+      label: record?.label ?? "",
+      cover: record?.cover,
+      seriesId: record?.seriesId,
+      seriesTitle: record?.seriesTitle,
+      sizeBytes: stat.size,
+
+      lastUsedAt: record?.lastUsedAt ?? stat.modificationDate,
+    })
+  }
+
+  return entries
+}
+
+/** 为页面异步读取索引与文件大小，避免同步逐文件扫描阻塞导航动画。 */
+export async function listOfflineCacheAsync(): Promise<CacheEntry[]> {
+  const directory = cacheDirectory()
+  if (!await FileManager.exists(directory)) return []
+
+  const names = await FileManager.readDirectory(directory)
+  let index: CacheIndex = {}
+  const indexPath = indexFilePath()
+  if (await FileManager.exists(indexPath)) {
+    const raw = await FileManager.readAsString(indexPath)
+    try {
+      const parsed = JSON.parse(raw) as { version?: number; entries?: CacheIndex }
+      if (parsed?.version === INDEX_VERSION && parsed.entries) index = parsed.entries
+    } catch (error) {
+      console.warn("[cache] 索引解析失败，已忽略元数据", error)
+    }
+  }
+
+  const entries = await Promise.all(names.filter(name => name.endsWith(CACHE_FILE_EXTENSION)).map(async name => {
+    let stat: FileStat
+    try {
+      stat = await FileManager.stat(`${directory}/${name}`)
+    } catch (error) {
+      console.warn(`[cache] 跳过无法读取的条目 ${name}`, error)
+      return null
+    }
+    if (stat.type === "notFound") return null
+    const videoId = name.slice(0, -CACHE_FILE_EXTENSION.length)
+    const record = index[videoId]
+    return {
+      videoId,
+      label: record?.label ?? "",
+      cover: record?.cover,
+      seriesId: record?.seriesId,
+      seriesTitle: record?.seriesTitle,
+      sizeBytes: stat.size,
+      lastUsedAt: record?.lastUsedAt ?? stat.modificationDate,
+    }
+  }))
+  return entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+}
+
+/** 更新使用时间、剧集信息和视频参数，保留未重新提供的元数据。 */
+function markUsed(
+  videoId: string,
+  label?: string,
+  meta?: { cover?: string; seriesId?: string; seriesTitle?: string; duration?: number; width?: number; height?: number }
+): void {
+  const index = readIndex()
+  const existing = index[videoId]
+  index[videoId] = {
+    label: label ?? existing?.label ?? "",
+    cover: meta?.cover ?? existing?.cover,
+    seriesId: meta?.seriesId ?? existing?.seriesId,
+    seriesTitle: meta?.seriesTitle ?? existing?.seriesTitle,
+    lastUsedAt: Date.now(),
+    duration: meta?.duration ?? existing?.duration,
+    width: meta?.width ?? existing?.width,
+    height: meta?.height ?? existing?.height,
+  }
+  writeIndex(index)
+}
+
+export function getCachedVideoMeta(videoId: string): {
+  duration?: number
+  width?: number
+  height?: number
+} | null {
+  const index = readIndex()
+  const record = index[videoId]
+  if (!record) return null
+  return {
+    duration: record.duration,
+    width: record.width,
+    height: record.height,
+  }
+}
+
+export interface CacheLimits {
+
+  maxBytes: number
+}
+
+/** 自动缓存默认开启，重新运行脚本时恢复用户保存的选择。 */
+export function getAutoCacheEnabled(): boolean {
+  return Storage.get<boolean>(AUTO_CACHE_STORAGE_KEY) ?? true
+}
+
+/** 保存自动缓存开关，保存失败时保留原配置并提示原因。 */
+export function setAutoCacheEnabled(enabled: boolean): void {
+  if (!Storage.set(AUTO_CACHE_STORAGE_KEY, enabled)) {
+    throw new Error("自动缓存设置保存失败，请重试")
+  }
+}
+
+/** 读取自动缓存的后续集数，未配置时使用默认五集。 */
+export function getAutoCacheEpisodeCount(): number {
+  return Storage.get<number>(AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY) ?? AUTO_CACHE_EPISODE_COUNT
+}
+
+/** 仅保存正整数自动缓存集数，保存失败时保留原配置。 */
+export function setAutoCacheEpisodeCount(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new Error("请输入不小于 1 的整数集数")
+  }
+  if (!Storage.set(AUTO_CACHE_EPISODE_COUNT_STORAGE_KEY, value)) {
+    throw new Error("自动缓存集数保存失败，请重试")
+  }
+}
+
+/** 读取用户设置的容量字节数，首次使用保留原有 500 MB 默认上限。 */
+export function getPlaybackCacheMaxBytes(): number {
+  return Storage.get<number>(MAX_BYTES_STORAGE_KEY) ?? PLAYBACK_CACHE_MAX_BYTES
+}
+
+/** 按整数 MB 保存容量上限，拒绝无效值，保存失败时保留原配置。 */
+export function setPlaybackCacheMaxBytes(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 1024 ** 2 || value % (1024 ** 2) !== 0) {
+    throw new Error("请输入不小于 1 的整数容量（MB），数值不能过大")
+  }
+  if (!Storage.set(MAX_BYTES_STORAGE_KEY, value)) {
+    throw new Error("缓存容量上限保存失败，请重试")
+  }
+}
+
+/** 仅按容量选择最久未使用的缓存，不再因缓存集数超过 50 集而淘汰。 */
+export function selectEvictions(
+  entries: CacheEntry[],
+  limits: CacheLimits,
+  protectedVideoIds: string[] = []
+): CacheEntry[] {
+  let totalBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
+  if (totalBytes <= limits.maxBytes) return []
+  const protectedSet = new Set(protectedVideoIds)
+
+  const removable = entries
+    .filter(entry => !protectedSet.has(entry.videoId))
+    .sort((a, b) => a.lastUsedAt - b.lastUsedAt)
+
+  const evicted: CacheEntry[] = []
+
+  for (const candidate of removable) {
+    if (totalBytes <= limits.maxBytes) break
+
+    totalBytes -= candidate.sizeBytes
+    evicted.push(candidate)
+  }
+
+  return evicted
+}
+
+/** 每次清理读取最新容量上限，按最久未使用顺序清理并保护指定剧集。 */
+export function enforceCacheLimit(
+  protectedVideoIds: string[] = [],
+  limits: CacheLimits = {
+    maxBytes: getPlaybackCacheMaxBytes(),
+  }
+): number {
+  const entries = listOfflineCache()
+  if (entries.length === 0) return 0
+
+  const victims = selectEvictions(entries, limits, protectedVideoIds)
+  if (victims.length === 0) return 0
+
+  const index = readIndex()
+  let removedCount = 0
+  let remainingBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
+
+  for (const victim of victims) {
+    try {
+      FileManager.removeSync(cachePath(victim.videoId))
+    } catch (error) {
+      console.warn(`[cache] 淘汰失败 ${victim.videoId}`, error)
+      continue
+    }
+
+    delete index[victim.videoId]
+    remainingBytes -= victim.sizeBytes
+    removedCount += 1
+  }
+
+  if (removedCount > 0) {
+    writeIndex(index)
+    console.log(`[cache] 已淘汰 ${removedCount} 集，当前占用 ${remainingBytes} 字节`)
+  }
+
+  return removedCount
+}
+
+export function pruneOfflineCache(): number {
+  const directory = cacheDirectory()
+  if (!FileManager.existsSync(directory)) return 0
+  return enforceCacheLimit()
+}
+
+export interface PrepareProgress {
+
+  stage: "fetching" | "downloading" | "decrypting" | "done"
+
+  progress: number
+}
+
+export interface PrepareOptions {
+
+  label?: string
+
+  cover?: string
+
+  seriesId?: string
+
+  seriesTitle?: string
+
+  onProgress?: (progress: PrepareProgress) => void
+
+  protectedVideoIds?: string[]
+}
+
+export function isOfflineVideoCached(videoId: string): boolean {
+  if (!videoId) return false
+  const target = cachePath(videoId)
+  return FileManager.existsSync(target)
+}
+
+export function listCachedVideoIds(): Set<string> {
+  const ids = new Set<string>()
+  const directory = cacheDirectory()
+  if (!FileManager.existsSync(directory)) return ids
+
+  for (const name of FileManager.readDirectorySync(directory)) {
+    if (!name.endsWith(CACHE_FILE_EXTENSION)) continue
+    ids.add(name.slice(0, -CACHE_FILE_EXTENSION.length))
+  }
+  return ids
+}
+
+type CacheChangeListener = (videoId: string, action: "added" | "removed" | "cleared") => void
+const cacheChangeListeners = new Set<CacheChangeListener>()
+
+export function onCacheChanged(listener: CacheChangeListener): () => void {
+  cacheChangeListeners.add(listener)
+  return () => {
+    cacheChangeListeners.delete(listener)
+  }
+}
+
+function notifyCacheChanged(videoId: string, action: "added" | "removed" | "cleared"): void {
+  for (const listener of cacheChangeListeners) {
+    try {
+      listener(videoId, action)
+    } catch {}
+  }
+}
+
+const inflightPrepares = new Map<string, Promise<string>>()
+
+/** 准备可播放缓存，并在下载、复用和并发等待完成时保存已知剧集信息。 */
+export async function prepareOfflineVideo(
+  videoId: string,
+  options: PrepareOptions = {}
+): Promise<string> {
+  const { label, cover, seriesId, seriesTitle, onProgress, protectedVideoIds } = options
+  ensureCacheDirectory()
+
+  const target = cachePath(videoId)
+
+  if (FileManager.existsSync(target)) {
+    markUsed(videoId, label, { cover, seriesId, seriesTitle })
+    onProgress?.({ stage: "done", progress: 1 })
+    return target
+  }
+
+  const existingTask = inflightPrepares.get(videoId)
+  if (existingTask) {
+    const result = await existingTask
+    markUsed(videoId, label, { cover, seriesId, seriesTitle })
+    onProgress?.({ stage: "done", progress: 1 })
+    return result
+  }
+
+  const task = (async () => {
+    try {
+      onProgress?.({ stage: "fetching", progress: 0 })
+
+      const streams = await fetchEncryptedStreams(videoId)
+      if (streams.length === 0) {
+        throw new HttpError("该集暂无可用清晰度，或均为设备不支持的编码", 404)
+      }
+
+      const stream: EncryptedStream = streams[0]
+
+      onProgress?.({ stage: "downloading", progress: 0 })
+      const encrypted = await downloadStream(stream.url, stream.backupUrls)
+      onProgress?.({ stage: "downloading", progress: 1 })
+
+      onProgress?.({ stage: "decrypting", progress: 0 })
+      const playable = await decryptToPlayableAsync(encrypted, stream.contentKey, ratio => {
+        onProgress?.({ stage: "decrypting", progress: ratio })
+      })
+
+      FileManager.writeAsBytesSync(target, playable)
+
+      markUsed(videoId, label, {
+        cover,
+        seriesId,
+        seriesTitle,
+        duration: stream.duration,
+        width: stream.width,
+        height: stream.height,
+      })
+
+      const protectList = [videoId, ...(protectedVideoIds ?? [])]
+      enforceCacheLimit(protectList)
+
+      onProgress?.({ stage: "done", progress: 1 })
+      notifyCacheChanged(videoId, "added")
+
+      return target
+    } finally {
+      inflightPrepares.delete(videoId)
+    }
+  })()
+
+  inflightPrepares.set(videoId, task)
+  return task
+}
+
+/** 开关开启时预加载剧集并保存真实剧集信息，关闭或失败时停止后续预加载。 */
+export async function preloadOfflineVideo(
+  videoId: string,
+  options: { label?: string; cover?: string; seriesId?: string; seriesTitle?: string; protectedVideoIds?: string[] } = {}
+): Promise<boolean> {
+  if (!videoId || !getAutoCacheEnabled()) return false
+  if (isOfflineVideoCached(videoId)) return true
+
+  try {
+    await prepareOfflineVideo(videoId, options)
+    return true
+  } catch (error) {
+    console.log(`[preload] 预加载集数 ${videoId} 失败（已静默跳过）:`, error)
+    return false
+  }
+}
+
+/** 删除指定缓存及索引记录，并通知正在展示缓存状态的页面。 */
+export function removeOfflineVideo(videoId: string): void {
+  const target = cachePath(videoId)
+  if (FileManager.existsSync(target)) FileManager.removeSync(target)
+
+  const index = readIndex()
+  delete index[videoId]
+  writeIndex(index)
+  notifyCacheChanged(videoId, "removed")
+}
+
+export function clearOfflineCache(): void {
+  const directory = cacheDirectory()
+  if (FileManager.existsSync(directory)) FileManager.removeSync(directory)
+  notifyCacheChanged("", "cleared")
+}

@@ -4,7 +4,7 @@ const { readFileSync } = require("node:fs")
 const path = require("node:path")
 const vm = require("node:vm")
 const { test } = require("node:test")
-const build = path.join(__dirname, "../work/hongguo-build")
+const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-build")
 
 /** Load compiled production code with explicit replacements for host dependencies. */
 function loadModule(file, dependencies, globals = {}) {

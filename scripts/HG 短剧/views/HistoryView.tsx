@@ -15,7 +15,7 @@ import {
 } from "scripting"
 import {
   clearPlayHistory,
-  removePlayHistoryItem,
+  removePlayHistoryItems,
   type HistoryRecord,
 } from "../core/history"
 import { addFavorite, loadFavorites, removeFavorites, type FavoriteRecord } from "../core/favorites"
@@ -222,7 +222,7 @@ export function HistoryView({ onPlaySeries, onOpenSeries }: {
     if (!confirmed) return
     try {
       if (fromFavorites) removeFavorites([record.seriesId])
-      else removePlayHistoryItem(record.seriesId)
+      else removePlayHistoryItems([record.seriesId])
       await refresh()
     } catch (error) {
       await Dialog.alert({ title: "操作失败", message: error instanceof Error ? error.message : String(error) })
@@ -243,7 +243,7 @@ export function HistoryView({ onPlaySeries, onOpenSeries }: {
     if (!confirmed) return
     try {
       if (fromFavorites) removeFavorites(selected.map(record => record.seriesId))
-      else for (const record of selected) removePlayHistoryItem(record.seriesId)
+      else removePlayHistoryItems(selected.map(record => record.seriesId))
       await refresh()
     } catch (error) {
       await Dialog.alert({ title: "操作失败", message: error instanceof Error ? error.message : String(error) })

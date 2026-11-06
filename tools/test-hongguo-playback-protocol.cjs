@@ -4,7 +4,7 @@ const { readFileSync } = require("node:fs")
 const path = require("node:path")
 const vm = require("node:vm")
 const crypto = require("node:crypto")
-const build = path.join(__dirname, "../work/hongguo-build/core")
+const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-build", "core")
 const vectors = require("./fixtures/hongguo-playback-vectors.json")
 const supportedCrypto = {
   createHash: crypto.createHash, randomBytes: crypto.randomBytes,

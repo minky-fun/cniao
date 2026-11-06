@@ -123,7 +123,7 @@ function mountPlayer(s) {
     rate: 0,
   }
   const data = { seriesDetail: { vid_list: ["a", "b"] } }
-  const states = [data, "a", false, "", player, "", "url", "", 0, 0, true, true, 0]
+  const states = [data, "a", false, "", player, "", "url", "", 0, 0, true, true]
   let index = 0
   const effects = []
   const { PlayerView } = load("views/PlayerView.js", {
@@ -136,7 +136,7 @@ function mountPlayer(s) {
     },
     "../core/sleepTimer": s.api,
     "../core/api": {}, "../core/mediaCache": {}, "../core/history": {},
-    "../core/format": {}, "../core/playbackState": {}, "./Common": {}, "./EpisodeGrid": {},
+    "../core/format": {}, "../core/playbackState": {}, "./Common": {}, "./EpisodeGrid": {}, "./FavoriteButton": {},
     "../core/playbackSource": {
       /** Suspend a real switch continuation until after timer expiry. */
       resolvePlaybackSource() {

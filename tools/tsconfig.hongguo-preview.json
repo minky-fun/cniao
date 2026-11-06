@@ -1,6 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "outDir": "../work/hongguo-preview-build",
     "rootDir": "../scripts/HG 短剧"
   },

@@ -2,11 +2,9 @@ import {
   AVPlayerView,
   Button,
   HStack,
-  Image,
   PIPStatus,
   ProgressView,
   ScrollView,
-  Spacer,
   Text,
   VStack,
   ZStack,
@@ -28,7 +26,6 @@ import { savePlayHistoryItem } from "../core/history"
 import { formatEpisodeLabel } from "../core/format"
 import {
   applyOfflineSource,
-  durationSeconds,
   loadOfflinePlayerData,
   resolvePlaybackSource,
   type OfflineLoadOptions,
@@ -94,7 +91,6 @@ export function PlayerView({
 
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
 
-  const [activeDuration, setActiveDuration] = useState<number>(0)
   const pipValue = pipStatus.value
 
   const isPipActive = pipValue === "willStart" || pipValue === "didStart"
@@ -167,9 +163,7 @@ export function PlayerView({
         }
         loadedSourceRef.current = url
 
-        const durSec = meta?.duration ?? 0
         setData(prev => (prev ? applyOfflineSource(prev, vid, url, meta) : prev))
-        setActiveDuration(durSec > 0 ? durSec : 0)
 
         setCurrentVid(vid)
         setSource(url)
@@ -193,15 +187,13 @@ export function PlayerView({
 
   /** 加载现有解密缓存及真实剧集信息。 */
   const applyOfflineLoad = async (vid: string, options: OfflineLoadOptions = {}) => {
-    const { data: offlineData, meta } = await loadOfflinePlayerData(seriesId, vid, {
+    const { data: offlineData } = await loadOfflinePlayerData(seriesId, vid, {
       ...options,
       onProgress: updatePrepareProgress,
     })
     setData(offlineData)
     setCurrentVid(vid)
     setSource(offlineData.playerInfo.main_url)
-    const seconds = durationSeconds(meta?.duration)
-    if (seconds > 0) setActiveDuration(seconds)
   }
 
   /** 请求指定剧集并更新加载状态。 */
@@ -282,27 +274,14 @@ export function PlayerView({
     }
   }, [player, source, isAudioReady])
 
-  /** 使用原生播放器的实际时长更新页面状态。 */
-  const syncPlayerDuration = () => {
-    const d = player.duration
-    if (d > 0) {
-      setActiveDuration(prev => {
-        if (Math.abs(prev - d) >= 0.5) return d
-        return prev
-      })
-    }
-  }
-
   useEffect(() => {
     if (!isPlayerLoaded) return
 
     /** 媒体就绪可能晚于倒计时到期，开始播放前重新检查。 */
     player.onReadyToPlay = () => {
-      syncPlayerDuration()
       if (canAutoPlay()) player.play()
     }
     const timer = setTimeout(() => {
-      syncPlayerDuration()
       if (canAutoPlay()) player.play()
     }, PLAY_AFTER_MOUNT_MS)
 
@@ -315,21 +294,12 @@ export function PlayerView({
   useEffect(() => {
     /** 原生播放按钮主动恢复后重新允许连播，尚未到期的计时保持不变。 */
     player.onTimeControlStatusChanged = () => {
-      syncPlayerDuration()
       if (player.rate > 0 && getSleepDeadline() === 0) resumeAfterSleep()
     }
     return () => {
       player.onTimeControlStatusChanged = undefined
     }
   }, [player])
-
-  useEffect(() => {
-    if (!source) return
-    const timers = [120, 300, 600, 1200].map(delay =>
-      setTimeout(syncPlayerDuration, delay)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [source])
 
   useEffect(() => {
     const detail = data?.seriesDetail

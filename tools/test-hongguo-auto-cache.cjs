@@ -79,7 +79,7 @@ function prefetchScenario({ enabled = true, count, current = 0, total = 8,
   const detail = { series_id: "series", series_name: "Test", series_cover: "", vid_list: Array.from({ length: total }, (_, i) => String(i)) }
   const currentVid = detail.vid_list[current]
   const data = { seriesDetail: detail }
-  const states = [data, currentVid, false, "", {}, "", "", "", 0, 0, true, true, 0]
+  const states = [data, currentVid, false, "", {}, "", "", "", 0, 0, true, true]
   const effects = [], timers = new Map(), calls = [], delays = [], refs = []
   const preference = { enabled, count: count ?? config.AUTO_CACHE_EPISODE_COUNT }
   let stateIndex = 0, refIndex = 0, timerId = 0
