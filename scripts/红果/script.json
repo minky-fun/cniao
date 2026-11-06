@@ -5,44 +5,40 @@
     "homepage" : "https://github.com/minky-fun",
     "name" : "Minky"
   },
-  "contributors" : [
-
-  ],
+  "contributors" : [],
   "remoteResource" : {
     "url" : "https://raw.githubusercontent.com/minky-fun/loon-scripts/main/scripts/Hongguo.scripting",
     "autoUpdateInterval" : 3600
   },
-  "description" : "红果短剧浏览与播放：首页推荐、热播榜单、分类浏览与标签筛选、关键词搜索，选集三行横向翻页，支持连播自动切集、播放历史记忆与续播、内嵌播放与付费集本地解密，自带缓存管理。",
-  "intentInputTypes" : [
-
-  ],
+  "description" : "短剧浏览与播放工具，支持推荐、榜单、分类筛选、搜索、选集连播、播放历史、定时停止及自定义容量缓存。",
+  "intentInputTypes" : [],
   "localizedDescriptions" : {
-    "fr" : "Parcourez et lisez les dramas courts Hongguo : recommandations, classements, catégories, recherche, sélection d'épisodes paginée sur 3 lignes, lecture automatique de l'épisode suivant, lecture avec déchiffrement local et gestion du cache.",
-    "de" : "Hongguo-Kurzdramen durchsuchen und abspielen: Empfehlungen, Ranglisten, Kategorien, Suche, 3-zeilige seitenweise Episodenauswahl, automatisches Weiterspielen, Wiedergabe mit lokaler Bezahlfolgen-Entschlüsselung und Cache-Verwaltung.",
-    "pt" : "Explore e assista curtas da Hongguo: recomendações, rankings, categorias, busca, seleção de episódios paginada em 3 linhas, reprodução contínua automática, reprodução com descriptografia local e gerenciamento de cache.",
-    "en" : "Browse and play Hongguo short dramas: home, rankings, categories with tag filters, search, 3-row paginated episode selection, auto-play next episode, inline playback with paid-episode local decryption, and cache management.",
-    "es" : "Explora y reproduce cortos de Hongguo: recomendaciones, rankings, categorías, búsqueda, selección de episodios paginada en 3 filas, reproducción continua automática, reproducción con descifrado local y gestión de caché.",
-    "it" : "Esplora e riproduci i corti di Hongguo: consigli, classifiche, categorie, ricerca, selezione episodi impaginata su 3 righe, riproduzione automatica episodio successivo, riproduzione con decrittazione locale e gestione della cache.",
-    "ru" : "Просмотр и воспроизведение коротких драм Hongguo: рекомендации, рейтинги, категории, поиск, 3-строчный постраничный выбор серий, автовоспроизведение следующей серии, воспроизведение с локальной расшифровкой и управление кешем.",
-    "ja" : "紅果ショートドラマの閲覧と再生：おすすめ、ランキング、カテゴリ、検索、3行横スクロール話数選択、自動連続再生、内蔵再生と有料話ローカル復号、キャッシュ管理に対応。",
-    "zh" : "红果短剧浏览与播放：首页推荐、热播榜单、分类浏览与标签筛选、关键词搜索，选集三行横向翻页，支持连播自动切集、播放历史记忆与续播、内嵌播放与付费集本地解密，自带缓存管理。"
+    "fr" : "Un lecteur de séries courtes avec recommandations, classements, catégories, recherche, lecture continue, historique, minuterie et limite de cache personnalisable.",
+    "de" : "Kurzserien entdecken und ansehen: Empfehlungen, Ranglisten, Kategorien, Suche, fortlaufende Wiedergabe, Verlauf, Abschalttimer und einstellbare Cache-Größe.",
+    "pt" : "Explore e assista séries curtas com recomendações, rankings, categorias, busca, reprodução contínua, histórico, temporizador e limite de cache ajustável.",
+    "en" : "Browse and watch short dramas with recommendations, rankings, categories, search, continuous playback, viewing history, a sleep timer, and an adjustable cache size limit.",
+    "es" : "Explora y reproduce series cortas con recomendaciones, clasificaciones, categorías, búsqueda, reproducción continua, historial, temporizador y límite de caché ajustable.",
+    "it" : "Scopri e guarda serie brevi con consigli, classifiche, categorie, ricerca, riproduzione continua, cronologia, timer e limite della cache personalizzabile.",
+    "ru" : "Просмотр коротких сериалов: рекомендации, рейтинги, категории, поиск, непрерывное воспроизведение, история, таймер остановки и настраиваемый лимит кеша.",
+    "ja" : "短編ドラマの閲覧と再生。おすすめ、ランキング、カテゴリ、検索、連続再生、視聴履歴、スリープタイマー、キャッシュ容量の設定に対応。",
+    "zh" : "短剧浏览与播放工具，支持推荐、榜单、分类筛选、搜索、选集连播、播放历史、定时停止及自定义容量缓存。"
   },
   "permissions" : null,
   "runInApp" : false,
-  "name" : "红果",
+  "name" : "幕间剧场",
   "entry" : "index.tsx",
   "color" : "rgba(238, 92, 98,1)",
-  "version" : "1.0.3",
+  "version" : "1.0.4",
   "localizedNames" : {
-    "es" : "Hongguo",
-    "ja" : "紅果",
-    "it" : "Hongguo",
-    "en" : "Hongguo",
-    "ru" : "Hongguo",
-    "pt" : "Hongguo",
-    "de" : "Hongguo",
-    "zh" : "红果",
-    "fr" : "Hongguo"
+    "es" : "Interlude",
+    "ja" : "幕間シアター",
+    "it" : "Interlude",
+    "en" : "Interlude",
+    "ru" : "Interlude",
+    "pt" : "Interlude",
+    "de" : "Interlude",
+    "zh" : "幕间剧场",
+    "fr" : "Interlude"
   },
   "iconImage" : null
 }

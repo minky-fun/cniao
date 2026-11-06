@@ -1,4 +1,4 @@
-"""按红果入口的实际依赖生成固定英文名 Scripting 安装包。"""
+"""按幕间剧场入口的实际依赖生成固定英文名 Scripting 安装包。"""
 from pathlib import Path
 import json
 import re
@@ -11,8 +11,8 @@ def main():
     """收集嵌套模块，校验元数据和源码后原子替换安装包。"""
     source = (ROOT / 'scripts/红果').resolve()
     metadata = json.loads((source / 'script.json').read_text())
-    if metadata['name'] != '红果' or metadata['entry'] != 'index.tsx':
-        raise ValueError('必须保留红果脚本名称和入口')
+    if metadata['name'] != '幕间剧场' or metadata['entry'] != 'index.tsx':
+        raise ValueError('脚本名称必须为幕间剧场，入口必须为 index.tsx')
     for field in ('icon', 'color', 'version'):
         if not metadata[field]:
             raise ValueError('脚本元数据缺失: ' + field)

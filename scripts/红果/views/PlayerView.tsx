@@ -447,7 +447,7 @@ export function PlayerView({
       spacing={0}
       frame={PAGE_FRAME}
       background={SERIES_SURFACE}
-      navigationTitle="红果剧场"
+      navigationTitle="幕间剧场"
       navigationBarTitleDisplayMode="inline"
       toolbar={{
         topBarTrailing: [

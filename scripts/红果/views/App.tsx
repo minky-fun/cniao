@@ -206,7 +206,7 @@ export function App() {
       >
         <Tab title="首页" systemImage="house.fill" value={0}>
           <TabPage
-            title="红果剧场"
+            title="幕间剧场"
             push={push}
             onClose={close}
             render={push => <HomeView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
