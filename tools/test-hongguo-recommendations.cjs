@@ -271,6 +271,7 @@ function mountFeed({ autoCache = true } = {}) {
     },
     "../core/mediaCache": {
       getAutoCacheEnabled: () => cache.enabled,
+      isOfflineVideoCached: vid => cache.saved.has(vid),
       /** Hold complete video downloads independently of current-page streaming. */
       preloadOfflineVideo(vid, options) {
         if (cache.saved.has(vid)) return Promise.resolve(true)
@@ -441,20 +442,113 @@ test("native visibility drives consecutive autoplay and reverse swipes without a
   let released = 0
   for (const [index, number] of [1, 2, 3, 2].entries()) {
     if (index) { h.select(number); await h.flush() }
-    assert.equal(h.sources[index].vid, item(number).vid)
-    assert.equal(released, index)
-    h.sources[index].resolve({ url: `synthetic-${index}`, dispose() { released++ } }); await h.flush()
+    assert.equal(released, 0, "ready sources stay alive across swipes")
+    if (index < 3) {
+      assert.equal(h.sources[index].vid, item(number).vid)
+      h.sources[index].resolve({ url: `synthetic-${index}`, dispose() { released++ } }); await h.flush()
+    } else {
+      assert.equal(h.sources.length, 3, "reverse swipe reuses the prepared second video")
+      assert.equal(h.player.bound.at(-1), "synthetic-1")
+    }
     h.player.onReadyToPlay(); await h.flush()
     assert.equal(h.player.rate, 1)
     assert.equal(h.history[index].seriesId, item(number).detail.series_id)
     const views = h.nodes().filter(node => node.type === "AVPlayerView")
     assert.equal(views.length, 1)
     assert.equal(views[0].props.player, h.player)
-    if (index) assert.equal(h.sources[index - 1].signal.aborted, true)
+    for (const source of h.sources) assert.equal(source.signal.aborted, false)
   }
   assert.equal(h.player.plays, 4)
   h.unmount()
-  assert.equal(released, 4)
+  assert.equal(released, 3)
+  for (const source of h.sources) assert.equal(source.signal.aborted, true)
+})
+
+test("returning to an incompletely downloaded video reuses its source without fetching playback information", async () => {
+  const h = mountFeed({ autoCache: false })
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  h.sources[0].resolve({ url: "synthetic-first" }); await h.flush()
+  h.player.onReadyToPlay()
+  h.select(2); await h.flush()
+  h.sources[1].resolve({ url: "synthetic-second" }); await h.flush()
+  h.player.onReadyToPlay()
+  h.select(1); await h.flush()
+  assert.equal(h.sources.length, 2)
+  assert.deepEqual(h.player.bound, ["synthetic-first", "synthetic-second", "synthetic-first"])
+  assert.ok(!h.nodes().some(node => node.children.includes("正在获取播放信息")))
+  h.player.onReadyToPlay()
+  assert.equal(h.player.rate, 1)
+  h.unmount()
+})
+
+test("a completed offline file replaces the retained network source and never shows a network-fetch label", async () => {
+  const h = mountFeed({ autoCache: false })
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  let released = 0
+  h.sources[0].resolve({ url: "synthetic-stream", dispose() { released++ } }); await h.flush()
+  h.select(2); await h.flush()
+  h.cache.saved.add(item(1).vid)
+  h.select(1); await h.flush()
+  assert.equal(released, 1)
+  assert.equal(h.sources[0].signal.aborted, true)
+  assert.equal(h.sources[2].vid, item(1).vid)
+  assert.ok(!h.nodes().some(node => node.children.includes("正在获取播放信息")))
+  h.sources[2].resolve({ url: "/synthetic/cached-first.mp4" }); await h.flush()
+  assert.equal(h.player.bound.at(-1), "/synthetic/cached-first.mp4")
+  h.select(2); await h.flush()
+  h.select(1); await h.flush()
+  assert.equal(h.sources.length, 4, "the ready local source is reused after another swipe")
+  assert.equal(h.player.bound.at(-1), "/synthetic/cached-first.mp4")
+  h.cache.saved.delete(item(1).vid)
+  h.select(2); await h.flush()
+  h.select(1); await h.flush()
+  assert.equal(h.sources.at(-1).vid, item(1).vid)
+  assert.equal(h.sources.length, 6, "a deleted local file must be prepared again")
+  assert.ok(h.nodes().some(node => node.children.includes("正在获取播放信息")))
+  h.unmount()
+})
+
+test("recent sources are bounded, revisit updates retention order and departure releases all remaining sources", async () => {
+  const h = mountFeed({ autoCache: false })
+  h.replyPage(0, [1, 2, 3, 4, 5, 6, 7, 8], 8, false); await h.flush()
+  const released = []
+  for (let number = 1; number <= 6; number++) {
+    if (number > 1) { h.select(number); await h.flush() }
+    h.sources[number - 1].resolve({ url: `synthetic-${number}`, dispose() { released.push(number) } }); await h.flush()
+  }
+  h.select(1); await h.flush() // Keep the first entry recent so the second becomes the eviction victim.
+  h.select(7); await h.flush()
+  h.sources[6].resolve({ url: "synthetic-7", dispose() { released.push(7) } }); await h.flush()
+  assert.deepEqual(released, [2])
+  assert.equal(h.sources[1].signal.aborted, true)
+  assert.equal(h.sources[0].signal.aborted, false)
+  h.select(1); await h.flush()
+  assert.equal(h.sources.length, 7)
+  h.update({ active: false })
+  assert.deepEqual([...released].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7])
+  for (const source of h.sources) assert.equal(source.signal.aborted, true)
+  h.unmount()
+  assert.equal(released.length, 7, "sources must not be disposed twice on unmount")
+})
+
+test("a failed retained source is invalidated for retry without discarding other ready videos", async () => {
+  const h = mountFeed({ autoCache: false })
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  let released = 0
+  h.sources[0].resolve({ url: "synthetic-first", dispose() { released++ } }); await h.flush()
+  h.select(2); await h.flush()
+  h.sources[1].resolve({ url: "synthetic-second" }); await h.flush()
+  h.select(1); await h.flush()
+  h.player.onError("synthetic expired media"); await h.flush()
+  assert.equal(released, 1)
+  h.nodes().find(node => node.props.title === "重试播放").props.action(); await h.flush()
+  assert.equal(h.sources.length, 3)
+  assert.equal(h.sources[2].vid, item(1).vid)
+  h.sources[2].resolve({ url: "synthetic-renewed" }); await h.flush()
+  h.select(2); await h.flush()
+  assert.equal(h.sources.length, 3)
+  assert.equal(h.player.bound.at(-1), "synthetic-second")
+  h.unmount()
 })
 
 test("empty, ambiguous and unknown visible targets do not restart or select another video", async () => {

@@ -5,11 +5,13 @@ import {
 } from "scripting"
 import { fetchRecommendationPage, type FeedCursor, type Recommendation } from "../core/recommendations"
 import { prepareFeedPlayback, type FeedPlaybackSource } from "../core/feedPlayback"
-import { getAutoCacheEnabled, preloadOfflineVideo } from "../core/mediaCache"
+import { getAutoCacheEnabled, isOfflineVideoCached, preloadOfflineVideo } from "../core/mediaCache"
 import { savePlayHistoryItem } from "../core/history"
 import { isPipPlaybackActive, releaseRetainedPlayer } from "../core/playbackState"
 import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, resumeAfterSleep } from "../core/sleepTimer"
 import { PAGE_FRAME, THEME_COLOR } from "./Common"
+
+const MAX_RECENT_SOURCES = 6
 
 const VIDEO_SHADE = gradient("linear", {
   stops: [
@@ -51,12 +53,26 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
   const cacheTask = useRef<Promise<void>>(Promise.resolve())
   const cacheAttempts = useRef(new Set<string>())
   const cacheProtection = useRef<string[]>([])
+  const preparedSources = useRef(new Map<string, {
+    source: FeedPlaybackSource
+    controller: AbortController
+    offline: boolean
+  }>())
   const current = items.find(item => item.detail.series_id === visibleId) ?? items[0]
   const index = current ? items.indexOf(current) : -1
   const enabled = active && foreground && appeared
   // 下载结束后才执行容量淘汰，保持数组引用以保护滑动后的当前播放集。
   cacheProtection.current.length = current ? 1 : 0
   if (current) cacheProtection.current[0] = current.vid
+
+  /** 移除失效或淘汰的播放源，同时关闭本地监听和未完成的片段请求。 */
+  const releaseSource = (vid: string) => {
+    const entry = preparedSources.current.get(vid)
+    if (!entry) return
+    preparedSources.current.delete(vid)
+    entry.controller.abort()
+    entry.source.dispose()
+  }
 
   /** 合并服务端下一页并按剧集去重；请求未完成时阻止重复触底请求。 */
   const loadMore = async () => {
@@ -116,7 +132,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     return () => AppEvents.scenePhase.removeListener(onScenePhase)
   }, [player])
 
-  // 当前页使用按需解密源，切换立即取消旧任务，迟到结果不能绑定播放器。
+  // 切页取消尚未完成的准备任务，已就绪的最近播放源保留供回滑复用。
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
@@ -133,7 +149,10 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     setPrepareLabel("")
     const blocked = isPipPlaybackActive()
     setPipBlocked(blocked)
-    if (!enabled || !current || blocked) return
+    if (!enabled || !current || blocked) {
+      for (const vid of preparedSources.current.keys()) releaseSource(vid)
+      return
+    }
     const item = current
     wantsPlay.current = true
     if (canAutoPlay()) attachSleepPlayer(player)
@@ -157,7 +176,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     player.onError = message => {
       // 旧媒体仍可能在新来源准备期间报告连接关闭，尚未绑定新来源时忽略这些错误。
       if (!cancelled && loaded) {
-        source?.dispose()
+        releaseSource(item.vid)
         loaded = false
         wantsPlay.current = false
         player.pause()
@@ -168,13 +187,30 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       }
     }
 
-    /** 只为当前目标读取索引，之后交给原生播放器按需请求视频片段。 */
+    /** 优先本地文件或最近的就绪源，仅未命中时获取播放信息并读取索引。 */
     const prepare = async () => {
       if (cancelled) return
       try {
-        setPrepareLabel("正在获取播放信息")
-        source = await prepareFeedPlayback(item.detail.series_id, item.detail, item.vid, controller.signal)
-        if (cancelled) { source.dispose(); return }
+        const offline = isOfflineVideoCached(item.vid)
+        let retained = preparedSources.current.get(item.vid)
+        if (retained && retained.offline !== offline) {
+          releaseSource(item.vid)
+          retained = undefined
+        }
+        if (retained) {
+          source = retained.source
+          preparedSources.current.delete(item.vid)
+          preparedSources.current.set(item.vid, retained)
+        } else {
+          if (!offline) setPrepareLabel("正在获取播放信息")
+          source = await prepareFeedPlayback(item.detail.series_id, item.detail, item.vid, controller.signal)
+          if (cancelled) { source.dispose(); return }
+          preparedSources.current.set(item.vid, { source, controller, offline })
+          while (preparedSources.current.size > MAX_RECENT_SOURCES) {
+            const oldest = preparedSources.current.keys().next().value
+            if (oldest !== undefined) releaseSource(oldest)
+          }
+        }
         await SharedAudioSession.setCategory("playback", [])
         if (cancelled) return
         await SharedAudioSession.setActive(true)
@@ -187,8 +223,9 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
         setPrepareLabel("")
         timer = setTimeout(play, 120)
       } catch (error) {
-        source?.dispose()
         if (!cancelled) {
+          releaseSource(item.vid)
+          controller.abort()
           loaded = false
           wantsPlay.current = false
           player.pause()
@@ -200,8 +237,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     void prepare()
     return () => {
       cancelled = true
-      controller.abort()
-      source?.dispose()
+      if (!source) controller.abort()
       wantsPlay.current = false
       if (timer !== undefined) clearTimeout(timer)
       player.onReadyToPlay = undefined
@@ -245,6 +281,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
   // 首页模式销毁后取消所有异步界面更新并释放播放器，不影响详情页的音频会话。
   useEffect(() => () => {
     alive.current = false
+    for (const vid of preparedSources.current.keys()) releaseSource(vid)
     player.dispose()
   }, [player])
 
