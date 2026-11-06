@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../work/hongguo-preview-build",
+    "rootDir": "../scripts/HG 短剧"
+  },
+  "include": ["../dts/*.d.ts", "../scripts/HG 短剧/**/*.ts", "../scripts/HG 短剧/**/*.tsx"]
+}
