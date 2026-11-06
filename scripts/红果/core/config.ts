@@ -71,6 +71,4 @@ export const PLAYBACK_CACHE_DIR = "hongguo-cache"
 
 export const PLAYBACK_CACHE_MAX_BYTES = 500 * 1024 * 1024
 
-export const PLAYBACK_CACHE_MAX_ENTRIES = 50
-
 export const AUTO_CACHE_EPISODE_COUNT = 5

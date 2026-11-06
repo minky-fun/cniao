@@ -1,6 +1,6 @@
 import { fetchEncryptedStreams, downloadStream, type EncryptedStream } from "./appApi"
 import { decryptToPlayableAsync } from "./mp4"
-import { AUTO_CACHE_EPISODE_COUNT, PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES, PLAYBACK_CACHE_MAX_ENTRIES } from "./config"
+import { AUTO_CACHE_EPISODE_COUNT, PLAYBACK_CACHE_DIR, PLAYBACK_CACHE_MAX_BYTES } from "./config"
 import { HttpError } from "./http"
 
 const CACHE_FILE_EXTENSION = ".mp4"
@@ -9,7 +9,7 @@ const INDEX_FILE_NAME = "cache-index.json"
 
 const INDEX_VERSION = 1
 
-const MAX_ENTRIES_STORAGE_KEY = "hongguo-cache-max-entries"
+const MAX_BYTES_STORAGE_KEY = "hongguo-cache-max-bytes"
 
 const AUTO_CACHE_STORAGE_KEY = "hongguo-auto-cache"
 
@@ -222,8 +222,6 @@ function forget(videoId: string, index: CacheIndex): void {
 export interface CacheLimits {
 
   maxBytes: number
-
-  maxEntries: number
 }
 
 /** 自动缓存默认开启，重新运行脚本时恢复用户保存的选择。 */
@@ -253,24 +251,22 @@ export function setAutoCacheEpisodeCount(value: number): void {
   }
 }
 
-/** 读取用户设置的保留集数，尚未设置或旧数据无效时使用原有默认值。 */
-export function getPlaybackCacheMaxEntries(): number {
-  const value = Storage.get<number>(MAX_ENTRIES_STORAGE_KEY)
-  return value !== null && Number.isSafeInteger(value) && value >= 2
-    ? value
-    : PLAYBACK_CACHE_MAX_ENTRIES
+/** 读取用户设置的容量字节数，首次使用保留原有 500 MB 默认上限。 */
+export function getPlaybackCacheMaxBytes(): number {
+  return Storage.get<number>(MAX_BYTES_STORAGE_KEY) ?? PLAYBACK_CACHE_MAX_BYTES
 }
 
-/** 校验并持久保存保留集数，保存失败时保留现有配置并报告原因。 */
-export function setPlaybackCacheMaxEntries(value: number): void {
-  if (!Number.isSafeInteger(value) || value < 2) {
-    throw new Error("请输入不小于 2 的整数集数")
+/** 按整数 MB 保存容量上限，拒绝无效值，保存失败时保留原配置。 */
+export function setPlaybackCacheMaxBytes(value: number): void {
+  if (!Number.isSafeInteger(value) || value < 1024 ** 2 || value % (1024 ** 2) !== 0) {
+    throw new Error("请输入不小于 1 的整数容量（MB），数值不能过大")
   }
-  if (!Storage.set(MAX_ENTRIES_STORAGE_KEY, value)) {
-    throw new Error("保留集数保存失败，请重试")
+  if (!Storage.set(MAX_BYTES_STORAGE_KEY, value)) {
+    throw new Error("缓存容量上限保存失败，请重试")
   }
 }
 
+/** 仅按容量选择最久未使用的缓存，不再因缓存集数超过 50 集而淘汰。 */
 export function selectEvictions(
   entries: CacheEntry[],
   limits: CacheLimits,
@@ -283,28 +279,23 @@ export function selectEvictions(
     .sort((a, b) => a.lastUsedAt - b.lastUsedAt)
 
   let totalBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0)
-  let totalCount = entries.length
   const evicted: CacheEntry[] = []
 
   for (const candidate of removable) {
-    const isOverBytes = totalBytes > limits.maxBytes
-    const isOverEntries = totalCount > limits.maxEntries
-    if (!isOverBytes && !isOverEntries) break
+    if (totalBytes <= limits.maxBytes) break
 
     totalBytes -= candidate.sizeBytes
-    totalCount -= 1
     evicted.push(candidate)
   }
 
   return evicted
 }
 
-/** 每次清理读取最新保留集数，按最久未观看顺序清理并保护指定剧集。 */
+/** 每次清理读取最新容量上限，按最久未使用顺序清理并保护指定剧集。 */
 export function enforceCacheLimit(
   protectedVideoIds: string[] = [],
   limits: CacheLimits = {
-    maxBytes: PLAYBACK_CACHE_MAX_BYTES,
-    maxEntries: getPlaybackCacheMaxEntries(),
+    maxBytes: getPlaybackCacheMaxBytes(),
   }
 ): number {
   const entries = listOfflineCache()

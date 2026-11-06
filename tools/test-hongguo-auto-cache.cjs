@@ -73,7 +73,7 @@ test("episode count defaults to five, persists valid choices and rejects invalid
 })
 
 /** Mount the production prefetch effect with configurable preferences and controlled timers. */
-function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0, total = 8,
+function prefetchScenario({ enabled = true, count, current = 0, total = 8,
   cached = new Set(), failures = new Map(), afterDownload } = {}) {
   const config = load("core/config.js", {})
   const detail = { series_id: "series", series_name: "Test", series_cover: "", vid_list: Array.from({ length: total }, (_, i) => String(i)) }
@@ -98,7 +98,6 @@ function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0,
     "../core/mediaCache": {
       getAutoCacheEnabled: () => preference.enabled,
       getAutoCacheEpisodeCount: () => preference.count,
-      getPlaybackCacheMaxEntries: () => maxEntries,
       isOfflineVideoCached: vid => cached.has(vid),
       /** Record completed background tasks and allow preference changes between episodes. */
       async preloadOfflineVideo(vid) {
@@ -185,10 +184,11 @@ test("switching auto-cache off prevents the remaining queued episodes from start
   assert.deepEqual(scenario.calls, ["1"])
 })
 
-test("prefetch respects cache retention, series end and leaving the player", async () => {
-  const limited = prefetchScenario({ maxEntries: 2 })
-  await limited.flush()
-  assert.deepEqual(limited.calls, ["1"])
+test("prefetch follows configured counts beyond fifty, series end and leaving the player", async () => {
+  const largeWindow = prefetchScenario({ count: 60, total: 70 })
+  await largeWindow.flush()
+  assert.equal(largeWindow.calls.length, 60)
+  assert.equal(largeWindow.calls.at(-1), "60")
   const finalEpisodes = prefetchScenario({ current: 6 })
   await finalEpisodes.flush()
   assert.deepEqual(finalEpisodes.calls, ["7"])

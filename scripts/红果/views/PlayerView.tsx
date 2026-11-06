@@ -20,7 +20,6 @@ import { fetchDetail } from "../core/api"
 import {
   getAutoCacheEnabled,
   getAutoCacheEpisodeCount,
-  getPlaybackCacheMaxEntries,
   isOfflineVideoCached,
   preloadOfflineVideo,
   type PrepareProgress,
@@ -356,8 +355,8 @@ export function PlayerView({
       if (cancelled || !getAutoCacheEnabled()) return
       let needsRetry = false
 
-      // 为当前播放留出一集额度，每集开始前重新检查自动缓存开关。
-      for (let offset = 1; offset <= getAutoCacheEpisodeCount() && offset < getPlaybackCacheMaxEntries(); offset++) {
+      // 按用户设置补齐后续集数，容量限制由缓存模块统一处理。
+      for (let offset = 1; offset <= getAutoCacheEpisodeCount(); offset++) {
         if (cancelled || !getAutoCacheEnabled()) break
         const targetIndex = currentIndex + offset
         if (targetIndex >= detail.vid_list.length) break

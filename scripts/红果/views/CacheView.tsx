@@ -10,13 +10,12 @@ import {
   useObservable,
   useState,
 } from "scripting"
-import { PLAYBACK_CACHE_MAX_BYTES } from "../core/config"
 import { formatBytes } from "../core/format"
 import {
   clearOfflineCache,
-  getPlaybackCacheMaxEntries,
+  getPlaybackCacheMaxBytes,
   listOfflineCacheAsync,
-  setPlaybackCacheMaxEntries,
+  setPlaybackCacheMaxBytes,
   type CacheEntry,
 } from "../core/mediaCache"
 import { ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME } from "./Common"
@@ -27,8 +26,8 @@ const TRACK_SURFACE = { light: "#EFEFEF", dark: "#343535" } as const
 const ACCENT_COLOR = { light: "#B55200", dark: "#FA7705" } as const
 
 /** 展示实际剧集缓存与缓存额度，并在容量右侧提供紧凑的一键清理按钮。 */
-function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count: number; onClear: () => void }) {
-  const ratio = Math.min(usedBytes / PLAYBACK_CACHE_MAX_BYTES, 1)
+function UsageSummary({ usedBytes, maxBytes, count, onClear }: { usedBytes: number; maxBytes: number; count: number; onClear: () => void }) {
+  const ratio = Math.min(usedBytes / maxBytes, 1)
 
   return (
     <VStack
@@ -83,7 +82,7 @@ function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count:
         </Button>
       </HStack>
       <Text font={14} frame={FILL_LEADING}>
-        {`已缓存 ${count} 集，上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}`}
+        {`已缓存 ${count} 集，上限 ${formatBytes(maxBytes)}`}
       </Text>
     </VStack>
   )
@@ -92,7 +91,7 @@ function UsageSummary({ usedBytes, count, onClear }: { usedBytes: number; count:
 /** 以贯穿安全区的主题背景展示缓存页，异步读取容量并保留清理和管理入口。 */
 export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
   const [entries, setEntries] = useState<CacheEntry[]>([])
-  const [maxEntries, setMaxEntries] = useState(getPlaybackCacheMaxEntries)
+  const [maxBytes, setMaxBytes] = useState(getPlaybackCacheMaxBytes)
   const [isLoading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const refreshRequest = useObservable(0)
@@ -108,7 +107,7 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
       const currentEntries = await listOfflineCacheAsync()
       if (requestId !== refreshRequest.value) return
       setEntries(currentEntries)
-      setMaxEntries(getPlaybackCacheMaxEntries())
+      setMaxBytes(getPlaybackCacheMaxBytes())
     } catch (error) {
       if (requestId === refreshRequest.value) setLoadError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -121,25 +120,25 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
     refreshRequest.setValue(refreshRequest.value + 1)
   }
 
-  /** 输入不小于两集的整数并保存，后续自动清理使用新配置，取消时不修改。 */
-  const changeMaxEntries = async () => {
+  /** 按 MB 输入并保存容量上限，取消或保存失败时保持当前值。 */
+  const changeMaxBytes = async () => {
     try {
       const input = await Dialog.prompt({
-        title: "最多保留几集",
-        message: "至少保留 2 集，请输入不小于 2 的整数。保存后，后续写入缓存和下次启动时按新上限自动清理。",
-        defaultValue: String(maxEntries),
+        title: "缓存容量上限",
+        message: "请输入不小于 1 的整数，单位 MB。例如 1024 MB 为 1 GB。保存时不立即清理，后续写入缓存和下次启动时按新上限自动清理。",
+        defaultValue: String(maxBytes / 1024 ** 2),
         keyboardType: "numberPad",
         selectAll: true,
         confirmLabel: "保存",
         cancelLabel: "取消",
       })
       if (input == null) return
-      const value = Number(input.trim())
-      setPlaybackCacheMaxEntries(value)
-      setMaxEntries(value)
+      const value = Number(input.trim()) * 1024 ** 2
+      setPlaybackCacheMaxBytes(value)
+      setMaxBytes(value)
     } catch (error) {
       await Dialog.alert({
-        title: "未能保存保留集数",
+        title: "未能保存缓存容量上限",
         message: error instanceof Error ? error.message : String(error),
       })
     }
@@ -185,7 +184,7 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
       <ScrollView scrollIndicator="hidden">
         {isLoading ? <LoadingView text="正在读取缓存…" /> : loadError ? <ErrorView message={loadError} onRetry={refresh} /> : (
           <VStack alignment="leading" spacing={16} padding={{ horizontal: 16, top: 20, bottom: 32 }} frame={FILL_LEADING}>
-            <UsageSummary usedBytes={usedBytes} count={entries.length} onClear={handleClear} />
+            <UsageSummary usedBytes={usedBytes} maxBytes={maxBytes} count={entries.length} onClear={handleClear} />
 
             <VStack
               alignment="leading"
@@ -226,17 +225,17 @@ export function CacheView({ onOpenManager }: { onOpenManager: () => void }) {
               frame={FILL_LEADING}
               background={{ style: CARD_SURFACE, shape: { type: "rect", cornerRadius: 16 } }}
             >
-              <Button action={changeMaxEntries} buttonStyle="plain">
+              <Button action={changeMaxBytes} buttonStyle="plain">
                 <HStack spacing={8} frame={{ maxWidth: "infinity", minHeight: 44 }}>
-                  <Text font={14}>最多保留</Text>
+                  <Text font={14}>缓存容量上限</Text>
                   <Spacer />
-                  <Text font={14} foregroundStyle={ACCENT_COLOR}>{`${maxEntries} 集`}</Text>
+                  <Text font={14} foregroundStyle={ACCENT_COLOR}>{formatBytes(maxBytes)}</Text>
                   <Image systemName="chevron.right" font={11} foregroundStyle="secondaryLabel" />
                 </HStack>
               </Button>
             </VStack>
             <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 4 }} frame={FILL_LEADING}>
-              {`最多保留 ${maxEntries} 集，容量上限 ${formatBytes(PLAYBACK_CACHE_MAX_BYTES)}。后续写入缓存和下次启动时，自动清理最久未观看的剧集。`}
+              {`容量上限 ${formatBytes(maxBytes)}，不限制缓存集数。后续写入缓存和下次启动时，按上限自动清理最久未使用的剧集。`}
             </Text>
           </VStack>
         )}
