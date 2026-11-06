@@ -1,4 +1,4 @@
-import { Button, HStack, Image, LazyVStack, NavigationStack, ProgressView, ScrollView, Text, VStack, useEffect, useRef, useState } from "scripting"
+import { Button, HStack, Image, LazyVStack, ProgressView, ScrollView, Text, TextField, VStack, useEffect, useRef, useState } from "scripting"
 import { fetchSearch, fetchSuggest } from "../core/api"
 import type { SearchData, SuggestWord } from "../core/types"
 import {
@@ -13,14 +13,13 @@ import {
 
 const SUGGEST_DEBOUNCE_MS = 300
 
-/** 通过原生搜索栏展示联想词与分页结果，并隔离不同关键词的请求。 */
+/** 展示页面内搜索框、联想词与分页结果，并隔离不同关键词的请求。 */
 export function SearchView({
   onSelectSeries,
 }: {
   onSelectSeries: (seriesId: string) => void
 }) {
   const [keyword, setKeyword] = useState("")
-  const [searchPresented, setSearchPresented] = useState(true)
   const [submittedKeyword, setSubmittedKeyword] = useState("")
   const [suggestions, setSuggestions] = useState<SuggestWord[]>([])
   const [result, setResult] = useState<SearchData | null>(null)
@@ -142,36 +141,54 @@ export function SearchView({
     setLoadMoreError("")
   }
 
-  /** 原生搜索栏清空时同时重置结果，使旧请求失效。 */
+  /** 输入框清空时同时重置结果，使旧请求失效。 */
   const changeKeyword = (value: string) => {
     if (value.length === 0) clearSearch()
     else setKeyword(value)
   }
 
-  /** 使用原生搜索键提交当前关键词。 */
+  /** 通过键盘或页面搜索按钮提交当前关键词。 */
   const submitSearch = () => { void search(keyword) }
 
-  /** 每次进入搜索页时展开输入框，取消状态由原生搜索栏回写。 */
-  const presentSearch = () => setSearchPresented(true)
-
   return (
-    <NavigationStack>
     <VStack
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
       navigationTitle="搜索"
       navigationBarTitleDisplayMode="inline"
-      navigationBarVisibility="visible"
-      onAppear={presentSearch}
-      searchable={{
-        value: keyword,
-        onChanged: changeKeyword,
-        prompt: "搜索短剧或演员",
-        presented: { value: searchPresented, onChanged: setSearchPresented },
-      }}
-      onSubmit={{ triggers: "search", action: submitSearch }}
     >
+      <HStack spacing={8} alignment="center" padding={{ horizontal: 16, vertical: 10 }}>
+        <HStack
+          spacing={6}
+          alignment="center"
+          padding={{ horizontal: 10, vertical: 7 }}
+          frame={{ maxWidth: "infinity" }}
+          background={{ style: "secondarySystemBackground", shape: { type: "rect", cornerRadius: 10 } }}
+        >
+          <Image systemName="magnifyingglass" font="footnote" foregroundStyle="tertiaryLabel" />
+          <TextField
+            title=""
+            value={keyword}
+            onChanged={changeKeyword}
+            prompt="搜索短剧或演员"
+            autofocus={true}
+            submitLabel="search"
+            onSubmit={submitSearch}
+            frame={{ maxWidth: "infinity" }}
+          />
+          {keyword.length > 0 ? (
+            <Image
+              systemName="xmark.circle.fill"
+              font="footnote"
+              foregroundStyle="tertiaryLabel"
+              onTapGesture={clearSearch}
+            />
+          ) : null}
+        </HStack>
+        <Button title="搜索" action={submitSearch} buttonStyle="plain" foregroundStyle="#FA7705" />
+      </HStack>
+
       <ScrollView key={`search-list:${submittedKeyword}`}>
         <LazyVStack alignment="leading" spacing={0} frame={FILL_LEADING}>
           {showSuggestions ? (
@@ -270,6 +287,5 @@ export function SearchView({
         </LazyVStack>
       </ScrollView>
     </VStack>
-    </NavigationStack>
   )
 }
