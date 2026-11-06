@@ -38,6 +38,7 @@ import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 import { CoverImage, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, SERIES_SURFACE } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
+import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, getSleepDeadline, resumeAfterSleep } from "../core/sleepTimer"
 
 const PLAYER_HEIGHT = 220
 
@@ -135,8 +136,10 @@ export function PlayerView({
     [clearPrepareProgress]
   )
 
+  /** 主动选集时恢复观看；异步切集完成后复核定时停止状态。 */
   const switchEpisode = useCallback((vid: string) => {
     if (!data || vid === currentVid) return
+    resumeAfterSleep()
 
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
@@ -167,7 +170,7 @@ export function PlayerView({
 
         setCurrentVid(vid)
         setSource(url)
-        player.play()
+        if (canAutoPlay()) player.play()
       })
       .catch(error => {
         if (isStale()) return
@@ -176,7 +179,7 @@ export function PlayerView({
         setErrorMessage(error instanceof Error ? error.message : String(error))
 
         const fallback = loadedSourceRef.current
-        if (fallback && player.setSource(fallback)) player.play()
+        if (fallback && player.setSource(fallback) && canAutoPlay()) player.play()
       })
       .finally(() => {
         if (!isStale()) setSwitchLabel("")
@@ -285,21 +288,27 @@ export function PlayerView({
   useEffect(() => {
     if (!isPlayerLoaded) return
 
+    /** 媒体就绪可能晚于倒计时到期，开始播放前重新检查。 */
     player.onReadyToPlay = () => {
       syncPlayerDuration()
-      player.play()
+      if (canAutoPlay()) player.play()
     }
     const timer = setTimeout(() => {
       syncPlayerDuration()
-      player.play()
+      if (canAutoPlay()) player.play()
     }, PLAY_AFTER_MOUNT_MS)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      player.onReadyToPlay = undefined
+    }
   }, [player, isPlayerLoaded, surfaceKey])
 
   useEffect(() => {
+    /** 原生播放按钮主动恢复后重新允许连播，尚未到期的计时保持不变。 */
     player.onTimeControlStatusChanged = () => {
       syncPlayerDuration()
+      if (player.rate > 0 && getSleepDeadline() === 0) resumeAfterSleep()
     }
     return () => {
       player.onTimeControlStatusChanged = undefined
@@ -390,10 +399,12 @@ export function PlayerView({
   }, [pipValue])
 
   useEffect(() => {
+    attachSleepPlayer(player)
     return () => {
       if (isPipActiveRef.current) {
         retainPipPlayer(player)
       } else {
+        detachSleepPlayer(player)
         setPipPlaybackActive(false)
         player.dispose()
       }
@@ -409,7 +420,9 @@ export function PlayerView({
   dataRef.current = data
 
   useEffect(() => {
+    /** 定时停止后阻止结束回调触发下一集，避免到期时连播竞争。 */
     player.onEnded = () => {
+      if (!canAutoPlay()) return
       const currentData = dataRef.current
       const current = currentVidRef.current
       if (!currentData || !current) return

@@ -113,6 +113,7 @@ function prefetchScenario({ enabled = true, count, maxEntries = 50, current = 0,
       },
     },
     "../core/api": {}, "../core/history": {}, "../core/playbackSource": {}, "../core/playbackState": {},
+    "../core/sleepTimer": {},
     "../core/format": { formatEpisodeLabel: () => "Test episode" },
     "./Common": {}, "./EpisodeGrid": {},
   }, {

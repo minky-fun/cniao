@@ -1,4 +1,5 @@
-import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useState } from "scripting"
+import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useEffect, useState } from "scripting"
+import { getSleepDeadline, setSleepTimer } from "../core/sleepTimer"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
 import {
   getAutoCacheEnabled,
@@ -61,6 +62,44 @@ export function SettingsView({
   const [autoCache, setAutoCache] = useState(getAutoCacheEnabled)
   const [autoCacheCount, setAutoCacheCount] = useState(getAutoCacheEpisodeCount)
   const [autoCacheError, setAutoCacheError] = useState("")
+  const [sleepRemaining, setSleepRemaining] = useState(0)
+
+  /** 按绝对截止时间更新剩余分钟，切换页面不会重置倒计时。 */
+  const refreshSleepRemaining = () => {
+    setSleepRemaining(Math.max(0, Math.ceil((getSleepDeadline() - Date.now()) / 60000)))
+  }
+
+  // 设置页重新出现时读取当前截止时间，并清理界面专用刷新计时器。
+  useEffect(() => {
+    refreshSleepRemaining()
+    const timer = setInterval(refreshSleepRemaining, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  /** 应用预设时长或取消本次定时停止。 */
+  const changeSleepTimer = (minutes: number) => {
+    setSleepTimer(minutes)
+    refreshSleepRemaining()
+  }
+
+  /** 输入自定义分钟数；取消或输入无效时保留当前倒计时。 */
+  const customizeSleepTimer = async () => {
+    const input = await Dialog.prompt({
+      title: "定时关闭",
+      message: "多少分钟后停止播放？请输入 1 至 1440 之间的整数。",
+      keyboardType: "numberPad",
+      confirmLabel: "开始计时",
+      cancelLabel: "取消",
+    })
+    if (input == null) return
+    try {
+      const minutes = Number(input.trim())
+      if (minutes === 0) throw new Error("请输入 1 至 1440 之间的整数分钟")
+      changeSleepTimer(minutes)
+    } catch (error) {
+      await Dialog.alert({ title: "未能设置定时关闭", message: error instanceof Error ? error.message : String(error) })
+    }
+  }
 
   /** 保存自动缓存偏好，保存失败时保持原开关状态并提示原因。 */
   const changeAutoCache = (enabled: boolean) => {
@@ -129,6 +168,16 @@ export function SettingsView({
             <Button action={onOpenHistory} buttonStyle="plain" frame={FILL_LEADING}>
               <SettingsRow title="播放历史" disclosure />
             </Button>
+            <Menu label={<SettingsRow title="定时关闭" value={sleepRemaining > 0 ? `剩余 ${sleepRemaining} 分钟` : "未开启"} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
+              {[15, 30, 45, 60, 90].map(minutes => (
+                <Button key={minutes} title={`${minutes} 分钟后停止播放`} action={() => changeSleepTimer(minutes)} />
+              ))}
+              <Button title="自定义时长" action={customizeSleepTimer} />
+              <Button title="取消定时关闭" action={() => changeSleepTimer(0)} />
+            </Menu>
+            <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+              设置后立即计时，到时暂停播放并保留页面；仅本次运行有效。
+            </Text>
           </VStack>
 
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
