@@ -330,6 +330,59 @@ function mountFeed({ autoCache = true } = {}) {
   }
 }
 
+test("finishing the feed episode opens the next episode once and disables looping", async () => {
+  const h = mountFeed(), opened = []
+  h.update({ onPlaySeries: (...args) => opened.push(args) })
+  h.replyPage(0, [1], 1, false); await h.flush()
+  h.sources[0].resolve({ url: "synthetic-first" }); await h.flush()
+  h.player.onReadyToPlay()
+  assert.equal(h.player.numberOfLoops, 0)
+  h.player.onEnded()
+  h.player.onEnded()
+  h.player.onReadyToPlay()
+  assert.deepEqual(opened, [[item(1).detail.series_id, item(1).detail.vid_list[1]]])
+  assert.equal(h.player.rate, 0)
+  h.unmount()
+  assert.equal(h.player.onEnded, undefined)
+})
+
+test("paused, background, departed, sleeping and stale feed callbacks never navigate", async () => {
+  for (const reason of ["paused", "background", "departed", "sleeping", "swiped", "unmounted"]) {
+    const h = mountFeed(), opened = []
+    h.update({ onPlaySeries: (...args) => opened.push(args) })
+    h.replyPage(0, [1, 2], 2, false); await h.flush()
+    h.sources[0].resolve({ url: "synthetic-first" }); await h.flush()
+    h.player.onReadyToPlay()
+    await h.flush()
+    const ended = h.player.onEnded
+    if (reason === "paused") h.nodes().find(node => node.props.title === "暂停").props.action()
+    if (reason === "background") h.scene("background")
+    if (reason === "departed") h.update({ active: false })
+    if (reason === "sleeping") { h.sleep.setSleepTimer(1); h.advance(60000) }
+    if (reason === "swiped") h.select(2)
+    if (reason === "unmounted") h.unmount()
+    ended()
+    assert.deepEqual(opened, [], reason)
+    if (reason !== "unmounted") h.unmount()
+  }
+})
+
+test("a final or unknown feed episode finishes without inventing a next episode", async () => {
+  for (const known of [true, false]) {
+    const h = mountFeed(), opened = [], recommendation = item(1)
+    recommendation.vid = known ? recommendation.detail.vid_list[1] : "unknown-synthetic-vid"
+    h.update({ onPlaySeries: (...args) => opened.push(args) })
+    h.pages[0].resolve({ items: [recommendation], cursor: { offset: 1, sessionId: "synthetic-session" }, hasMore: false })
+    await h.flush()
+    h.sources[0].resolve({ url: "synthetic-last" }); await h.flush()
+    h.player.onReadyToPlay()
+    h.player.onEnded()
+    assert.deepEqual(opened, [])
+    assert.equal(h.player.rate, 0)
+    h.unmount()
+  }
+})
+
 test("a recommendation page caches every returned playback episode without waiting for swipes", async () => {
   const h = mountFeed()
   h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()

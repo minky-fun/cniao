@@ -22,7 +22,7 @@ const VIDEO_SHADE = gradient("linear", {
   startPoint: "top", endPoint: "bottom",
 })
 
-/** 用原生纵向分页展示服务端推荐，一次只为当前视频绑定播放器。 */
+/** 用原生纵向分页展示推荐，当前集播完后进入选集播放页续播下一集。 */
 export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }: {
   active: boolean
   onPlaySeries: (seriesId: string, vid: string) => void
@@ -170,6 +170,16 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       }
     }
     player.onReadyToPlay = play
+    /** 当前推荐自然播完后暂停首页并续播下一集，拒绝迟到或重复的结束通知。 */
+    player.onEnded = () => {
+      if (cancelled || !loaded || !wantsPlay.current || !canAutoPlay()) return
+      const currentIndex = item.detail.vid_list.indexOf(item.vid)
+      const nextVid = currentIndex >= 0 ? item.detail.vid_list[currentIndex + 1] : undefined
+      wantsPlay.current = false
+      player.pause()
+      setPlaying(false)
+      if (nextVid) onPlaySeries(item.detail.series_id, nextVid)
+    }
     player.onTimeControlStatusChanged = () => {
       if (!cancelled) setPlaying(player.rate > 0)
     }
@@ -215,7 +225,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
         if (cancelled) return
         await SharedAudioSession.setActive(true)
         if (cancelled) return
-        player.numberOfLoops = -1
+        player.numberOfLoops = 0
         if (!player.setSource(source.url)) throw new Error("播放器未能载入视频，请重试")
         loaded = true
         setReady(true)
@@ -241,6 +251,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       wantsPlay.current = false
       if (timer !== undefined) clearTimeout(timer)
       player.onReadyToPlay = undefined
+      player.onEnded = undefined
       player.onTimeControlStatusChanged = undefined
       player.onError = undefined
       player.pause()
