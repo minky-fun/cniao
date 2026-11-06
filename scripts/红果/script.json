@@ -8,7 +8,10 @@
   "contributors" : [
 
   ],
-  "remoteResource" : null,
+  "remoteResource" : {
+    "url" : "https://raw.githubusercontent.com/minky-fun/loon-scripts/main/scripts/Hongguo.scripting",
+    "autoUpdateInterval" : 3600
+  },
   "description" : "红果短剧浏览与播放：首页推荐、热播榜单、分类浏览与标签筛选、关键词搜索，选集三行横向翻页，支持连播自动切集、播放历史记忆与续播、内嵌播放与付费集本地解密，自带缓存管理。",
   "intentInputTypes" : [
 
