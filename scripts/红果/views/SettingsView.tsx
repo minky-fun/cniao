@@ -1,6 +1,7 @@
 import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useEffect, useState } from "scripting"
 import { getSleepDeadline, setSleepTimer } from "../core/sleepTimer"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
+import type { HomeMode } from "../core/recommendations"
 import {
   getAutoCacheEnabled,
   getAutoCacheEpisodeCount,
@@ -47,6 +48,9 @@ export function SettingsView({
   theme,
   themeError,
   onThemeChange,
+  homeMode,
+  homeModeError,
+  onHomeModeChange,
   onOpenCache,
   onOpenHistory,
   onExit,
@@ -54,6 +58,9 @@ export function SettingsView({
   theme: ThemeMode
   themeError: string
   onThemeChange: (theme: ThemeMode) => void
+  homeMode: HomeMode
+  homeModeError: string
+  onHomeModeChange: (mode: HomeMode) => void
   onOpenCache: () => void
   onOpenHistory: () => void
   onExit: () => void
@@ -155,6 +162,14 @@ export function SettingsView({
       <ScrollView scrollIndicator="hidden" frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
         <VStack spacing={10} padding={{ horizontal: 16, top: 12, bottom: 28 }} frame={FILL_LEADING}>
           <VStack spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
+            <Menu label={<SettingsRow title="首页模式" value={homeMode === "video" ? "刷剧模式" : "推荐模式"} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
+              <Button title="推荐模式" systemImage={homeMode === "recommend" ? "checkmark" : undefined} action={() => onHomeModeChange("recommend")} />
+              <Button title="刷剧模式" systemImage={homeMode === "video" ? "checkmark" : undefined} action={() => onHomeModeChange("video")} />
+            </Menu>
+            <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
+              推荐模式展示海报与分区；刷剧模式上下滑动切换推荐视频，并自动加载下一批。
+            </Text>
+            {homeModeError ? <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>{homeModeError}</Text> : null}
             <Menu label={<SettingsRow title="显示主题" value={THEME_LABELS[theme]} disclosure />} buttonStyle="plain" frame={FILL_LEADING}>
               <Button title="跟随系统" systemImage={theme === "system" ? "checkmark" : undefined} action={() => onThemeChange("system")} />
               <Button title="浅色" systemImage={theme === "light" ? "checkmark" : undefined} action={() => onThemeChange("light")} />

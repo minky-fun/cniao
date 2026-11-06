@@ -25,6 +25,8 @@ import { SettingsView, type ThemeMode } from "./SettingsView"
 import { THEME_COLOR } from "./Common"
 import { pruneOfflineCache } from "../core/mediaCache"
 import { isPipPlaybackActive } from "../core/playbackState"
+import { getHomeMode, setHomeMode, type HomeMode } from "../core/recommendations"
+import { VideoFeedView } from "./VideoFeedView"
 
 /** 生成剧集详情的导航路径。 */
 function routeDetail(seriesId: string): string {
@@ -152,6 +154,8 @@ export function App() {
   // 首次使用跟随系统，重新启动时恢复用户选择。
   const [theme, setTheme] = useState<ThemeMode>(() => Storage.get<ThemeMode>(THEME_STORAGE_KEY) ?? "system")
   const [themeError, setThemeError] = useState("")
+  const [homeMode, updateHomeMode] = useState(getHomeMode)
+  const [homeModeError, setHomeModeError] = useState("")
   const [isPlayerFullscreen, setPlayerFullscreen] = useState(false)
 
   /** 在标签页之外追加页面，保留根部标签的选择和内容状态。 */
@@ -165,6 +169,17 @@ export function App() {
       setThemeError("")
     } catch (error) {
       setThemeError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  /** 持久保存首页模式，设置成功后立即替换首页内容。 */
+  const changeHomeMode = (value: HomeMode) => {
+    try {
+      setHomeMode(value)
+      updateHomeMode(value)
+      setHomeModeError("")
+    } catch (error) {
+      setHomeModeError(error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -213,7 +228,14 @@ export function App() {
             title="HG 短剧"
             push={push}
             onClose={close}
-            render={push => <HomeView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
+            render={push => homeMode === "video" ? (
+              <VideoFeedView
+                active={selection.value === 0 && path.value.length === 0}
+                onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))}
+                onOpenHistory={() => push(HISTORY_ROUTE)}
+                onSearch={() => push(SEARCH_ROUTE)}
+              />
+            ) : <HomeView onSelectSeries={seriesId => push(routeDetail(seriesId))} />}
           />
         </Tab>
 
@@ -251,6 +273,9 @@ export function App() {
                 theme={theme}
                 themeError={themeError}
                 onThemeChange={changeTheme}
+                homeMode={homeMode}
+                homeModeError={homeModeError}
+                onHomeModeChange={changeHomeMode}
                 onOpenCache={() => push(CACHE_ROUTE)}
                 onOpenHistory={() => push(HISTORY_ROUTE)}
                 onExit={exit}
