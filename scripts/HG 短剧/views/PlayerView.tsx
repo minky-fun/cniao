@@ -425,6 +425,9 @@ export function PlayerView({
     setErrorMessage(error instanceof Error ? error.message : String(error))
   }, [])
 
+  /** 在当前页面展开播放器，让根导航统一控制状态栏和安全区背景。 */
+  const toggleFullscreen = () => setFullscreen(value => !value)
+
   const isPlayerBusy = isLoading || prepareLabel !== "" || switchLabel !== ""
 
   return (
@@ -432,7 +435,9 @@ export function PlayerView({
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
-      background={fullscreen ? "black" : SERIES_SURFACE}
+      background={fullscreen
+        ? <ZStack background="black" ignoresSafeArea frame={{ maxWidth: "infinity", maxHeight: "infinity" }} />
+        : SERIES_SURFACE}
       navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
       navigationBarVisibility={fullscreen ? "hidden" : "visible"}
@@ -463,8 +468,16 @@ export function PlayerView({
           language="zh"
           title={data?.seriesDetail.series_name}
           gestures={true}
-          showFullscreenButton={true}
-          onFullscreenChange={setFullscreen}
+          showFullscreenButton={false}
+          bottomTrailing={
+            <Button
+              title={isFullscreen ? "退出全屏" : "全屏"}
+              systemImage={isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
+              action={toggleFullscreen}
+              buttonStyle="plain"
+              foregroundStyle="white"
+            />
+          }
           onError={showPlaybackError}
           videoGravity="resizeAspect"
           frame={{ maxWidth: "infinity", maxHeight: "infinity" }}

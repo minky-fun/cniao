@@ -200,6 +200,9 @@ export function App() {
       preferredColorScheme={theme === "system" ? undefined : theme}
       statusBarHidden={isPlayerFullscreen}
       persistentSystemOverlays={isPlayerFullscreen ? "hidden" : "visible"}
+      background={isPlayerFullscreen
+        ? <ZStack background="black" ignoresSafeArea frame={{ maxWidth: "infinity", maxHeight: "infinity" }} />
+        : undefined}
     >
       <TabView
         selection={selection}
