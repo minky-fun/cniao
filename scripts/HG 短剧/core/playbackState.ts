@@ -1,12 +1,12 @@
 let pipPlaybackActive = false
-let retainedPlayer: VideoPlaybackController | null = null
+let retainedPlayer: AVPlayer | null = null
 
-/** 更新画中画状态，结束后释放离开播放页时保留的控制器。 */
+/** 记录画中画状态，并在停止后释放保留的播放器。 */
 export function setPipPlaybackActive(active: boolean): void {
   pipPlaybackActive = active
   if (!active && retainedPlayer) {
     try {
-      void retainedPlayer.dispose().catch(error => console.warn("[播放器] 释放失败:", error))
+      retainedPlayer.dispose()
     } catch {}
     retainedPlayer = null
   }
@@ -17,21 +17,21 @@ export function isPipPlaybackActive(): boolean {
   return pipPlaybackActive
 }
 
-/** 暂存仍在画中画播放的控制器，避免提前销毁媒体。 */
-export function retainPipPlayer(player: VideoPlaybackController): void {
+/** 保留离开播放页时仍在画中画中播放的实例。 */
+export function retainPipPlayer(player: AVPlayer): void {
   if (retainedPlayer && retainedPlayer !== player) {
     try {
-      void retainedPlayer.dispose().catch(error => console.warn("[播放器] 释放失败:", error))
+      retainedPlayer.dispose()
     } catch {}
   }
   retainedPlayer = player
 }
 
-/** 显式结束保留的画中画会话并清理引用。 */
+/** 显式释放保留的播放器并清除画中画标记。 */
 export function releaseRetainedPlayer(): void {
   if (retainedPlayer) {
     try {
-      void retainedPlayer.dispose().catch(error => console.warn("[播放器] 释放失败:", error))
+      retainedPlayer.dispose()
     } catch {}
     retainedPlayer = null
   }

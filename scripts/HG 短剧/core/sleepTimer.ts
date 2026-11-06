@@ -1,7 +1,7 @@
 let deadline = 0
 let expired = false
 let timer: ReturnType<typeof setTimeout> | undefined
-let activePlayer: Pick<AVPlayer, "pause"> | null = null
+let activePlayer: AVPlayer | null = null
 
 /** 返回本次运行的定时停止时间；重新启动脚本不会恢复旧倒计时。 */
 export function getSleepDeadline(): number {
@@ -37,14 +37,14 @@ export function setSleepTimer(minutes: number): void {
 }
 
 /** 记录当前播放器；保留画中画时继续让倒计时控制该实例。 */
-export function attachSleepPlayer(player: Pick<AVPlayer, "pause">): void {
+export function attachSleepPlayer(player: AVPlayer): void {
   activePlayer = player
   expired = false
   expireSleepTimer()
 }
 
 /** 普通退出播放页时解除已销毁播放器的引用。 */
-export function detachSleepPlayer(player: Pick<AVPlayer, "pause">): void {
+export function detachSleepPlayer(player: AVPlayer): void {
   if (activePlayer === player) activePlayer = null
 }
 

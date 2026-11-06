@@ -1,8 +1,9 @@
 import {
-  VideoPlaybackPlayer,
+  AVPlayerView,
   Button,
   HStack,
   Image,
+  PIPStatus,
   ProgressView,
   ScrollView,
   Spacer,
@@ -11,6 +12,7 @@ import {
   ZStack,
   useEffect,
   useCallback,
+  useObservable,
   useRef,
   useState,
 } from "scripting"
@@ -18,7 +20,6 @@ import { fetchDetail } from "../core/api"
 import {
   getAutoCacheEnabled,
   getAutoCacheEpisodeCount,
-  getCachedVideoMeta,
   isOfflineVideoCached,
   preloadOfflineVideo,
   type PrepareProgress,
@@ -27,8 +28,10 @@ import { savePlayHistoryItem } from "../core/history"
 import { formatEpisodeLabel } from "../core/format"
 import {
   applyOfflineSource,
+  durationSeconds,
   loadOfflinePlayerData,
   resolvePlaybackSource,
+  type OfflineLoadOptions,
 } from "../core/playbackSource"
 import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
@@ -37,6 +40,8 @@ import { EpisodeGrid } from "./EpisodeGrid"
 import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, getSleepDeadline, resumeAfterSleep } from "../core/sleepTimer"
 
 const PLAYER_HEIGHT = 220
+
+const PLAY_AFTER_MOUNT_MS = 120
 
 const PREPARE_PROGRESS_STEP = 0.05
 
@@ -54,26 +59,20 @@ export function PlayerView({
   onOpenCache,
   onOpenHistory,
   onClose,
-  onFullscreenChange,
 }: {
   seriesId: string
   initialVid?: string
   onOpenCache?: () => void
   onOpenHistory?: () => void
   onClose?: () => void
-  onFullscreenChange?: (fullscreen: boolean) => void
 }) {
   const [data, setData] = useState<PlayerData | null>(null)
   const [currentVid, setCurrentVid] = useState(initialVid ?? "")
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
 
-  const [player] = useState(() => new VideoPlaybackController())
-  const [isPipActive, setIsPipActive] = useState(false)
-  const [isFullscreen, setFullscreen] = useState(false)
-  const [sourceRevision, setSourceRevision] = useState(0)
-  const pendingPlayRef = useRef(0)
-  const openSeqRef = useRef(0)
+  const [player] = useState(() => new AVPlayer())
+  const pipStatus = useObservable<PIPStatus>(null)
 
   const loadedSourceRef = useRef("")
 
@@ -88,46 +87,28 @@ export function PlayerView({
   const [prepareLabel, setPrepareLabel] = useState("")
   const [preparePercent, setPreparePercent] = useState(0)
 
+  const [surfaceKey, setSurfaceKey] = useState(0)
+
   const [isAudioReady, setIsAudioReady] = useState(false)
 
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
 
+  const [activeDuration, setActiveDuration] = useState<number>(0)
+  const pipValue = pipStatus.value
+
+  const isPipActive = pipValue === "willStart" || pipValue === "didStart"
   const isPipActiveRef = useRef(false)
   isPipActiveRef.current = isPipActive
-  const fullscreen = isFullscreen && !isPipActive
 
-  // 根导航负责隐藏状态栏；离开页面时恢复系统覆盖层。
   useEffect(() => {
-    onFullscreenChange?.(fullscreen)
-    return () => onFullscreenChange?.(false)
-  }, [fullscreen, onFullscreenChange])
-
-  // 只使用真实缓存尺寸判断方向，退出或切集时恢复原方向设置。
-  useEffect(() => {
-    if (!fullscreen || !Device.isiPhone) return
-    const previous = [...Device.supportedInterfaceOrientations]
-    const meta = getCachedVideoMeta(currentVid)
-    if (meta?.width !== undefined && meta.height !== undefined
-      && Number.isFinite(meta.width) && Number.isFinite(meta.height)
-      && meta.width > 0 && meta.height > 0 && meta.width !== meta.height) {
-      Device.supportedInterfaceOrientations = meta.width > meta.height ? ["landscape"] : ["portrait"]
+    if (pipValue === "willStart" || pipValue === "didStart") {
+      setPipPlaybackActive(true)
+    } else if (pipValue === "willStop" || pipValue === "didStop") {
+      setPipPlaybackActive(false)
     }
-    return () => { Device.supportedInterfaceOrientations = previous }
-  }, [fullscreen, currentVid, source])
+  }, [pipValue])
 
-  /** 自动播放前后都检查倒计时，防止异步播放跨越到期时刻。 */
-  const playAutomatically = useCallback(async () => {
-    if (!canAutoPlay()) return
-    pendingPlayRef.current++
-    try {
-      await player.play()
-      if (!canAutoPlay()) player.pause()
-    } finally {
-      pendingPlayRef.current--
-    }
-  }, [player])
-
-  /** 清除上次下载或解密的进度提示。 */
+  /** 清除下载或解密进度提示。 */
   const clearPrepareProgress = useCallback(() => {
     const shown = prepareShownRef.current
     if (!shown.label && shown.percent === 0) return
@@ -136,7 +117,7 @@ export function PlayerView({
     setPreparePercent(0)
   }, [])
 
-  /** 按固定步长更新准备进度，减少页面刷新。 */
+  /** 按步长更新准备进度，减少页面刷新。 */
   const updatePrepareProgress = useCallback(
     ({ stage, progress }: PrepareProgress) => {
       if (stage === "done") {
@@ -156,73 +137,98 @@ export function PlayerView({
     [clearPrepareProgress]
   )
 
-  /** 主动选集或重试失败集时恢复观看；异步切集完成后复核定时停止状态。 */
+  /** 主动选集时恢复观看；异步切集完成后复核定时停止状态。 */
   const switchEpisode = useCallback((vid: string) => {
-    if (!data || (vid === currentVid && !errorMessage)) return
+    if (!data || vid === currentVid) return
     resumeAfterSleep()
 
     const seq = requestSeqRef.current + 1
     requestSeqRef.current = seq
 
-    openSeqRef.current++
     player.pause()
     clearPrepareProgress()
     setErrorMessage("")
     setSwitchLabel("正在切换")
 
-    // 后完成的旧请求不能覆盖用户最近选择的剧集。
+    /** 判断切集结果是否已被后续请求替代。 */
+    const isStale = () => requestSeqRef.current !== seq
+
     resolvePlaybackSource(seriesId, data.seriesDetail, vid, {
       onProgress: updatePrepareProgress,
       protectedVideoIds: [currentVid, vid],
     })
       .then(({ url, meta }) => {
-        if (requestSeqRef.current !== seq) return
+
+        if (isStale()) return
+
+        if (!player.setSource(url)) {
+          throw new Error(`无法装载第 ${data.seriesDetail.vid_list.indexOf(vid) + 1} 集`)
+        }
+        loadedSourceRef.current = url
+
+        const durSec = meta?.duration ?? 0
         setData(prev => (prev ? applyOfflineSource(prev, vid, url, meta) : prev))
+        setActiveDuration(durSec > 0 ? durSec : 0)
+
         setCurrentVid(vid)
         setSource(url)
-        setSourceRevision(value => value + 1)
+        if (canAutoPlay()) player.play()
       })
-      .catch(async error => {
-        if (requestSeqRef.current !== seq) return
+      .catch(error => {
+        if (isStale()) return
+
         clearPrepareProgress()
-        setSwitchLabel("")
         setErrorMessage(error instanceof Error ? error.message : String(error))
-        if (loadedSourceRef.current) {
-          try { await playAutomatically() }
-          catch (playError) { setErrorMessage(String(playError)) }
-        }
+
+        const fallback = loadedSourceRef.current
+        if (fallback && player.setSource(fallback) && canAutoPlay()) player.play()
+      })
+      .finally(() => {
+        if (!isStale()) setSwitchLabel("")
       })
     },
-    [data, currentVid, errorMessage, seriesId, player, clearPrepareProgress, updatePrepareProgress, playAutomatically]
+    [data, currentVid, seriesId, player, clearPrepareProgress, updatePrepareProgress]
   )
 
-  /** 加载现有解密缓存，完成后交给异步播放器装载。 */
+  /** 加载现有解密缓存及真实剧集信息。 */
+  const applyOfflineLoad = async (vid: string, options: OfflineLoadOptions = {}) => {
+    const { data: offlineData, meta } = await loadOfflinePlayerData(seriesId, vid, {
+      ...options,
+      onProgress: updatePrepareProgress,
+    })
+    setData(offlineData)
+    setCurrentVid(vid)
+    setSource(offlineData.playerInfo.main_url)
+    const seconds = durationSeconds(meta?.duration)
+    if (seconds > 0) setActiveDuration(seconds)
+  }
+
+  /** 请求指定剧集并更新加载状态。 */
   const load = (vid: string) => {
     setIsLoading(true)
     setErrorMessage("")
-    openSeqRef.current++
-    const seq = ++requestSeqRef.current
+
+    requestSeqRef.current += 1
     setSwitchLabel("")
 
-    loadOfflinePlayerData(seriesId, vid, {
-      onProgress: updatePrepareProgress,
-      onDetail: detail => {
-        if (requestSeqRef.current !== seq) return
-        setData(detail)
-        setCurrentVid(vid)
-      },
-    }).then(({ data: offlineData }) => {
-      if (requestSeqRef.current !== seq) return
-      setData(offlineData)
+    const seq = requestSeqRef.current
+    /** 判断首次加载结果是否已被后续请求替代。 */
+    const isStale = () => requestSeqRef.current !== seq
+
+    /** 在视频准备完成之前先展示剧集详情。 */
+    const showDetailEarly = (detail: PlayerData) => {
+      if (isStale()) return
+      setData(detail)
       setCurrentVid(vid)
-      setSource(offlineData.playerInfo.main_url)
-      setSourceRevision(value => value + 1)
-    }).catch(error => {
-      if (requestSeqRef.current !== seq) return
-      clearPrepareProgress()
-      setErrorMessage(error instanceof Error ? error.message : String(error))
-      setIsLoading(false)
-    })
+    }
+
+    applyOfflineLoad(vid, { onDetail: showDetailEarly })
+      .catch(error => {
+        clearPrepareProgress()
+
+        setErrorMessage(error instanceof Error ? error.message : String(error))
+      })
+      .finally(() => setIsLoading(false))
   }
 
   useEffect(() => {
@@ -261,42 +267,68 @@ export function PlayerView({
 
     return () => {
       cancelled = true
-      if (!isPipActiveRef.current) {
-        void SharedAudioSession.setActive(false).catch(error => console.warn("[播放器] 关闭音频会话失败:", error))
-      }
+      SharedAudioSession.setActive(false).catch(() => {})
     }
   }, [])
 
-  // open 完成后才自动播放；清理和序号检查阻止旧媒体请求的续播。
   useEffect(() => {
     if (!source || !isAudioReady) return
-    let cancelled = false
-    const seq = ++openSeqRef.current
-    const request = requestSeqRef.current
-    player.open(source).then(async () => {
-      if (cancelled || seq !== openSeqRef.current || request !== requestSeqRef.current) return
+    if (loadedSourceRef.current === source) return
+
+    if (player.setSource(source)) {
       loadedSourceRef.current = source
       setIsPlayerLoaded(true)
-      clearPrepareProgress()
-      setIsLoading(false)
-      setSwitchLabel("")
-      await playAutomatically()
-    }).catch(error => {
-      if (cancelled || seq !== openSeqRef.current || request !== requestSeqRef.current) return
-      clearPrepareProgress()
-      setIsLoading(false)
-      setSwitchLabel("")
-      setErrorMessage(error instanceof Error ? error.message : String(error))
-    })
-    return () => { cancelled = true }
-  }, [player, source, sourceRevision, isAudioReady, playAutomatically, clearPrepareProgress])
-
-  // 控件主动播放可以解除已到期状态，脚本自动播放由独立的到期检查保护。
-  useEffect(() => player.on("state", snapshot => {
-    if (snapshot.state === "playing" && pendingPlayRef.current === 0 && getSleepDeadline() === 0) {
-      resumeAfterSleep()
     }
-  }), [player])
+  }, [player, source, isAudioReady])
+
+  /** 使用原生播放器的实际时长更新页面状态。 */
+  const syncPlayerDuration = () => {
+    const d = player.duration
+    if (d > 0) {
+      setActiveDuration(prev => {
+        if (Math.abs(prev - d) >= 0.5) return d
+        return prev
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (!isPlayerLoaded) return
+
+    /** 媒体就绪可能晚于倒计时到期，开始播放前重新检查。 */
+    player.onReadyToPlay = () => {
+      syncPlayerDuration()
+      if (canAutoPlay()) player.play()
+    }
+    const timer = setTimeout(() => {
+      syncPlayerDuration()
+      if (canAutoPlay()) player.play()
+    }, PLAY_AFTER_MOUNT_MS)
+
+    return () => {
+      clearTimeout(timer)
+      player.onReadyToPlay = undefined
+    }
+  }, [player, isPlayerLoaded, surfaceKey])
+
+  useEffect(() => {
+    /** 原生播放按钮主动恢复后重新允许连播，尚未到期的计时保持不变。 */
+    player.onTimeControlStatusChanged = () => {
+      syncPlayerDuration()
+      if (player.rate > 0 && getSleepDeadline() === 0) resumeAfterSleep()
+    }
+    return () => {
+      player.onTimeControlStatusChanged = undefined
+    }
+  }, [player])
+
+  useEffect(() => {
+    if (!source) return
+    const timers = [120, 300, 600, 1200].map(delay =>
+      setTimeout(syncPlayerDuration, delay)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [source])
 
   useEffect(() => {
     const detail = data?.seriesDetail
@@ -369,31 +401,19 @@ export function PlayerView({
     }
   }, [data?.seriesDetail, currentVid, isPlayerLoaded])
 
-  // 进入画中画后保留控制器；窗口关闭后解除倒计时引用并释放资源。
   useEffect(() => {
-    let mounted = true
+    if (pipValue === "didStop") setSurfaceKey(key => key + 1)
+  }, [pipValue])
+
+  useEffect(() => {
     attachSleepPlayer(player)
-    const offPip = player.on("pictureInPicture", state => {
-      isPipActiveRef.current = state.active
-      if (mounted) setIsPipActive(state.active)
-      setPipPlaybackActive(state.active)
-      if (!mounted && !state.active) {
-        detachSleepPlayer(player)
-        offPip()
-        void SharedAudioSession.setActive(false).catch(error => console.warn("[播放器] 关闭音频会话失败:", error))
-      }
-    })
     return () => {
-      mounted = false
-      requestSeqRef.current++
-      openSeqRef.current++
       if (isPipActiveRef.current) {
         retainPipPlayer(player)
       } else {
-        offPip()
         detachSleepPlayer(player)
         setPipPlaybackActive(false)
-        void player.dispose().catch(error => console.warn("[播放器] 释放失败:", error))
+        player.dispose()
       }
     }
   }, [player])
@@ -406,27 +426,26 @@ export function PlayerView({
   const dataRef = useRef(data)
   dataRef.current = data
 
-  // 定时停止后不再自动切集；保留现有的剧集顺序。
-  useEffect(() => player.on("ended", () => {
-    if (!canAutoPlay()) return
-    const currentData = dataRef.current
-    const current = currentVidRef.current
-    if (!currentData || !current) return
-    const vidList = currentData.seriesDetail.vid_list
-    const index = vidList.indexOf(current)
-    if (index >= 0 && index < vidList.length - 1) switchEpisodeRef.current(vidList[index + 1])
-  }), [player])
+  useEffect(() => {
+    /** 定时停止后阻止结束回调触发下一集，避免到期时连播竞争。 */
+    player.onEnded = () => {
+      if (!canAutoPlay()) return
+      const currentData = dataRef.current
+      const current = currentVidRef.current
+      if (!currentData || !current) return
 
-  // 播放器控件及原生事件的异步错误统一显示在现有错误区域。
-  useEffect(() => player.on("error", error => setErrorMessage(error.message)), [player])
+      const vidList = currentData.seriesDetail.vid_list
+      const currentIndex = vidList.indexOf(current)
+      if (currentIndex >= 0 && currentIndex < vidList.length - 1) {
+        const nextVid = vidList[currentIndex + 1]
+        switchEpisodeRef.current(nextVid)
+      }
+    }
 
-  /** 显示控件操作失败的信息，不隐式切换回旧播放器。 */
-  const showPlaybackError = useCallback((error: unknown) => {
-    setErrorMessage(error instanceof Error ? error.message : String(error))
-  }, [])
-
-  /** 在当前页面展开播放器，让根导航统一控制状态栏和安全区背景。 */
-  const toggleFullscreen = () => setFullscreen(value => !value)
+    return () => {
+      player.onEnded = undefined
+    }
+  }, [player])
 
   const isPlayerBusy = isLoading || prepareLabel !== "" || switchLabel !== ""
 
@@ -435,13 +454,9 @@ export function PlayerView({
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
-      background={fullscreen
-        ? <ZStack background="black" ignoresSafeArea frame={{ maxWidth: "infinity", maxHeight: "infinity" }} />
-        : SERIES_SURFACE}
+      background={SERIES_SURFACE}
       navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
-      navigationBarVisibility={fullscreen ? "hidden" : "visible"}
-      tabBarVisibility="hidden"
       toolbar={{
         topBarTrailing: [
           ...(onOpenHistory
@@ -460,28 +475,22 @@ export function PlayerView({
     >
 
       <ZStack
-        frame={{ maxWidth: "infinity", minHeight: fullscreen ? 0 : PLAYER_HEIGHT, maxHeight: fullscreen ? "infinity" : PLAYER_HEIGHT }}
+        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
         background="black"
       >
-        <VideoPlaybackPlayer
-          controller={player}
-          language="zh"
-          title={data?.seriesDetail.series_name}
-          gestures={true}
-          showFullscreenButton={false}
-          bottomTrailing={
-            <Button
-              title={isFullscreen ? "退出全屏" : "全屏"}
-              systemImage={isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
-              action={toggleFullscreen}
-              buttonStyle="plain"
-              foregroundStyle="white"
-            />
-          }
-          onError={showPlaybackError}
-          videoGravity="resizeAspect"
-          frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
-        />
+        {isPlayerLoaded ? (
+          <AVPlayerView
+            key={surfaceKey}
+            player={player}
+            renderingMode="controller"
+            showsPlaybackControls={true}
+            pipStatus={pipStatus}
+            allowsPictureInPicturePlayback={true}
+            canStartPictureInPictureAutomaticallyFromInline={false}
+            videoGravity="resizeAspect"
+            frame={{ maxWidth: "infinity", maxHeight: "infinity" }}
+          />
+        ) : null}
 
         {isPlayerBusy ? (
           <VStack
@@ -512,9 +521,7 @@ export function PlayerView({
         ) : null}
       </ZStack>
 
-      {fullscreen && errorMessage ? <Text foregroundStyle="systemOrange" padding={12}>{errorMessage}</Text> : null}
-
-      {!fullscreen ? <ScrollView>
+      <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -527,7 +534,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView> : null}
+      </ScrollView>
     </VStack>
   )
 }
