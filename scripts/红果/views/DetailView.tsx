@@ -75,7 +75,7 @@ export function DetailView({
   if (isLoading) {
     return (
       <ScrollView
-        navigationTitle="幕间剧场"
+        navigationTitle="HG 短剧"
         navigationBarTitleDisplayMode="inline"
         background={<VStack frame={PAGE_FRAME} background={SERIES_SURFACE} ignoresSafeArea={{ regions: "container" }} />}
         foregroundStyle="label"
@@ -93,7 +93,7 @@ export function DetailView({
 
   return (
     <ScrollView
-      navigationTitle="幕间剧场"
+      navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
       background={<VStack frame={PAGE_FRAME} background={SERIES_SURFACE} ignoresSafeArea={{ regions: "container" }} />}
       foregroundStyle="label"

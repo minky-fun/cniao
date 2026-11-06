@@ -208,7 +208,7 @@ export function SettingsView({
 
           <VStack alignment="leading" spacing={0} frame={FILL_LEADING} background={CARD_BACKGROUND}>
             <Text font={14} fontWeight="medium" padding={{ horizontal: 20, top: 18, bottom: 6 }} frame={FILL_LEADING}>
-              关于幕间剧场
+              关于HG 短剧
             </Text>
             <SettingsRow title="版本号" value={version} />
             {author?.homepage ? (

@@ -447,7 +447,7 @@ export function PlayerView({
       spacing={0}
       frame={PAGE_FRAME}
       background={SERIES_SURFACE}
-      navigationTitle="幕间剧场"
+      navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
       toolbar={{
         topBarTrailing: [
