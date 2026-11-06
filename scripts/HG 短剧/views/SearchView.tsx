@@ -13,7 +13,7 @@ import {
 
 const SUGGEST_DEBOUNCE_MS = 300
 
-/** 展示页面内搜索框、联想词与分页结果，并隔离不同关键词的请求。 */
+/** 保留原生搜索声明供独立标签使用，页面内输入框与它共用关键词和提交逻辑。 */
 export function SearchView({
   onSelectSeries,
 }: {
@@ -157,6 +157,12 @@ export function SearchView({
       frame={PAGE_FRAME}
       navigationTitle="搜索"
       navigationBarTitleDisplayMode="inline"
+      searchable={{
+        value: keyword,
+        onChanged: changeKeyword,
+        prompt: "搜索短剧或演员",
+      }}
+      onSubmit={{ triggers: "search", action: submitSearch }}
     >
       <HStack spacing={8} alignment="center" padding={{ horizontal: 16, vertical: 10 }}>
         <HStack

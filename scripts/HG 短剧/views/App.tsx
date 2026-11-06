@@ -199,6 +199,7 @@ export function App() {
     >
       <TabView
         selection={selection}
+        tabViewSearchActivation="searchTabSelection"
         navigationBarVisibility="hidden"
         navigationDestination={
           <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close)}</NavigationDestination>
