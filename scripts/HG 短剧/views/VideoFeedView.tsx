@@ -5,6 +5,7 @@ import {
 } from "scripting"
 import { fetchRecommendationPage, type FeedCursor, type Recommendation } from "../core/recommendations"
 import { prepareFeedPlayback, type FeedPlaybackSource } from "../core/feedPlayback"
+import { getAutoCacheEnabled, preloadOfflineVideo } from "../core/mediaCache"
 import { savePlayHistoryItem } from "../core/history"
 import { isPipPlaybackActive, releaseRetainedPlayer } from "../core/playbackState"
 import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, resumeAfterSleep } from "../core/sleepTimer"
@@ -47,9 +48,15 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
   const [retry, setRetry] = useState(0)
   const [pipBlocked, setPipBlocked] = useState(false)
   const wantsPlay = useRef(false)
+  const cacheTask = useRef<Promise<void>>(Promise.resolve())
+  const cacheAttempts = useRef(new Set<string>())
+  const cacheProtection = useRef<string[]>([])
   const current = items.find(item => item.detail.series_id === visibleId) ?? items[0]
   const index = current ? items.indexOf(current) : -1
   const enabled = active && foreground && appeared
+  // 下载结束后才执行容量淘汰，保持数组引用以保护滑动后的当前播放集。
+  cacheProtection.current.length = current ? 1 : 0
+  if (current) cacheProtection.current[0] = current.vid
 
   /** 合并服务端下一页并按剧集去重；请求未完成时阻止重复触底请求。 */
   const loadMore = async () => {
@@ -79,6 +86,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     if (pagePending.current) return
     cursor.current = { offset: 0, sessionId: "" }
     seenSeries.current.clear()
+    cacheAttempts.current.clear()
     setVisibleId(null)
     setItems([])
     setHasMore(true)
@@ -203,6 +211,36 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       detachSleepPlayer(player)
     }
   }, [player, enabled, current, retry])
+
+  // 整页推荐集进入同一后台队列，追加分页或恢复前台时接续未开始的下载。
+  useEffect(() => {
+    if (!enabled || !items.length || pipBlocked) return
+    let cancelled = false
+    const previous = cacheTask.current
+
+    /** 串行保存每个推荐播放集及元数据；等待旧任务收尾，避免分页和返回时并行下载。 */
+    const cachePage = async () => {
+      await previous
+      for (const item of items) {
+        if (cancelled || !getAutoCacheEnabled() || isPipPlaybackActive()) return
+        if (cacheAttempts.current.has(item.vid)) continue
+        cacheAttempts.current.add(item.vid)
+        await preloadOfflineVideo(item.vid, {
+          label: `${item.detail.series_name} 第 ${item.episodeIndex + 1} 集`,
+          cover: item.detail.series_cover,
+          seriesId: item.detail.series_id,
+          seriesTitle: item.detail.series_name,
+          protectedVideoIds: cacheProtection.current,
+        })
+      }
+    }
+    cacheTask.current = cachePage().catch(() => {
+      console.warn("[HG刷剧] 推荐页缓存任务中断，下次进入推荐页时继续")
+    })
+
+    /** 离开页面后不再追加下载，当前在途任务交由已有缓存模块完成并保存。 */
+    return () => { cancelled = true }
+  }, [enabled, items, pipBlocked])
 
   // 首页模式销毁后取消所有异步界面更新并释放播放器，不影响详情页的音频会话。
   useEffect(() => () => {

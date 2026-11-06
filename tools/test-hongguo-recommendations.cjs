@@ -215,9 +215,10 @@ function item(number) {
 }
 
 /** Simulate hooks and native lifecycle while running the actual compiled feed component. */
-function mountFeed() {
+function mountFeed({ autoCache = true } = {}) {
   const slots = [], effects = [], timers = new Map(), listeners = new Set()
   const pages = [], sources = [], history = []
+  const cache = { enabled: autoCache, requests: [], saved: new Set() }
   let hook = 0, dirty = false, tree, props = { active: true, onPlaySeries() {}, onOpenHistory() {}, onSearch() {} }
   let now = 1000, timerId = 0, pip = false
   const globals = {
@@ -268,6 +269,16 @@ function mountFeed() {
       /** Hold media preparation while scroll/tab/scene changes invalidate it. */
       prepareFeedPlayback(seriesId, detail, vid, signal) { const task = deferred(); sources.push({ ...task, seriesId, detail, vid, signal }); return task.promise.then(source => ({ dispose() {}, ...source })) },
     },
+    "../core/mediaCache": {
+      getAutoCacheEnabled: () => cache.enabled,
+      /** Hold complete video downloads independently of current-page streaming. */
+      preloadOfflineVideo(vid, options) {
+        if (cache.saved.has(vid)) return Promise.resolve(true)
+        const task = deferred()
+        cache.requests.push({ ...task, vid, options })
+        return task.promise.then(success => { if (success) cache.saved.add(vid); return success })
+      },
+    },
     "../core/history": { savePlayHistoryItem: record => history.push(record) },
     "../core/sleepTimer": sleep,
     "../core/playbackState": { isPipPlaybackActive: () => pip, releaseRetainedPlayer: () => { pip = false } },
@@ -301,7 +312,7 @@ function mountFeed() {
     return [node, ...children.flatMap(child => nodes(child))]
   }
   render()
-  return { player, pages, sources, sleep, history, flush, nodes,
+  return { player, pages, sources, sleep, history, cache, flush, nodes,
     update: next => { props = { ...props, ...next }; render() },
     /** Deliver the native visible-target set rather than forcing a position binding. */
     visible(ids) { nodes().find(node => node.type === "ScrollView").props.onScrollTargetVisibilityChange.onChanged(ids); render() },
@@ -317,6 +328,109 @@ function mountFeed() {
     unmount: () => { for (const effect of effects) effect?.cleanup?.() },
   }
 }
+
+test("a recommendation page caches every returned playback episode without waiting for swipes", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  for (let index = 0; index < 6; index++) {
+    assert.equal(h.cache.requests.length, index + 1, "only one whole-video download runs at a time")
+    const request = h.cache.requests[index], recommendation = item(index + 1)
+    assert.equal(request.vid, recommendation.vid)
+    assert.equal(request.options.label, `${recommendation.detail.series_name} 第 1 集`)
+    assert.equal(request.options.cover, recommendation.detail.series_cover)
+    assert.equal(request.options.seriesId, recommendation.detail.series_id)
+    assert.equal(request.options.seriesTitle, recommendation.detail.series_name)
+    request.resolve(true); await h.flush()
+  }
+  assert.equal(h.cache.saved.size, 6)
+  assert.equal(h.sources.length, 1, "background caching does not bind or prepare offscreen players")
+  assert.equal(h.player.bound.length, 0)
+  h.select(2); await h.flush()
+  assert.equal(h.cache.saved.has(h.sources[1].vid), true)
+  assert.equal(h.cache.requests.length, 6, "a swipe must not redownload the page")
+  h.unmount()
+})
+
+test("a new page joins the existing cache queue and duplicate or evicted episodes are not downloaded again", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  h.select(4); await h.flush()
+  h.replyPage(1, [5, 6, 7, 8, 9, 10], 12); await h.flush()
+  assert.equal(h.cache.requests.length, 1, "pagination must await the in-flight download")
+  for (let index = 0; index < 10; index++) {
+    assert.equal(h.cache.requests.length, index + 1)
+    assert.equal(h.cache.requests[index].vid, item(index + 1).vid)
+    h.cache.requests[index].resolve(true); await h.flush()
+  }
+  h.cache.saved.clear() // Simulate capacity eviction, which must not create an endless refill loop.
+  h.select(8); await h.flush()
+  h.replyPage(2, [11, 12, 13, 14, 15, 16], 18); await h.flush()
+  assert.equal(h.cache.requests.length, 11)
+  assert.equal(h.cache.requests[10].vid, item(11).vid)
+  h.unmount()
+})
+
+test("cache capacity protection follows the current video while a background download is pending", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  const protection = h.cache.requests[0].options.protectedVideoIds
+  assert.deepEqual(Array.from(protection), [item(1).vid])
+  h.select(2); await h.flush()
+  assert.deepEqual(Array.from(protection), [item(2).vid])
+  h.cache.requests[0].resolve(true); await h.flush()
+  assert.equal(h.cache.requests[1].options.protectedVideoIds, protection)
+  h.unmount()
+})
+
+test("disabled caching starts no downloads and disabling it mid-page stops the remaining queue", async () => {
+  const disabled = mountFeed({ autoCache: false })
+  disabled.replyPage(0, [1, 2, 3, 4, 5, 6]); await disabled.flush()
+  assert.equal(disabled.cache.requests.length, 0)
+  disabled.unmount()
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  h.cache.enabled = false
+  h.cache.requests[0].resolve(true); await h.flush()
+  assert.equal(h.cache.requests.length, 1)
+  h.update({ active: false }); h.cache.enabled = true; h.update({ active: true }); await h.flush()
+  assert.equal(h.cache.requests.length, 2)
+  assert.equal(h.cache.requests[1].vid, item(2).vid)
+  h.unmount()
+})
+
+test("leaving or backgrounding stops queued downloads, and a quick return still runs one download at a time", async () => {
+  for (const departure of ["tab", "background", "unmount"]) {
+    const h = mountFeed()
+    h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+    if (departure === "tab") h.update({ active: false })
+    else if (departure === "background") { h.scene("background"); await h.flush() }
+    else h.unmount()
+    h.cache.requests[0].resolve(true); await h.flush()
+    assert.equal(h.cache.requests.length, 1)
+    if (departure !== "unmount") h.unmount()
+  }
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  h.update({ active: false }); h.update({ active: true }); await h.flush()
+  assert.equal(h.cache.requests.length, 1)
+  h.cache.requests[0].resolve(true); await h.flush()
+  assert.equal(h.cache.requests.length, 2)
+  assert.equal(h.cache.requests[1].vid, item(2).vid)
+  h.unmount()
+})
+
+test("one failed cache download does not block the other recommendations or loop on that failure", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  for (let index = 0; index < 6; index++) {
+    h.cache.requests[index].resolve(index !== 1); await h.flush()
+  }
+  assert.equal(h.cache.saved.size, 5)
+  assert.equal(h.cache.requests.length, 6)
+  h.update({ active: false }); h.update({ active: true }); await h.flush()
+  assert.equal(h.cache.requests.length, 6)
+  h.unmount()
+})
 
 test("native visibility drives consecutive autoplay and reverse swipes without a position callback", async () => {
   const h = mountFeed()

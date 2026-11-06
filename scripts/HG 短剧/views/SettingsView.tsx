@@ -209,7 +209,7 @@ export function SettingsView({
               <SettingsRow title="自动缓存集数" value={`${autoCacheCount} 集`} disclosure />
             </Button>
             <Text font={12} foregroundStyle="secondaryLabel" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>
-              {`开启后自动缓存后续 ${autoCacheCount} 集，受缓存上限限制；关闭后仅加载当前播放集。建议设置 3-5 集，适量即可，不宜过多。`}
+              {`开启后，刷剧模式缓存每页返回的推荐播放集，选集播放时缓存后续 ${autoCacheCount} 集，均受缓存容量上限限制；关闭后仅加载当前播放集。`}
             </Text>
             {autoCacheError ? (
               <Text font={12} foregroundStyle="red" padding={{ horizontal: 20, bottom: 12 }} frame={FILL_LEADING}>

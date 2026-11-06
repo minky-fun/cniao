@@ -4,7 +4,7 @@ const { readFileSync } = require("node:fs")
 const path = require("node:path")
 const vm = require("node:vm")
 const { test } = require("node:test")
-const build = path.join(__dirname, "../work/hongguo-build")
+const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-build")
 
 /** Load production code with explicit replacements for native dependencies. */
 function load(file, dependencies, globals = {}) {
@@ -114,7 +114,7 @@ function prefetchScenario({ enabled = true, count, current = 0, total = 8,
     "../core/api": {}, "../core/history": {}, "../core/playbackSource": {}, "../core/playbackState": {},
     "../core/sleepTimer": {},
     "../core/format": { formatEpisodeLabel: () => "Test episode" },
-    "./Common": {}, "./EpisodeGrid": {},
+    "./Common": {}, "./EpisodeGrid": {}, "./FavoriteButton": { FavoriteButton: "FavoriteButton" },
   }, {
     createElement: (type, props, ...children) => ({ type, props, children }),
     /** Retain scheduled callbacks so tests can change settings before they start. */
