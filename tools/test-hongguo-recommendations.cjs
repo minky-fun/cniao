@@ -244,7 +244,7 @@ function mountFeed() {
       if (!Object.is(next, slots[position])) { slots[position] = next; dirty = true }
     }]
   }
-  const scripting = { useState,
+  const scripting = { useState, AbortController,
     useRef: value => useState(() => ({ current: value }))[0],
     useObservable: value => useState(() => ({ value }))[0],
     /** Schedule effects only when their actual dependencies change. */
@@ -264,9 +264,9 @@ function mountFeed() {
       /** Hold page requests for testing duplicate triggers, errors and retry cursors. */
       fetchRecommendationPage(cursor) { const task = deferred(); pages.push({ ...task, cursor }); return task.promise },
     },
-    "../core/playbackSource": {
+    "../core/feedPlayback": {
       /** Hold media preparation while scroll/tab/scene changes invalidate it. */
-      resolvePlaybackSource(seriesId, detail, vid, options) { const task = deferred(); sources.push({ ...task, seriesId, detail, vid, options }); return task.promise },
+      prepareFeedPlayback(seriesId, detail, vid, signal) { const task = deferred(); sources.push({ ...task, seriesId, detail, vid, signal }); return task.promise.then(source => ({ dispose() {}, ...source })) },
     },
     "../core/history": { savePlayHistoryItem: record => history.push(record) },
     "../core/sleepTimer": sleep,
@@ -315,22 +315,50 @@ function mountFeed() {
   }
 }
 
-test("feed serializes rapid swipe loads and never binds late media to the wrong card", async () => {
+test("rapid swipes cancel old loads without waiting and never bind late media to the wrong card", async () => {
   const h = mountFeed()
   h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
   assert.equal(h.sources.length, 1)
   h.select(2); await h.flush()
   h.select(3); await h.flush()
-  assert.equal(h.sources.length, 1)
-  h.sources[0].resolve({ url: "synthetic-old" }); await h.flush()
-  assert.equal(h.sources.length, 2)
-  assert.equal(h.sources[1].vid, item(3).vid)
+  assert.equal(h.sources.length, 3)
+  assert.equal(h.sources[0].signal.aborted, true)
+  assert.equal(h.sources[1].signal.aborted, true)
+  let disposed = 0
+  h.sources[0].resolve({ url: "synthetic-old", dispose() { disposed++ } }); await h.flush()
+  h.sources[1].resolve({ url: "synthetic-skipped", dispose() { disposed++ } }); await h.flush()
+  assert.equal(disposed, 2)
+  assert.equal(h.sources[2].vid, item(3).vid)
   assert.equal(h.player.bound.length, 0)
-  h.sources[1].resolve({ url: "synthetic-current" }); await h.flush()
+  h.sources[2].resolve({ url: "synthetic-current" }); await h.flush()
   assert.deepEqual(h.player.bound, ["synthetic-current"])
   h.player.onReadyToPlay()
   assert.equal(h.player.plays, 1)
   assert.equal(h.history[0].seriesId, item(3).detail.series_id)
+  h.unmount()
+})
+
+test("the paging viewport is framed and clipped before the tab bar safe area", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  const scroll = h.nodes().find(node => node.type === "ScrollView")
+  assert.deepEqual({ ...scroll.props.frame }, { width: 390, height: 700 })
+  assert.equal(scroll.props.clipped, true)
+  assert.equal(scroll.props.scrollClipDisabled, false)
+  h.unmount()
+})
+
+test("a bound streaming source is disposed when navigating away and cannot resume late", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  let releases = 0
+  h.sources[0].resolve({ url: "synthetic-local-stream", dispose() { releases++ } }); await h.flush()
+  const lateReady = h.player.onReadyToPlay
+  h.update({ active: false })
+  assert.equal(releases, 1)
+  assert.equal(h.sources[0].signal.aborted, true)
+  lateReady(); h.advance(1000)
+  assert.equal(h.player.plays, 0)
   h.unmount()
 })
 

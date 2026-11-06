@@ -1,10 +1,10 @@
 import {
-  AppEvents, AVPlayerView, Button, GeometryReader, HStack, Image, LazyVStack,
+  AbortController, AppEvents, AVPlayerView, Button, GeometryReader, HStack, Image, LazyVStack,
   PIPStatus, ProgressView, ScrollView, Spacer, Text, VStack, ZStack,
   gradient, useEffect, useObservable, useRef, useState,
 } from "scripting"
 import { fetchRecommendationPage, type FeedCursor, type Recommendation } from "../core/recommendations"
-import { resolvePlaybackSource } from "../core/playbackSource"
+import { prepareFeedPlayback, type FeedPlaybackSource } from "../core/feedPlayback"
 import { savePlayHistoryItem } from "../core/history"
 import { isPipPlaybackActive, releaseRetainedPlayer } from "../core/playbackState"
 import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, resumeAfterSleep } from "../core/sleepTimer"
@@ -47,7 +47,6 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
   const [retry, setRetry] = useState(0)
   const [pipBlocked, setPipBlocked] = useState(false)
   const wantsPlay = useRef(false)
-  const sourceQueue = useRef<Promise<void>>(Promise.resolve())
   const current = items.find(item => item.detail.series_id === visibleId) ?? items[0]
   const index = current ? items.indexOf(current) : -1
   const enabled = active && foreground && appeared
@@ -102,9 +101,11 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     return () => AppEvents.scenePhase.removeListener(onScenePhase)
   }, [player])
 
-  // 同一个播放器串行准备媒体；快速滑动时跳过排队中的旧目标，迟到结果不绑定播放器。
+  // 当前页使用按需解密源，切换立即取消旧任务，迟到结果不能绑定播放器。
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
+    let source: FeedPlaybackSource | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
     let loaded = false
     let historySaved = false
@@ -140,6 +141,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     }
     player.onError = () => {
       if (!cancelled) {
+        source?.dispose()
         loaded = false
         wantsPlay.current = false
         player.pause()
@@ -148,20 +150,13 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       }
     }
 
-    sourceQueue.current = sourceQueue.current.then(async () => {
+    /** 只为当前目标读取索引，之后交给原生播放器按需请求视频片段。 */
+    const prepare = async () => {
       if (cancelled) return
       try {
         setPrepareLabel("正在获取播放信息")
-        const source = await resolvePlaybackSource(item.detail.series_id, item.detail, item.vid, {
-          protectedVideoIds: [item.vid],
-          /** 只显示仍然可见的目标进度，旧任务完成后仍可复用磁盘缓存。 */
-          onProgress: progress => {
-            if (!cancelled) setPrepareLabel(progress.stage === "fetching" ? "正在获取播放信息"
-              : progress.stage === "downloading" ? "正在加载视频"
-              : progress.stage === "decrypting" ? "正在准备播放" : "")
-          },
-        })
-        if (cancelled) return
+        source = await prepareFeedPlayback(item.detail.series_id, item.detail, item.vid, controller.signal)
+        if (cancelled) { source.dispose(); return }
         await SharedAudioSession.setCategory("playback", [])
         if (cancelled) return
         await SharedAudioSession.setActive(true)
@@ -174,6 +169,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
         setPrepareLabel("")
         timer = setTimeout(play, 120)
       } catch (error) {
+        source?.dispose()
         if (!cancelled) {
           loaded = false
           wantsPlay.current = false
@@ -182,9 +178,12 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
           setPlayError(error instanceof Error ? error.message : "视频准备失败，请重试")
         }
       }
-    })
+    }
+    void prepare()
     return () => {
       cancelled = true
+      controller.abort()
+      source?.dispose()
       wantsPlay.current = false
       if (timer !== undefined) clearTimeout(timer)
       player.onReadyToPlay = undefined
@@ -245,9 +244,10 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
         <Button title="搜索" systemImage="magnifyingglass" action={onSearch} labelStyle="iconOnly" buttonStyle="plain" />
       </HStack>
       <GeometryReader>{geometry => (
-        <ZStack frame={{ width: geometry.size.width, height: geometry.size.height }}>
+        <ZStack frame={{ width: geometry.size.width, height: geometry.size.height }} clipped>
           {items.length ? (
             <ScrollView axes="vertical" scrollIndicator="hidden" scrollTargetBehavior="paging"
+              frame={{ width: geometry.size.width, height: geometry.size.height }} clipped scrollClipDisabled={false}
               scrollPosition={{ value: visibleId, anchor: "top", onChanged: id => {
                 if (typeof id === "string") setVisibleId(id)
               } }}
