@@ -1,4 +1,4 @@
-import { Button, HStack, Image, LazyVStack, ProgressView, ScrollView, Text, VStack, useEffect, useRef, useState } from "scripting"
+import { Button, HStack, Image, LazyVStack, NavigationStack, ProgressView, ScrollView, Text, VStack, useEffect, useRef, useState } from "scripting"
 import { fetchSearch, fetchSuggest } from "../core/api"
 import type { SearchData, SuggestWord } from "../core/types"
 import {
@@ -20,6 +20,7 @@ export function SearchView({
   onSelectSeries: (seriesId: string) => void
 }) {
   const [keyword, setKeyword] = useState("")
+  const [searchPresented, setSearchPresented] = useState(true)
   const [submittedKeyword, setSubmittedKeyword] = useState("")
   const [suggestions, setSuggestions] = useState<SuggestWord[]>([])
   const [result, setResult] = useState<SearchData | null>(null)
@@ -150,7 +151,11 @@ export function SearchView({
   /** 使用原生搜索键提交当前关键词。 */
   const submitSearch = () => { void search(keyword) }
 
+  /** 每次进入搜索页时展开输入框，取消状态由原生搜索栏回写。 */
+  const presentSearch = () => setSearchPresented(true)
+
   return (
+    <NavigationStack>
     <VStack
       alignment="leading"
       spacing={0}
@@ -158,10 +163,12 @@ export function SearchView({
       navigationTitle="搜索"
       navigationBarTitleDisplayMode="inline"
       navigationBarVisibility="visible"
+      onAppear={presentSearch}
       searchable={{
         value: keyword,
         onChanged: changeKeyword,
         prompt: "搜索短剧或演员",
+        presented: { value: searchPresented, onChanged: setSearchPresented },
       }}
       onSubmit={{ triggers: "search", action: submitSearch }}
     >
@@ -263,5 +270,6 @@ export function SearchView({
         </LazyVStack>
       </ScrollView>
     </VStack>
+    </NavigationStack>
   )
 }
