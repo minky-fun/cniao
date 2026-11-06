@@ -165,3 +165,16 @@ xcrun swiftc tools/hongguo-avplayer-probe.swift -o /tmp/hongguo-avplayer-probe
 ```
 
 手机 CLI 的运行请求仍被 `busy: A manual preview or script is already running.` 拒绝。macOS 的真实 AVPlayer 及像素帧验证比 FFmpeg 更直接地覆盖此次错误，但仍不能替代 iPhone 中 Scripting 网络、播放器与页面生命周期的最终验证。
+
+## 滑动后的自动播放切换
+
+用户继续反馈滑动下一部不播放。本轮只修改 HG 短剧的推荐视图，核对连接设备 3.3.0.46 的 ScrollView、AVPlayerView 官方完整文档与声明后，调整当前播放页的选择与切页错误处理。
+
+- 使用 iOS 18+ 的 `onScrollTargetVisibilityChange` 接收原生可见目标集合。保持剧集字符串 key 和 `scrollTargetLayout`，只有一个目标达到 60% 可见时才切换播放源；空集合、多目标和未知 ID 不触发切换。
+- 移除播放目标与 `scrollPosition` 的双向绑定，分页仍由原生 `paging` 完成。可见页变化沿用原有的取消、释放、准备播放源和自动播放流程。
+- 旧播放源被释放后，原生旧媒体可能在新来源尚未绑定时报告连接关闭。错误处理现在要求当前来源已绑定，避免旧错误关闭下一部自动播放；新来源绑定后的实际错误仍显示重试。
+- AVPlayerView 文档明确说明视图消失不会停止或销毁调用方持有的 AVPlayer，因此本轮保留单播放器，不根据未经验证的视图销毁推断重建播放器。
+
+TypeScript 检查及 HG 相关 43 项回归通过，新增测试通过实际注册的可见目标回调验证连续切到第二、第三部、滑回上一部、过渡集合不重复加载，以及旧媒体错误不会阻止下一部自动播放。测试使用模拟原生回调，不能证明手机实际滚动会产生预期事件。
+
+`scripts inspect` 已确认修改后的 VideoFeedView 与 iPhone 上文件 SHA-256 一致。随后发起原生运行请求时设备断开，返回 `disconnected`；未取得此次修复后的 iPhone 播放或滑动结果。仍需重新运行 HG 短剧，在视频推荐模式连续切换几部并滑回检查。

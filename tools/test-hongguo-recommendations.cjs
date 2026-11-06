@@ -303,7 +303,10 @@ function mountFeed() {
   render()
   return { player, pages, sources, sleep, history, flush, nodes,
     update: next => { props = { ...props, ...next }; render() },
-    select: number => { nodes().find(node => node.type === "ScrollView").props.scrollPosition.onChanged(item(number).detail.series_id); render() },
+    /** Deliver the native visible-target set rather than forcing a position binding. */
+    visible(ids) { nodes().find(node => node.type === "ScrollView").props.onScrollTargetVisibilityChange.onChanged(ids); render() },
+    /** Settle a swipe on a single fully visible recommendation. */
+    select(number) { this.visible([item(number).detail.series_id]) },
     scene: phase => { for (const listener of listeners) listener(phase) },
     advance: ms => { now += ms; for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); timer.fn() } },
     setPip: value => { pip = value },
@@ -314,6 +317,65 @@ function mountFeed() {
     unmount: () => { for (const effect of effects) effect?.cleanup?.() },
   }
 }
+
+test("native visibility drives consecutive autoplay and reverse swipes without a position callback", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  const scroll = h.nodes().find(node => node.type === "ScrollView")
+  assert.equal(scroll.props.onScrollTargetVisibilityChange.idType, "string")
+  assert.equal(scroll.props.onScrollTargetVisibilityChange.threshold, 0.6)
+  let released = 0
+  for (const [index, number] of [1, 2, 3, 2].entries()) {
+    if (index) { h.select(number); await h.flush() }
+    assert.equal(h.sources[index].vid, item(number).vid)
+    assert.equal(released, index)
+    h.sources[index].resolve({ url: `synthetic-${index}`, dispose() { released++ } }); await h.flush()
+    h.player.onReadyToPlay(); await h.flush()
+    assert.equal(h.player.rate, 1)
+    assert.equal(h.history[index].seriesId, item(number).detail.series_id)
+    const views = h.nodes().filter(node => node.type === "AVPlayerView")
+    assert.equal(views.length, 1)
+    assert.equal(views[0].props.player, h.player)
+    if (index) assert.equal(h.sources[index - 1].signal.aborted, true)
+  }
+  assert.equal(h.player.plays, 4)
+  h.unmount()
+  assert.equal(released, 4)
+})
+
+test("empty, ambiguous and unknown visible targets do not restart or select another video", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  for (const ids of [[], [item(1).detail.series_id, item(2).detail.series_id], ["missing"], [2], [item(1).detail.series_id]]) {
+    h.visible(ids); await h.flush()
+    assert.equal(h.sources.length, 1)
+    assert.equal(h.sources[0].signal.aborted, false)
+  }
+  h.select(2); await h.flush()
+  h.visible([item(2).detail.series_id]); await h.flush()
+  assert.equal(h.sources.length, 2)
+  h.unmount()
+})
+
+test("an old native item error during next-source preparation cannot disable the next autoplay", async () => {
+  const h = mountFeed()
+  h.replyPage(0, [1, 2, 3, 4, 5, 6]); await h.flush()
+  h.sources[0].resolve({ url: "synthetic-first" }); await h.flush()
+  h.player.onReadyToPlay()
+  const lateReady = h.player.onReadyToPlay, lateError = h.player.onError
+  h.select(2); await h.flush()
+  lateReady(); lateError("synthetic disposed source")
+  h.player.onError("synthetic old connection closed"); await h.flush()
+  assert.ok(!h.nodes().some(node => node.props.title === "重试播放"))
+  h.sources[1].resolve({ url: "synthetic-second" }); await h.flush()
+  h.player.onReadyToPlay(); await h.flush()
+  assert.equal(h.player.rate, 1)
+  assert.equal(h.history.length, 2)
+  h.player.onError("synthetic current source failure"); await h.flush()
+  assert.equal(h.player.rate, 0)
+  assert.ok(h.nodes().some(node => node.props.title === "重试播放"))
+  h.unmount()
+})
 
 test("rapid swipes cancel old loads without waiting and never bind late media to the wrong card", async () => {
   const h = mountFeed()

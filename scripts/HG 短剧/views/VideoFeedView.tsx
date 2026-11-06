@@ -85,6 +85,13 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     setPageError("")
   }
 
+  /** 由原生可见目标选择播放页；滑动过渡中的空集合和非当前推荐均不触发切换。 */
+  const changeVisiblePage = (ids: string[] | number[]) => {
+    if (ids.length !== 1) return
+    const id = ids[0]
+    if (typeof id === "string" && items.some(item => item.detail.series_id === id)) setVisibleId(id)
+  }
+
   // 接近列表尾部时续取推荐，失败后等待用户重试，避免自动请求循环。
   useEffect(() => {
     if (enabled && hasMore && !pageError && index >= items.length - 3) void loadMore()
@@ -140,7 +147,8 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
       if (!cancelled) setPlaying(player.rate > 0)
     }
     player.onError = message => {
-      if (!cancelled) {
+      // 旧媒体仍可能在新来源准备期间报告连接关闭，尚未绑定新来源时忽略这些错误。
+      if (!cancelled && loaded) {
         source?.dispose()
         loaded = false
         wantsPlay.current = false
@@ -250,9 +258,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
           {items.length ? (
             <ScrollView axes="vertical" scrollIndicator="hidden" scrollTargetBehavior="paging"
               frame={{ width: geometry.size.width, height: geometry.size.height }} clipped scrollClipDisabled={false}
-              scrollPosition={{ value: visibleId, anchor: "top", onChanged: id => {
-                if (typeof id === "string") setVisibleId(id)
-              } }}
+              onScrollTargetVisibilityChange={{ idType: "string", threshold: 0.6, onChanged: changeVisiblePage }}
             >
               <LazyVStack spacing={0} scrollTargetLayout>
                 {items.map((item, itemIndex) => (
