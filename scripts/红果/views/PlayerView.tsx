@@ -20,6 +20,7 @@ import { fetchDetail } from "../core/api"
 import {
   getAutoCacheEnabled,
   getAutoCacheEpisodeCount,
+  getCachedVideoMeta,
   isOfflineVideoCached,
   preloadOfflineVideo,
   type PrepareProgress,
@@ -59,12 +60,14 @@ export function PlayerView({
   onOpenCache,
   onOpenHistory,
   onClose,
+  onFullscreenChange,
 }: {
   seriesId: string
   initialVid?: string
   onOpenCache?: () => void
   onOpenHistory?: () => void
   onClose?: () => void
+  onFullscreenChange?: (fullscreen: boolean) => void
 }) {
   const [data, setData] = useState<PlayerData | null>(null)
   const [currentVid, setCurrentVid] = useState(initialVid ?? "")
@@ -94,19 +97,47 @@ export function PlayerView({
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
 
   const [activeDuration, setActiveDuration] = useState<number>(0)
+  const [isFullscreen, setFullscreen] = useState(false)
   const pipValue = pipStatus.value
 
   const isPipActive = pipValue === "willStart" || pipValue === "didStart"
   const isPipActiveRef = useRef(false)
   isPipActiveRef.current = isPipActive
 
+  // 画中画接管播放时退出脚本全屏，恢复页面和设备方向。
   useEffect(() => {
     if (pipValue === "willStart" || pipValue === "didStart") {
+      setFullscreen(false)
       setPipPlaybackActive(true)
     } else if (pipValue === "willStop" || pipValue === "didStop") {
       setPipPlaybackActive(false)
     }
   }, [pipValue])
+
+  // 将全屏状态同步给根导航容器，由根容器控制状态栏和系统覆盖层。
+  useEffect(() => {
+    onFullscreenChange?.(isFullscreen)
+    return () => onFullscreenChange?.(false)
+  }, [isFullscreen, onFullscreenChange])
+
+  // 仅使用缓存中的真实视频尺寸；切集、退出全屏和离开页面时恢复原方向。
+  useEffect(() => {
+    if (!isFullscreen || !Device.isiPhone) return
+    const previous = [...Device.supportedInterfaceOrientations]
+    const meta = getCachedVideoMeta(currentVid)
+    const width = meta?.width
+    const height = meta?.height
+    if (width !== undefined && height !== undefined && Number.isFinite(width) && Number.isFinite(height)
+      && width > 0 && height > 0 && width !== height) {
+      Device.supportedInterfaceOrientations = width > height ? ["landscape"] : ["portrait"]
+    }
+    return () => {
+      Device.supportedInterfaceOrientations = previous
+    }
+  }, [isFullscreen, currentVid, source])
+
+  /** 只切换页面布局，不替换播放器或重新装载媒体。 */
+  const toggleFullscreen = () => setFullscreen(value => !value)
 
   const clearPrepareProgress = useCallback(() => {
     const shown = prepareShownRef.current
@@ -187,6 +218,7 @@ export function PlayerView({
     [data, currentVid, seriesId, player, clearPrepareProgress, updatePrepareProgress]
   )
 
+  /** 加载真实缓存与剧集信息，保留播放器使用的媒体来源。 */
   const applyOfflineLoad = async (vid: string, options: OfflineLoadOptions = {}) => {
     const { data: offlineData, meta } = await loadOfflinePlayerData(seriesId, vid, {
       ...options,
@@ -446,9 +478,11 @@ export function PlayerView({
       alignment="leading"
       spacing={0}
       frame={PAGE_FRAME}
-      background={SERIES_SURFACE}
+      background={isFullscreen ? "black" : SERIES_SURFACE}
       navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
+      navigationBarVisibility={isFullscreen ? "hidden" : "visible"}
+      tabBarVisibility="hidden"
       toolbar={{
         topBarTrailing: [
           ...(onOpenHistory
@@ -467,8 +501,26 @@ export function PlayerView({
     >
 
       <ZStack
-        frame={{ maxWidth: "infinity", minHeight: PLAYER_HEIGHT, maxHeight: PLAYER_HEIGHT }}
+        frame={{ maxWidth: "infinity", minHeight: isFullscreen ? 0 : PLAYER_HEIGHT, maxHeight: isFullscreen ? "infinity" : PLAYER_HEIGHT }}
         background="black"
+        overlay={{
+          alignment: "topLeading",
+          content: (
+            <Button
+              title={isFullscreen ? "退出全屏" : "全屏"}
+              systemImage={isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
+              action={toggleFullscreen}
+              disabled={!isPlayerLoaded || isPlayerBusy || isPipActive}
+              buttonStyle="plain"
+              font={13}
+              foregroundStyle="white"
+              padding={{ horizontal: 12 }}
+              frame={{ minHeight: 44 }}
+              background={{ style: "rgba(0,0,0,0.6)", shape: { type: "rect", cornerRadius: 10 } }}
+              opacity={isPlayerLoaded && !isPlayerBusy && !isPipActive ? 1 : 0}
+            />
+          ),
+        }}
       >
         {isPlayerLoaded ? (
           <AVPlayerView
@@ -511,7 +563,7 @@ export function PlayerView({
         ) : null}
       </ZStack>
 
-      <ScrollView>
+      {!isFullscreen ? <ScrollView>
         {data ? (
           <EpisodeInfoPanel
             data={data}
@@ -524,7 +576,7 @@ export function PlayerView({
         ) : (
           <LoadingView />
         )}
-      </ScrollView>
+      </ScrollView> : null}
     </VStack>
   )
 }

@@ -69,7 +69,7 @@ export function decodeRoute(raw: string): Route | null {
 }
 
 /** 按路径构建搜索、详情、播放和数据管理页面。 */
-function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void) {
+function buildRoute(route: Route | null, push: (raw: string) => void, onClose: () => void, onFullscreenChange: (fullscreen: boolean) => void) {
   if (!route) return <VStack />
 
   if (route.kind === "search") {
@@ -106,6 +106,7 @@ function buildRoute(route: Route | null, push: (raw: string) => void, onClose: (
       onOpenCache={goCache}
       onOpenHistory={goHistory}
       onClose={onClose}
+      onFullscreenChange={onFullscreenChange}
     />
   )
 }
@@ -151,6 +152,7 @@ export function App() {
   // 首次使用跟随系统，重新启动时恢复用户选择。
   const [theme, setTheme] = useState<ThemeMode>(() => Storage.get<ThemeMode>(THEME_STORAGE_KEY) ?? "system")
   const [themeError, setThemeError] = useState("")
+  const [isPlayerFullscreen, setPlayerFullscreen] = useState(false)
 
   /** 在标签页之外追加页面，保留根部标签的选择和内容状态。 */
   const push = (raw: string) => path.setValue([...path.value, raw])
@@ -196,12 +198,14 @@ export function App() {
       path={path}
       tint={THEME_COLOR}
       preferredColorScheme={theme === "system" ? undefined : theme}
+      statusBarHidden={isPlayerFullscreen}
+      persistentSystemOverlays={isPlayerFullscreen ? "hidden" : "visible"}
     >
       <TabView
         selection={selection}
         navigationBarVisibility="hidden"
         navigationDestination={
-          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close)}</NavigationDestination>
+          <NavigationDestination>{raw => buildRoute(decodeRoute(raw), push, close, setPlayerFullscreen)}</NavigationDestination>
         }
       >
         <Tab title="首页" systemImage="house.fill" value={0}>
