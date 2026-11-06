@@ -1,4 +1,4 @@
-import { Button, HStack, Image, Link, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useEffect, useState } from "scripting"
+import { Button, HStack, Image, Menu, Script, ScrollView, Spacer, Text, Toggle, VStack, useEffect, useState } from "scripting"
 import { getSleepDeadline, setSleepTimer } from "../core/sleepTimer"
 import { FILL_LEADING, PAGE_FRAME } from "./Common"
 import type { HomeMode } from "../core/recommendations"
@@ -65,7 +65,7 @@ export function SettingsView({
   onOpenHistory: () => void
   onExit: () => void
 }) {
-  const { version, author, contributors } = Script.metadata
+  const { version, contributors } = Script.metadata
   const [autoCache, setAutoCache] = useState(getAutoCacheEnabled)
   const [autoCacheCount, setAutoCacheCount] = useState(getAutoCacheEpisodeCount)
   const [autoCacheError, setAutoCacheError] = useState("")
@@ -226,11 +226,6 @@ export function SettingsView({
               关于HG 短剧
             </Text>
             <SettingsRow title="版本号" value={version} />
-            {author?.homepage ? (
-              <Link url={author.homepage} buttonStyle="plain" frame={FILL_LEADING}>
-                <SettingsRow title="作者主页" disclosure />
-              </Link>
-            ) : null}
             {contributors?.length ? (
               <SettingsRow title="贡献者" value={contributors.map(person => person.name).join("、")} />
             ) : null}
