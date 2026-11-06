@@ -4,7 +4,7 @@ const path = require("node:path")
 const vm = require("node:vm")
 const crypto = require("node:crypto")
 const { test } = require("node:test")
-const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-build")
+const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-preview-build")
 const mp4 = require(path.join(build, "core/mp4Range.js"))
 
 /** Create an ISO box with exact lengths for independent synthetic fixtures. */
@@ -75,22 +75,32 @@ test("unsupported subsample encryption, missing codec and truncated tables fail 
   assert.throws(() => mp4.prepareRangeMovie(count, f.headerOffset, f.bytes.length), /采样数量/)
 })
 
-/** Load the actual local proxy with an explicit host and synthetic CDN. */
+/** Load the actual TCP response implementation, adapting only the Scripting abort class. */
+function rangeServer(nativeNet = require("node:net")) {
+  const module = { exports: {} }, dependencies = {
+    "node:net": nativeNet, "node:buffer": require("node:buffer"), "node:crypto": crypto, scripting: { AbortController },
+  }
+  vm.runInNewContext(readFileSync(path.join(build, "core/rangeServer.js"), "utf8"), {
+    module, exports: module.exports, console, Uint8Array, Error, Set,
+    require(name) { assert.ok(Object.hasOwn(dependencies, name), name); return dependencies[name] },
+  })
+  return module.exports
+}
+
+/** Load the production source with a synthetic CDN and real loopback TCP sockets. */
 function host({ tail = false, rejectPrimary = false, badRange = false, cached = false, startError = false, large = false } = {}) {
   const f = fixture({ tail, large }), requests = [], servers = []
-  let holdRequest
-  let offlineCalls = 0
-  class HttpServer {
-    /** Preserve route and bind options for checks without opening a real port. */
-    constructor() { this.port = 12345; this.stops = 0; servers.push(this) }
-    /** Capture the production async route handler. */
-    registerAsyncHandler(route, handler) { this.route = route; this.handler = handler }
-    /** Model synchronous bind success or error. */
-    start(options) { this.options = options; return startError ? "in use" : null }
-    /** Count releases so double disposal is detectable. */
-    stop() { this.stops++ }
+  let holdRequest, offlineCalls = 0, onHeld
+  const native = require("node:net")
+  const net = {
+    /** Track each real listener, optionally injecting only a bind failure. */
+    createServer(...args) {
+      const server = native.createServer(...args); servers.push(server)
+      if (startError) server.listen = () => { server.emit("error", new Error("synthetic bind failure")); return server }
+      return server
+    },
   }
-  const module = { exports: {} }
+  const proxy = rangeServer(net), module = { exports: {} }
   const streams = [{ url: "https://example.invalid/primary", backupUrls: ["https://example.invalid/backup"], width: 720, height: 1280, contentKey: f.key }]
   const dependencies = {
     scripting: { AbortController,
@@ -98,7 +108,7 @@ function host({ tail = false, rejectPrimary = false, badRange = false, cached = 
       async fetch(url, options) {
         options.signal.throwIfAborted()
         requests.push({ url, options })
-        if (holdRequest) await holdRequest(options.signal)
+        if (holdRequest) { onHeld?.(); await holdRequest(options.signal) }
         if (rejectPrimary && url.endsWith("primary")) throw Error("synthetic CDN failure")
         const [, from, to] = /^bytes=(\d+)-(\d+)$/.exec(options.headers.Range)
         const start = Number(from), end = Math.min(Number(to), f.bytes.length - 1)
@@ -106,64 +116,81 @@ function host({ tail = false, rejectPrimary = false, badRange = false, cached = 
           arrayBuffer: async () => Uint8Array.from(f.bytes.subarray(start, end + 1)).buffer }
       },
     },
-    "node:crypto": crypto, "./appApi": { fetchEncryptedStreams: async () => streams },
+    "./appApi": { fetchEncryptedStreams: async () => streams }, "./rangeServer": proxy,
     "./bytes": require(path.join(build, "core/bytes.js")), "./mp4Range": mp4,
     "./mediaCache": { isOfflineVideoCached: () => cached },
     "./playbackSource": { resolvePlaybackSource: async () => { offlineCalls++; return { url: "/cached.mp4" } } },
   }
   vm.runInNewContext(readFileSync(path.join(build, "core/feedPlayback.js"), "utf8"), {
     module, exports: module.exports, console, Uint8Array, DataView, Error, Set, Object,
-    HttpServer, HttpResponse: { raw: (status, phrase, options = {}) => ({ status, phrase, ...options }) },
-    Data: { fromUint8Array: bytes => Buffer.from(bytes) },
     require(name) { assert.ok(Object.hasOwn(dependencies, name), name); return dependencies[name] },
   })
   return { ...module.exports, f, requests, servers, get offlineCalls() { return offlineCalls },
-    /** Hold a CDN range until the production cancellation signal aborts it. */
-    holdUntilAbort() { holdRequest = signal => new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason))) },
+    /** Hold the next CDN range until the client or source cancels it. */
+    holdUntilAbort() {
+      holdRequest = signal => new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason)))
+      return new Promise(resolve => { onHeld = resolve })
+    },
   }
 }
 
-test("bounded HTTP ranges cover open, suffix, invalid and oversized requests", () => {
-  const h = host(), total = 5000000
-  assert.equal(h.feedByteRange("bytes=0-", total).end, 1048575)
-  assert.equal(h.feedByteRange("bytes=-16", total).start, total - 16)
-  assert.equal(h.feedByteRange("bytes=4-99999999", total).end, 1048579)
-  for (const range of ["", "bytes=-", "bytes=-0", "bytes=7-6", "bytes=5000000-", "bytes=0-1,3-4", "bytes=9007199254740993-"]) assert.equal(h.feedByteRange(range, total), null)
+/** Read a real HTTP response, including strict body length checking by Node's HTTP parser. */
+function request(url, { method = "GET", range, headers = {} } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = require("node:http").request(url, { method, headers: { ...headers, ...(range === undefined ? {} : { Range: range }) } }, res => {
+      const chunks = []
+      res.on("data", bytes => chunks.push(bytes))
+      res.on("error", reject)
+      res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }))
+    })
+    req.on("error", reject); req.end()
+  })
+}
+
+test("HTTP range parsing preserves complete open, suffix and explicit ranges", () => {
+  const { parseVideoRange } = rangeServer(), total = 5000000
+  assert.equal(parseVideoRange("bytes=0-", total).end, total - 1)
+  assert.equal(parseVideoRange("bytes=-16", total).start, total - 16)
+  assert.equal(parseVideoRange("bytes=4-99999999", total).end, total - 1)
+  for (const range of ["", "bytes=-", "bytes=-0", "bytes=7-6", "bytes=5000000-", "bytes=0-1,3-4", "bytes=9007199254740993-"]) assert.equal(parseVideoRange(range, total), null)
 })
 
-for (const tail of [false, true]) test(`proxy HEAD/GET returns independently decrypted media and preserves offsets, tail=${tail}`, async () => {
+for (const tail of [false, true]) test(`real TCP HEAD/GET preserves complete lengths and media offsets, tail=${tail}`, async () => {
   const h = host({ tail }), controller = new AbortController()
   const source = await h.prepareFeedPlayback("synthetic", {}, "synthetic", controller.signal)
-  const server = h.servers[0]
-  assert.equal(server.listenAddressIPv4, "127.0.0.1")
-  assert.equal(server.options.forceIPv4, true)
-  assert.ok(source.url.startsWith("http://127.0.0.1:12345/"))
-  const head = await server.handler({ method: "HEAD", headers: {} })
-  assert.equal(head.status, 200); assert.equal(head.headers["Content-Length"], String(h.f.bytes.length))
-  const reply = await server.handler({ method: "GET", headers: { rAnGe: "bytes=0-" } })
-  assert.equal(reply.status, 206)
-  assert.deepEqual(reply.body, h.f.expected)
-  const reads = h.requests.length
-  const partial = await server.handler({ method: "GET", headers: { Range: "bytes=13-31" } })
-  assert.deepEqual(partial.body, h.f.expected.subarray(13, 32))
-  assert.equal(h.requests.length, reads)
-  assert.equal((await server.handler({ method: "GET", headers: { Range: "bytes=99999-" } })).status, 416)
-  assert.equal((await server.handler({ method: "POST", headers: {} })).status, 405)
-  controller.abort(); source.dispose()
-  assert.equal(server.stops, 1)
-  assert.equal((await server.handler({ method: "GET", headers: { Range: "bytes=0-1" } })).status, 410)
+  try {
+    assert.equal(new URL(source.url).hostname, "127.0.0.1")
+    const head = await request(source.url, { method: "HEAD" })
+    assert.equal(head.status, 200); assert.equal(head.headers["content-length"], String(h.f.bytes.length))
+    assert.equal(head.body.length, 0)
+    const probe = await request(source.url, { range: "bytes=0-1" })
+    assert.equal(probe.status, 206); assert.equal(probe.headers["content-length"], "2")
+    assert.deepEqual(probe.body, h.f.expected.subarray(0, 2))
+    const reply = await request(source.url, { range: "bytes=0-" })
+    assert.equal(reply.status, 206); assert.deepEqual(reply.body, h.f.expected)
+    assert.equal(reply.headers["content-range"], `bytes 0-${h.f.bytes.length - 1}/${h.f.bytes.length}`)
+    const reads = h.requests.length
+    const partial = await request(source.url, { range: "bytes=13-31" })
+    assert.deepEqual(partial.body, h.f.expected.subarray(13, 32)); assert.equal(h.requests.length, reads)
+    assert.equal((await request(source.url, { range: "bytes=99999-" })).status, 416)
+    assert.equal((await request(source.url, { method: "POST" })).status, 405)
+    assert.equal((await request(source.url + "unknown")).status, 404)
+    const complete = await request(source.url)
+    assert.equal(complete.status, 200); assert.deepEqual(complete.body, h.f.expected)
+  } finally { controller.abort(); source.dispose() }
+  assert.equal(h.servers[0].listening, false)
 })
 
 test("proxy switches to a real backup, rejects bad ranges and cleans startup failures", async () => {
   const h = host({ rejectPrimary: true }), c = new AbortController()
   const source = await h.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal)
-  assert.equal(h.requests.length, 2); assert.ok(h.requests[1].url.endsWith("backup")); source.dispose()
+  try { assert.equal(h.requests.length, 2); assert.ok(h.requests[1].url.endsWith("backup")) } finally { source.dispose() }
   const invalid = host({ badRange: true })
   await assert.rejects(invalid.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal), /片段加载失败/)
   assert.equal(invalid.servers.length, 0)
   const busy = host({ startError: true })
   await assert.rejects(busy.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal), /启动失败/)
-  assert.equal(busy.servers[0].stops, 1)
+  assert.equal(busy.servers[0].listening, false)
 })
 
 test("a cached episode skips media requests and cancellation prevents preparation", async () => {
@@ -174,26 +201,84 @@ test("a cached episode skips media requests and cancellation prevents preparatio
   await assert.rejects(h.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal), { name: "AbortError" })
 })
 
-test("open-ended requests advance in bounded chunks and decrypt a sample crossing the chunk boundary", async () => {
+test("one large requested range receives its complete body while upstream reads stay bounded", async () => {
   const h = host({ large: true }), c = new AbortController()
   const source = await h.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal)
-  const first = await h.servers[0].handler({ method: "GET", headers: { Range: "bytes=0-" } })
-  assert.equal(first.body.length, 1048576)
-  assert.deepEqual(first.body, h.f.expected.subarray(0, 1048576))
-  const second = await h.servers[0].handler({ method: "GET", headers: { Range: "bytes=1048576-" } })
-  assert.equal(second.status, 206)
-  assert.deepEqual(second.body, h.f.expected.subarray(1048576))
+  try {
+    const reply = await request(source.url, { range: "bytes=0-" })
+    assert.equal(reply.status, 206); assert.equal(reply.body.length, h.f.bytes.length)
+    assert.equal(Number(reply.headers["content-length"]), h.f.bytes.length)
+    assert.deepEqual(reply.body, h.f.expected)
+    assert.ok(h.requests.slice(1).every(({ options }) => {
+      const [, start, end] = /^bytes=(\d+)-(\d+)$/.exec(options.headers.Range)
+      return Number(end) - Number(start) + 1 <= 262144
+    }))
+    const suffix = await request(source.url, { range: "bytes=-81" })
+    assert.deepEqual(suffix.body, h.f.expected.subarray(-81))
+  } finally { source.dispose() }
+})
+
+test("leaving during an upstream range aborts the request and closes the HTTP connection", async () => {
+  const h = host({ large: true }), c = new AbortController()
+  const source = await h.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal)
+  const held = h.holdUntilAbort()
+  const pending = assert.rejects(request(source.url, { range: "bytes=80000-" }), /aborted|reset|hang up/i)
+  await held
+  c.abort()
+  await pending
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(h.requests.at(-1).options.signal.aborted, true)
+  assert.equal(h.servers[0].listening, false)
   source.dispose()
 })
 
-test("leaving during an upstream range aborts the request and returns no late video body", async () => {
+test("client cancellation aborts its own CDN read without stopping other video connections", async () => {
   const h = host({ large: true }), c = new AbortController()
   const source = await h.prepareFeedPlayback("synthetic", {}, "synthetic", c.signal)
-  h.holdUntilAbort()
-  const pending = h.servers[0].handler({ method: "GET", headers: { Range: "bytes=80000-" } })
+  const held = h.holdUntilAbort()
+  const req = require("node:http").get(source.url, { headers: { Range: "bytes=80000-" } })
+  req.on("error", () => {})
+  req.on("response", response => response.on("error", () => {}))
+  await held
+  req.destroy()
+  for (let i = 0; i < 20 && !h.requests.at(-1).options.signal.aborted; i++) await new Promise(resolve => setImmediate(resolve))
+  try {
+    assert.equal(h.requests.at(-1).options.signal.aborted, true)
+    assert.equal((await request(source.url, { method: "HEAD" })).status, 200)
+  } finally { source.dispose() }
+})
+
+test("abort during asynchronous bind closes the late listener", async () => {
+  const { startVideoRangeServer } = rangeServer(), c = new AbortController()
+  const pending = startVideoRangeServer(100, c.signal, async () => new Uint8Array())
   c.abort()
-  assert.equal((await pending).status, 410)
-  assert.equal(h.requests.at(-1).options.signal.aborted, true)
-  assert.equal(h.servers[0].stops, 1)
-  source.dispose()
+  await assert.rejects(pending, /取消/)
+  await new Promise(resolve => setImmediate(resolve))
+})
+
+test("fragmented HTTP headers and a slow reader still receive the complete requested range", async () => {
+  const { startVideoRangeServer } = rangeServer(), c = new AbortController()
+  const expected = Buffer.alloc(700000, 73), reads = []
+  const source = await startVideoRangeServer(expected.length, c.signal, async (start, end) => {
+    reads.push(end - start + 1)
+    return new Uint8Array(expected.subarray(start, end + 1))
+  })
+  try {
+    const url = new URL(source.url)
+    const wire = await new Promise((resolve, reject) => {
+      const data = [], socket = require("node:net").createConnection({ host: url.hostname, port: Number(url.port) })
+      socket.on("connect", () => {
+        socket.write(`GET ${url.pathname} HTTP/1.1\r\nHost: 127.0.0.1\r\nRan`)
+        setTimeout(() => socket.write("ge: bytes=0-699999\r\n\r\n"), 5)
+      })
+      socket.on("data", chunk => { data.push(chunk); socket.pause(); setTimeout(() => socket.resume(), 1) })
+      socket.on("error", reject)
+      socket.on("end", () => resolve(Buffer.concat(data)))
+    })
+    const end = wire.indexOf("\r\n\r\n")
+    assert.ok(wire.subarray(0, end).toString().includes("Content-Length: 700000"))
+    assert.ok(wire.subarray(0, end).toString().includes("Content-Range: bytes 0-699999/700000"))
+    assert.deepEqual(wire.subarray(end + 4), expected)
+    assert.ok(reads.every(length => length <= 262144))
+  } finally { source.dispose() }
 })

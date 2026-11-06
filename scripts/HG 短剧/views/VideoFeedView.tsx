@@ -139,14 +139,16 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
     player.onTimeControlStatusChanged = () => {
       if (!cancelled) setPlaying(player.rate > 0)
     }
-    player.onError = () => {
+    player.onError = message => {
       if (!cancelled) {
         source?.dispose()
         loaded = false
         wantsPlay.current = false
         player.pause()
         setReady(false)
-        setPlayError("视频播放失败，请重试或上滑切换")
+        const detail = message.replace(/https?:\/\/\S+/gi, "[播放地址]")
+        console.error("[HG刷剧] 原生播放器错误：", detail)
+        setPlayError(`视频播放失败：${detail}`)
       }
     }
 

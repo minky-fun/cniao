@@ -110,7 +110,7 @@ HONGGUO_BUILD_DIR=../work/hongguo-preview-build node --test tools/test-hongguo-r
 - 扫描顶层盒子定位 moov，允许索引位于媒体数据前后，最多读取 8 MB 索引；无需下载整集 mdat。
 - 根据 stsz、stco、stsc、senc 定位全采样 CENC 区间，使用 frma 中的真实编码替换 encv/enca，将 DRM 声明改为等长 free，保持绝对字节偏移。
 - 支持 8/16 字节 IV、非块对齐区间、跨采样和跨 HTTP 分块的 CTR 解密。缺失必要表、分段采样加密或不支持的索引明确报错，不猜测替代字段。
-- 本地响应每次最多缓冲 1 MB，返回正确的 Content-Range 和 Content-Length；播放器继续请求后续区间。仅保留最近一个已解密片段，复用重复读取。
+- 初版将本地响应范围限制为 1 MB；后续原生播放器验证确认，这种缩短请求范围的做法会触发 AVPlayer 错误，已由下文的 TCP 分块传输修复替代。仅保留最近一个已解密片段，复用重复读取。
 - 对上游 206 范围、长度和文件总大小进行校验；同清晰度主备节点有限切换。退出时取消在途网络并停止监听，不写入不完整的离线缓存。
 - 刷剧优先使用服务端已有、短边不超过 720 的清晰度；仅提供一个更高清晰度时直接使用该项，不进行本地转码。
 
@@ -132,3 +132,36 @@ HONGGUO_BUILD_DIR=../work/hongguo-preview-build node --test tools/test-hongguo-f
 ```
 
 本轮中途 CLI 曾报告无兼容设备连接；结束前 iPhone 恢复连接，`scripts inspect` 已确认 `feedPlayback.ts`、`mp4Range.ts`、`VideoFeedView.tsx` 的 App 端 SHA-256 与本地一致。设备为 `busy: true`，有手动脚本正在运行，未中断该运行，也未取得新版原生 HttpServer/AVPlayer 的运行结果或修复后截图。仍需手机重新运行 HG 短剧，检查刷剧首播、连续上滑、后台恢复、选集返回、标签栏底部裁切。桌面媒体验证与模拟测试不构成手机端流畅播放结论。
+
+## AVPlayer 区间响应兼容修复
+
+用户报告“视频播放失败，请重试或上滑切换”后，继续对实际媒体验证。本次产品代码只修改 `scripts/HG 短剧`，不再同步旧的 `scripts/红果` 目录。
+
+### 复现与修复
+
+初版代理把客户端请求的完整区间缩短为前 1 MB，然后结束该 HTTP 响应。FFmpeg 可以容忍这种行为，但 macOS 原生 AVPlayer 对实际视频复现失败，错误链为 `NSURLErrorDomain -1`、`CoreMediaErrorDomain -12939`。上一轮 FFmpeg 测试不足以证明 AVPlayer 兼容性。
+
+- 将 HTTP 传输从缓冲式 HttpServer 响应改为文档支持的 `node:net` 本地 TCP 服务。
+- 客户端请求哪个区间，就返回该完整区间及对应 Content-Range、Content-Length；传输每块最多 256 KB，逐块读取、解密、写入，不再缩短响应范围。
+- 每次等待套接字写入回调再发送下一块，控制排队内存，保持边加载边播放。普通无 Range 的 GET 也支持流式 200 响应。
+- 继续仅监听 `127.0.0.1`，随机路径，最多 6 个连接；支持 HEAD、开放区间、后缀区间、无效请求及超长请求头限制。
+- 客户端取消会中止该连接的在途上游请求；切页/后台/退出关闭整个源及所有连接；监听启动期间取消也会清理迟到的监听器。
+- 播放失败时保留原生错误文字，先遮盖 URL，再显示并输出日志，避免只有通用提示无法排查。
+
+### 验证结果
+
+使用与产品相同的编译模块和真实 Node TCP 服务器，上游 HTTPS 与 Storage 适配为桌面环境，游客身份及签名链接仍仅在进程内存中使用。
+
+- 同一集媒体在旧代理下原生 AVPlayer 报 `-12939`，新 TCP 服务下可播放并准确跳转第 20 秒后继续播放。
+- 增加原生检查程序 `tools/hongguo-avplayer-probe.swift`，静音播放，通过 AVPlayerItemVideoOutput 检查跳转前后的实际像素帧；只输出状态及错误域/代码，不输出播放链接。
+- 带像素帧验证的一次运行确认跳转前后均获得 1080×1920 图像，播放位置超过 20.5 秒；索引准备请求 349,342 字节，媒体完整大小为 13,282,827 字节。总运行计时约 1.60 秒，包含测试主动跳转，不等同于首帧耗时。
+- `tools/tsconfig.hongguo-preview.json` TypeScript 检查通过；HG 目录分段播放、推荐、收藏相关回归 40 项通过。
+- 回归使用真实 TCP/HTTP 传输，检查大于 1 MB 的单个响应完整接收、严格长度、分块上游读取、慢速读取、分段到达的请求头、客户端取消、播放源取消及监听启动取消。
+
+原生检查程序的编译方式（参数仅接受已有本机播放服务的 URL）：
+
+```sh
+xcrun swiftc tools/hongguo-avplayer-probe.swift -o /tmp/hongguo-avplayer-probe
+```
+
+手机 CLI 的运行请求仍被 `busy: A manual preview or script is already running.` 拒绝。macOS 的真实 AVPlayer 及像素帧验证比 FFmpeg 更直接地覆盖此次错误，但仍不能替代 iPhone 中 Scripting 网络、播放器与页面生命周期的最终验证。
