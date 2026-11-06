@@ -37,6 +37,7 @@ import type { PlayerData } from "../core/types"
 import { retainPipPlayer, setPipPlaybackActive } from "../core/playbackState"
 import { CoverImage, ErrorView, FILL_LEADING, LoadingView, PAGE_FRAME, SERIES_SURFACE } from "./Common"
 import { EpisodeGrid } from "./EpisodeGrid"
+import { FavoriteButton } from "./FavoriteButton"
 import { attachSleepPlayer, canAutoPlay, detachSleepPlayer, getSleepDeadline, resumeAfterSleep } from "../core/sleepTimer"
 
 const PLAYER_HEIGHT = 220
@@ -52,7 +53,7 @@ const STAGE_LABEL: Record<PrepareProgress["stage"], string> = {
   done: "准备完成",
 }
 
-/** 展示剧集播放页，按自动缓存开关及用户配置集数预加载并保存真实剧集信息。 */
+/** 展示剧集播放页及收藏操作，按用户配置预加载并保存真实观看进度。 */
 export function PlayerView({
   seriesId,
   initialVid,
@@ -457,6 +458,18 @@ export function PlayerView({
       background={SERIES_SURFACE}
       navigationTitle="HG 短剧"
       navigationBarTitleDisplayMode="inline"
+      safeAreaInset={data ? {
+        bottom: {
+          alignment: "center",
+          spacing: 0,
+          content: <FavoriteButton key={data.seriesDetail.series_id} record={{
+            seriesId: data.seriesDetail.series_id,
+            title: data.seriesDetail.series_name,
+            cover: data.seriesDetail.series_cover,
+            totalEpisodes: data.seriesDetail.vid_list.length,
+          }} />,
+        },
+      } : undefined}
       toolbar={{
         topBarTrailing: [
           ...(onOpenHistory

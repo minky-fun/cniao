@@ -78,7 +78,10 @@ function buildRoute(route: Route | null, push: (raw: string) => void, onClose: (
   if (route.kind === "cache") return <CacheView onOpenManager={() => push(CACHE_MANAGER_ROUTE)} />
   if (route.kind === "cache-manager") return <CacheManagerView />
   if (route.kind === "history") {
-    return <HistoryView onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))} />
+    return <HistoryView
+      onPlaySeries={(seriesId, vid) => push(routePlayer(seriesId, vid))}
+      onOpenSeries={seriesId => push(routeDetail(seriesId))}
+    />
   }
 
   /** 从当前页面打开指定剧集。 */
