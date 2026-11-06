@@ -3,7 +3,7 @@ const { readFileSync } = require("node:fs")
 const path = require("node:path")
 const vm = require("node:vm")
 const { test } = require("node:test")
-const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-build")
+const build = path.resolve(__dirname, process.env.HONGGUO_FEED_BUILD_DIR ?? "../work/hongguo-feed-build")
 
 /** Load compiled production modules with explicit host adapters. */
 function load(file, dependencies, globals = {}) {
@@ -40,10 +40,9 @@ function envelope(videos = [rawVideo()], offset = 6, hasMore = true) {
   } }
 }
 
-/** Provide synthetic transport, identity and storage without real account data. */
+/** Provide synthetic transport and identity without real account data. */
 function apiHost(replies = []) {
-  const calls = [], signs = [], registrations = [], store = new Map()
-  let saveAllowed = true
+  const calls = [], signs = [], registrations = []
   class HttpError extends Error {
     /** Carry an HTTP status for the production retry policy. */
     constructor(message, status) { super(message); this.status = status }
@@ -73,78 +72,9 @@ function apiHost(replies = []) {
       /** Capture the exact signed parameters without using live credentials. */
       signPlayback(params, body) { signs.push({ params, body }); return { query: "synthetic-query", headers: {} } },
     },
-  }, { Storage: { get: key => store.get(key), set: (key, value) => {
-    if (!saveAllowed) return false
-    store.set(key, value); return true
-  } } })
-  return { api, calls, signs, registrations, store, rejectSaves: () => { saveAllowed = false } }
-}
-
-/** Render the real root with native containers replaced, keeping actual mode storage behavior. */
-function mountApp(host) {
-  const slots = []
-  let index = 0, tree
-  /** Preserve root state between simulated settings and navigation actions. */
-  function useState(initial) {
-    const position = index++
-    if (!(position in slots)) slots[position] = typeof initial === "function" ? initial() : initial
-    return [slots[position], value => { slots[position] = typeof value === "function" ? value(slots[position]) : value }]
-  }
-  const dependencies = {
-    scripting: { useState, useEffect() {}, Navigation: { useDismiss: () => () => {} },
-      useObservable: initial => useState(() => ({ value: initial, setValue(value) { this.value = value } }))[0] },
-    "../core/recommendations": host.api,
-    "../core/mediaCache": { pruneOfflineCache: () => 0 },
-    "../core/playbackState": { isPipPlaybackActive: () => false },
-    "./Common": { THEME_COLOR: "#fa7705" },
-  }
-  for (const name of ["CacheView", "CacheManagerView", "CategoryView", "DetailView", "HistoryView", "HomeView", "PlayerView", "RankView", "SearchView", "SettingsView", "VideoFeedView"]) dependencies["./" + name] = { [name]: name }
-  const { App } = load("views/App", dependencies, {
-    Storage: { get: key => host.store.get(key) },
-    createElement: (type, props, ...children) => ({ type, props: props ?? {}, children: children.flat(Infinity) }),
   })
-  /** Rerender the actual root after a simulated user action. */
-  function render() { index = 0; tree = App() }
-  /** Expand only the root's page render callbacks to inspect the intended screens. */
-  function nodes(node = tree) {
-    if (!node || typeof node !== "object") return []
-    return [node, ...(node.children ?? []).flatMap(child => nodes(child)),
-      ...(node.props.render ? nodes(node.props.render(node.props.push)) : [])]
-  }
-  render()
-  return { render, nodes, select: value => { slots[0].setValue(value); render() } }
+  return { api, calls, signs, registrations }
 }
-
-test("home mode defaults to the original homepage and writes only on successful storage", () => {
-  const h = apiHost()
-  assert.equal(h.api.getHomeMode(), "recommend")
-  h.api.setHomeMode("video")
-  assert.equal(h.api.getHomeMode(), "video")
-  h.rejectSaves()
-  assert.throws(() => h.api.setHomeMode("recommend"), /保存失败/)
-  assert.equal(h.api.getHomeMode(), "video")
-})
-
-test("settings switches the real homepage immediately and root tab/path state gates playback", () => {
-  const host = apiHost(), app = mountApp(host)
-  assert.ok(app.nodes().some(node => node.type === "HomeView"))
-  app.nodes().find(node => node.type === "SettingsView").props.onHomeModeChange("video")
-  app.render()
-  let feed = app.nodes().find(node => node.type === "VideoFeedView")
-  assert.equal(feed.props.active, true)
-  app.select(4)
-  assert.equal(app.nodes().find(node => node.type === "VideoFeedView").props.active, false)
-  app.select(0)
-  feed = app.nodes().find(node => node.type === "VideoFeedView")
-  feed.props.onSearch(); app.render()
-  assert.equal(app.nodes().find(node => node.type === "VideoFeedView").props.active, false)
-  host.rejectSaves()
-  app.nodes().find(node => node.type === "SettingsView").props.onHomeModeChange("recommend")
-  app.render()
-  const settings = app.nodes().find(node => node.type === "SettingsView").props
-  assert.equal(settings.homeMode, "video")
-  assert.match(settings.homeModeError, /保存失败/)
-})
 
 test("recommendations sign the exact desktop GET and follow top-level offset/session", async () => {
   const first = rawVideo(), second = rawVideo(2)
@@ -219,7 +149,7 @@ function mountFeed({ autoCache = true } = {}) {
   const slots = [], effects = [], timers = new Map(), listeners = new Set()
   const pages = [], sources = [], history = []
   const cache = { enabled: autoCache, requests: [], saved: new Set() }
-  let hook = 0, dirty = false, tree, props = { active: true, onPlaySeries() {}, onOpenHistory() {}, onSearch() {} }
+  let hook = 0, dirty = false, tree, props = { active: true, onPlaySeries() {}, onClose() {} }
   let now = 1000, timerId = 0, pip = false
   const globals = {
     Date: { now: () => now },

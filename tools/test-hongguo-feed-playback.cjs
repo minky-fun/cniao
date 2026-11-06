@@ -4,7 +4,7 @@ const path = require("node:path")
 const vm = require("node:vm")
 const crypto = require("node:crypto")
 const { test } = require("node:test")
-const build = path.resolve(__dirname, process.env.HONGGUO_BUILD_DIR ?? "../work/hongguo-preview-build")
+const build = path.resolve(__dirname, process.env.HONGGUO_FEED_BUILD_DIR ?? "../work/hongguo-feed-build")
 const mp4 = require(path.join(build, "core/mp4Range.js"))
 
 /** Create an ISO box with exact lengths for independent synthetic fixtures. */

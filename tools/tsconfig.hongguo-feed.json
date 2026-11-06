@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "../work/hongguo-feed-build",
+    "rootDir": "../scripts/HG 刷剧"
+  },
+  "include": ["../dts/*.d.ts", "../scripts/HG 刷剧/**/*.ts", "../scripts/HG 刷剧/**/*.tsx"]
+}

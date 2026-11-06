@@ -1,0 +1,13 @@
+{
+  "name": "HG 刷剧",
+  "description": "独立的上下滑动刷剧项目，支持推荐视频、选集续播与本地缓存。",
+  "icon": "play.rectangle.on.rectangle.fill",
+  "color": "rgba(250, 119, 5,1)",
+  "version": "1.0.0",
+  "entry": "index.tsx",
+  "runInApp": false,
+  "author": {
+    "name": "Minky",
+    "homepage": "https://github.com/minky-fun"
+  }
+}

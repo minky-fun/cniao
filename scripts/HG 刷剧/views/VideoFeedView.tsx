@@ -23,11 +23,10 @@ const VIDEO_SHADE = gradient("linear", {
 })
 
 /** 用原生纵向分页展示推荐，当前集播完后进入选集播放页续播下一集。 */
-export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }: {
+export function VideoFeedView({ active, onPlaySeries, onClose }: {
   active: boolean
   onPlaySeries: (seriesId: string, vid: string) => void
-  onOpenHistory: () => void
-  onSearch: () => void
+  onClose: () => void
 }) {
   const [items, setItems] = useState<Recommendation[]>([])
   const [visibleId, setVisibleId] = useState<string | null>(null)
@@ -327,8 +326,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
   return (
     <VStack spacing={0} frame={PAGE_FRAME} foregroundStyle="white"
       background={<VStack frame={PAGE_FRAME} background="black" ignoresSafeArea={{ regions: "container" }} />}
-      toolbarBackground={{ style: { light: "#FFFFFF", dark: "#131414" }, bars: ["tabBar"] }}
-      toolbarBackgroundVisibility={{ visibility: "visible", bars: ["tabBar"] }}
+      navigationBarVisibility="hidden"
       onAppear={() => setAppeared(true)}
       onDisappear={() => { wantsPlay.current = false; player.pause(); setAppeared(false) }}
     >
@@ -336,8 +334,7 @@ export function VideoFeedView({ active, onPlaySeries, onOpenHistory, onSearch }:
         <Text font={19} fontWeight="bold">推荐</Text>
         <Text font={12} foregroundStyle="rgba(255,255,255,0.5)">上滑发现下一部</Text>
         <Spacer />
-        <Button title="播放历史" systemImage="clock.arrow.circlepath" action={onOpenHistory} labelStyle="iconOnly" buttonStyle="plain" />
-        <Button title="搜索" systemImage="magnifyingglass" action={onSearch} labelStyle="iconOnly" buttonStyle="plain" />
+        <Button title="关闭" action={onClose} buttonStyle="plain" />
       </HStack>
       <GeometryReader>{geometry => (
         <ZStack frame={{ width: geometry.size.width, height: geometry.size.height }} clipped>

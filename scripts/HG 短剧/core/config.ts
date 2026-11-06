@@ -25,34 +25,6 @@ export const RANK_BOARDS = [
   { board: "hot-comic-drama", label: "漫剧热播榜" },
 ] as const
 
-export const APP_COMMON_QUERY: Record<string, string> = {
-  aid: "8662",
-  app_name: "novelread",
-  version_code: "71332",
-  version_name: "7.1.3.32",
-  manifest_version_code: "71332",
-  update_version_code: "71332",
-  channel: "update_64",
-  device_platform: "android",
-  os: "android",
-  ssmix: "a",
-  device_type: "25053RT47C",
-  device_brand: "Redmi",
-  language: "zh",
-  os_api: "36",
-  os_version: "16",
-  resolution: "1280*2772",
-  dpi: "520",
-  ac: "wifi",
-  compliance_status: "0",
-  dragon_device_type: "phone",
-  host_abi: "arm64-v8a",
-  is_android_pad_screen: "0",
-  need_personal_recommend: "1",
-  player_so_load: "1",
-  pv_player: "71332",
-}
-
 export const MEDIA_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 

@@ -5,9 +5,6 @@ import { getPlaybackIdentity, PLAYBACK_USER_AGENT } from "./playbackIdentity"
 import { signPlayback } from "./playbackSign"
 import type { SeriesDetail } from "./types"
 
-export type HomeMode = "recommend" | "video"
-export const HOME_MODE_STORAGE_KEY = "hongguo-home-mode"
-
 export interface FeedCursor {
   offset: number
   sessionId: string
@@ -51,16 +48,6 @@ const FEED_BASES = [
   "https://api5-normal-lq.fqnovel.com",
   "https://api5-normal-sinfonlinec.fqnovel.com",
 ]
-
-/** 只读取已知的首页模式，旧安装保持原推荐首页。 */
-export function getHomeMode(): HomeMode {
-  return Storage.get<string>(HOME_MODE_STORAGE_KEY) === "video" ? "video" : "recommend"
-}
-
-/** 保存成功后才允许界面切换，失败时由设置页显示原因。 */
-export function setHomeMode(mode: HomeMode): void {
-  if (!Storage.set(HOME_MODE_STORAGE_KEY, mode)) throw new Error("首页模式保存失败，请重试")
-}
 
 /** 按桌面端已验证的 cell_view 结构解析推荐，保持服务端顺序和字符串剧集标识。 */
 function parsePage(text: string, previous: FeedCursor): RecommendationPage {
