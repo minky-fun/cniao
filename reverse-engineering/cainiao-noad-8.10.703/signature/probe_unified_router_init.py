@@ -1,5 +1,6 @@
 """离线执行 Unified 路由表安装与处理器注册，只报告下一个模块依赖。"""
 import argparse
+import ctypes
 import json
 import plistlib
 import struct
@@ -23,8 +24,9 @@ class RouterInitProbe(UnifiedBoundaryProbe):
         return_address = cpu.reg_read(UC_ARM64_REG_X30)
         if address == 0x102a598ec:
             symbol = self.cstring(cpu.reg_read(ARGUMENT_REGISTERS[1])).decode('ascii')
-            if symbol in ('mach_task_self', 'proc_regionfilename'):
-                if getattr(self.host_libc, symbol, None) is None:
+            if symbol in ('mach_task_self', 'proc_regionfilename', 'CFSetGetCount', 'CFBooleanGetValue'):
+                library = ctypes.CDLL('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation') if symbol in ('CFSetGetCount', 'CFBooleanGetValue') else self.host_libc
+                if getattr(library, symbol, None) is None:
                     raise RuntimeError('宿主没有已确认的链接符号：' + symbol)
                 pointer = self.linked.setdefault(symbol, self.callback + 0x500 + len(self.linked) * 4)
                 self.resolved_system_names.append(symbol)

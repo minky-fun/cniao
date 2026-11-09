@@ -861,7 +861,7 @@ Unified 原始 ABI 探针使用已核对包装器偏移的 **216 字节请求、
 
 继续执行描述符的原生回调 `0x102bac1d8`，其返回的来源为 `0x1066cb560`、长度 **77,635** 字节。按现有双 zlib 容器解析器校验，模块标识确为 `lvm_llc_core`，解压代码长 **143,128** 字节，业务元数据有 22 项绑定 `66020601` 至 `66020622`。前置 `lvm_minilibc` 仍能由原生加载器返回 0。
 
-加载 `lvm_llc_core` 时先后解析 `mach_task_self` 和 `proc_regionfilename`。研究探针只为这两个经本机符号表确认的名称提供**执行即中止**的链接槽，不调用宿主函数，也不模拟任务端口或进程路径；原生加载器继续前进，两槽均未执行。下一停止点是未解析的 CoreFoundation 导入 `CFSetGetCount`。主程序导入表有名称不同的 `_mach_task_self_` 数据符号，不能把它直接当成函数或返回猜测的端口。核心模块加载状态仍未知，也没有完成初始化或签名。下一步需核对这些系统导入的实际调用方式及后续加载依赖，再验证安全因子；证据见 `unified-router-init-evidence.json`。
+加载 `lvm_llc_core` 时依次解析 `mach_task_self`、`proc_regionfilename`、`CFSetGetCount` 和 `CFBooleanGetValue`。研究探针仅在确认本机符号存在后为它们提供**执行即中止**的链接槽，不调用宿主函数，也不模拟任务端口、进程路径或 CoreFoundation 对象。四槽在加载阶段均未执行；独立调用现有原生 VM 加载器加载 `lvm_llc_core` 返回 **0**。这证明该样本的模块加载路径在有界隔离环境中走通，**不等于原始 `(1,34,13,0)` 注册回调已实现**，更不等于 Unified 安全因子或完整签名器已成功。主程序导入表有名称不同的 `_mach_task_self_` 数据符号，不能把它直接当成函数。下一步仍需恢复模块注册协议、继续初始化，并在执行期核对这些系统函数的真实调用行为。证据见 `unified-router-init-evidence.json`。
 
 复现（macOS、已配置的研究 Python 环境）：
 
