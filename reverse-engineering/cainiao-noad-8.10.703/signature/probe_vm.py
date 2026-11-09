@@ -157,10 +157,38 @@ class ModuleProbe(NativeProbe):
                 result = a if name == '_memset' else 0
             elif name == '_strlen':
                 result = len(self.cstring(a))
+            elif name == '_atoi':
+                text = self.cstring(a).lstrip()
+                sign = -1 if text.startswith(b'-') else 1
+                if text.startswith((b'-', b'+')):
+                    text = text[1:]
+                digits = text[:next((index for index, value in enumerate(text) if not 48 <= value <= 57), len(text))]
+                if not digits:
+                    raise RuntimeError('atoi 输入超出数字模型')
+                value = sign * int(digits)
+                if not -2147483648 <= value <= 2147483647:
+                    raise RuntimeError('atoi 输入超出 32 位范围')
+                result = value & 0xffffffff
+            elif name in ('___tolower', '___toupper'):
+                if a in (0xffffffff, 0xffffffffffffffff):
+                    result = 0xffffffff
+                elif a > 255:
+                    raise RuntimeError('字符转换输入超出 unsigned char 范围')
+                else:
+                    value = a & 0xff
+                    if name == '___tolower' and 65 <= value <= 90:
+                        value += 32
+                    elif name == '___toupper' and 97 <= value <= 122:
+                        value -= 32
+                    result = value
             elif name == '_strdup':
                 raw = self.cstring(a) + b'\0'
                 result = self.allocate(len(raw))
                 cpu.mem_write(result, raw)
+            elif name == '_strcat':
+                raw = self.cstring(a) + self.cstring(b) + b'\0'
+                cpu.mem_write(a, raw)
+                result = a
             elif name in ('_sprintf', '_snprintf'):
                 # 仅实现实际观察到的格式；Apple ARM64 可变参数占八字节栈槽。
                 format_pointer = b if name == '_sprintf' else c
@@ -176,6 +204,9 @@ class ModuleProbe(NativeProbe):
                 elif name == '_snprintf' and format_text == b'%03u':
                     number = struct.unpack('<I', cpu.mem_read(stack_pointer, 4))[0]
                     raw = str(number).zfill(3).encode('ascii')
+                elif name == '_snprintf' and format_text == b'%05d':
+                    number = struct.unpack('<i', cpu.mem_read(stack_pointer, 4))[0]
+                    raw = format(number, '05d').encode('ascii')
                 else:
                     raise RuntimeError('未实现的 printf 格式')
                 if name == '_sprintf':
@@ -183,13 +214,37 @@ class ModuleProbe(NativeProbe):
                 elif b:
                     cpu.mem_write(a, raw[:b - 1] + b'\0')
                 result = len(raw)
-            elif name in ('_strcmp', '_memcmp'):
+            elif name == '_strtok_r':
+                if not c:
+                    raise RuntimeError('strtok_r 缺少保存指针')
+                cursor = a or struct.unpack('<Q', cpu.mem_read(c, 8))[0]
+                if not cursor:
+                    raise RuntimeError('strtok_r 缺少初始字符串')
+                raw, delims = self.cstring(cursor), self.cstring(b)
+                start = 0
+                while start < len(raw) and raw[start] in delims:
+                    start += 1
+                if start == len(raw):
+                    result, next_cursor = 0, cursor + len(raw)
+                else:
+                    end = start
+                    while end < len(raw) and raw[end] not in delims:
+                        end += 1
+                    result = cursor + start
+                    next_cursor = cursor + end
+                    if end < len(raw):
+                        cpu.mem_write(next_cursor, b'\0')
+                        next_cursor += 1
+                cpu.mem_write(c, struct.pack('<Q', next_cursor))
+            elif name in ('_strcmp', '_memcmp', '_strncmp'):
                 if name == '_strcmp':
                     left, right = self.cstring(a), self.cstring(b)
                 else:
                     if c > 0x1000000:
                         raise RuntimeError('比较长度超限')
                     left, right = bytes(cpu.mem_read(a, c)), bytes(cpu.mem_read(b, c))
+                    if name == '_strncmp':
+                        left, right = left.split(b'\0')[0], right.split(b'\0')[0]
                 result = (left > right) - (left < right)
             elif name == '_pthread_key_create':
                 cpu.mem_write(a, struct.pack('<I', 1))

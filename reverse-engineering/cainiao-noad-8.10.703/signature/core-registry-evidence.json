@@ -1,0 +1,42 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "isolated native core table install and registry lookup",
+  "installer": "0x102aa9a30",
+  "callbacks": [
+    "0x102aa9658",
+    "0x102aa98d4",
+    "0x102aa973c",
+    "0x102aa9940"
+  ],
+  "registration": {
+    "ids": [
+      1,
+      34,
+      1,
+      1
+    ],
+    "handler": "0x102aa9c90",
+    "status": 0
+  },
+  "lookup_flag_1_status": 0,
+  "lookup_same_ids_flag_0_status": 134019904,
+  "lookup_unregistered_module_flag_0_status": 134139904,
+  "manually_registered_module": {
+    "ids": [
+      1,
+      34,
+      13,
+      0
+    ],
+    "handler": "0x102ab4068",
+    "registration_status": 0,
+    "lookup_status": 0
+  },
+  "synthetic_dependencies": [
+    "zero time for srand48 seed",
+    "deterministic POSIX 48-bit random sequence"
+  ],
+  "module_registration_completed": false,
+  "signature_generated": false,
+  "network_requests_sent": 0
+}

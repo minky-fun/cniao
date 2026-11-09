@@ -1,0 +1,436 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "bounded native Unified init continuation into real lvm_llc_core registration",
+  "entry": "0x102b9803c",
+  "llc_handler": "0x102ab4068",
+  "path_object_handler": "0x102aed450",
+  "llc_handler_entered": true,
+  "llc_handler_returned": false,
+  "llc_handler_chain_reached": "descriptor callback 0x102bac1d8 -> registrar 0x102a66ca8 -> cJSON metadata parse",
+  "registrations": [
+    {
+      "ids": [
+        2,
+        19,
+        2,
+        1
+      ],
+      "handler": "0x102b905ac"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        7,
+        1
+      ],
+      "handler": "0x102b97bf0"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        8,
+        1
+      ],
+      "handler": "0x102b97d08"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        1,
+        1
+      ],
+      "handler": "0x102b90730"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        3,
+        1
+      ],
+      "handler": "0x102b90738"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        4,
+        1
+      ],
+      "handler": "0x102b90740"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        5,
+        1
+      ],
+      "handler": "0x102b90748"
+    },
+    {
+      "ids": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "handler": "0x102b90750"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        1,
+        1
+      ],
+      "handler": "0x102ba9304"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        2,
+        1
+      ],
+      "handler": "0x102ba940c"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        3,
+        1
+      ],
+      "handler": "0x102ba94f4"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        4,
+        1
+      ],
+      "handler": "0x102ba9584"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        1,
+        0
+      ],
+      "handler": "0x102b90660"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        8,
+        0
+      ],
+      "handler": "0x102b9288c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        9,
+        0
+      ],
+      "handler": "0x102b9113c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        10,
+        0
+      ],
+      "handler": "0x102bac31c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        13,
+        0
+      ],
+      "handler": "0x102b9298c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        17,
+        0
+      ],
+      "handler": "0x102b915bc"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        18,
+        0
+      ],
+      "handler": "0x102b92a80"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        19,
+        0
+      ],
+      "handler": "0x102b91de4"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        20,
+        0
+      ],
+      "handler": "0x102ba9190"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        25,
+        0
+      ],
+      "handler": "0x102b92ddc"
+    }
+  ],
+  "cjson_hooks": {
+    "installer": "0x102ac6f94",
+    "installer_executed_with_null": true,
+    "installer_status": 0,
+    "default_slots": {
+      "alloc": "0x1053bc078",
+      "free": "0x1053bb838"
+    },
+    "default_bind_symbols": [
+      "_malloc",
+      "_free"
+    ],
+    "runtime_slots_match_defaults": true,
+    "app_internal_call_site_of_installer": "not yet identified"
+  },
+  "bridge": {
+    "selector": "ksdjk23dskm:",
+    "classes": [
+      {
+        "name": "_dklasdm23jsdafImpl1",
+        "class_address": "0x10643e488",
+        "implementation": "0x102aefeb8"
+      },
+      {
+        "name": "_dklasdm23jsdafImpl2",
+        "class_address": "0x10643f158",
+        "implementation": "0x102b9a718"
+      },
+      {
+        "name": "_dklasdm23jsdafImpl7",
+        "class_address": "0x10643e618",
+        "implementation": "0x102b4340c"
+      }
+    ],
+    "implementations_executed_natively": true,
+    "returned_opaque_value_not_exported": true
+  },
+  "execution_boundary": {
+    "kind": "unmapped_memory",
+    "error": "Invalid memory read (UC_ERR_READ_UNMAPPED)",
+    "pc": "0x102aed4bc",
+    "fault": {
+      "native_pc": "0x102aed4bc",
+      "address": "0x70",
+      "bytes": 8
+    },
+    "return_address": "0x102aafa64",
+    "registers": [
+      "0x0",
+      "0x0",
+      "0x8",
+      "0x0"
+    ]
+  },
+  "module_routes": [
+    [
+      1,
+      6,
+      36,
+      0
+    ],
+    [
+      1,
+      6,
+      22,
+      0
+    ],
+    [
+      1,
+      6,
+      26,
+      0
+    ],
+    [
+      1,
+      6,
+      18,
+      0
+    ],
+    [
+      1,
+      6,
+      1,
+      0
+    ],
+    [
+      1,
+      6,
+      23,
+      0
+    ],
+    [
+      1,
+      6,
+      21,
+      0
+    ],
+    [
+      1,
+      6,
+      19,
+      0
+    ],
+    [
+      1,
+      6,
+      20,
+      0
+    ]
+  ],
+  "native_routes": [
+    [
+      1,
+      1,
+      3,
+      0
+    ],
+    [
+      1,
+      9,
+      2,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      14,
+      5,
+      0
+    ],
+    [
+      1,
+      35,
+      1,
+      0
+    ],
+    [
+      1,
+      34,
+      13,
+      0
+    ],
+    [
+      1,
+      1,
+      8,
+      0
+    ]
+  ],
+  "observed_commands": [
+    [
+      1,
+      37,
+      1,
+      1
+    ],
+    [
+      1,
+      37,
+      1,
+      1
+    ],
+    [
+      1,
+      34,
+      13,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      1,
+      8,
+      0
+    ]
+  ],
+  "gate_flag_at_stop": 0,
+  "router_slot_at_stop": "0x200000000",
+  "completed_module_calls": 73,
+  "module_calls_during_router_init": 0,
+  "llc_registration_complete": false,
+  "sdk_initialization_complete": false,
+  "security_factors_generated": false,
+  "signature_generated": false,
+  "network_requests_sent": 0,
+  "private_values_exported": false
+}

@@ -873,3 +873,50 @@ work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signat
 ```
 
 第二条附加 `--without-native-route` 可复现尚未提供 `(2,23,1,0)` 的负例。时间 ABI 编译检查为 `xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fsyntax-only signature/verify_ios_time.c`，从归档根目录执行。未完成任何 iPhone 或服务端验证。
+
+## 真实 lvm_llc_core 注册处理函数与 cJSON 钩子（2026-11-09）
+
+新增 `probe_llc_registration.py`：在既有路由安装前缀之后，接上 `(1,34,13,0)` 的**真实原生处理函数** `0x102ab4068`，执行至模块登记过程中的下一个依赖边界。该处理函数尚未返回，模块注册完成与否仍未证实。
+
+### 已还原的处理函数与登记器链
+
+`0x102ab4068`（干净函数，非混淆区）读取描述符结构 `[x0]=name、[x0+8]=callback、[x0+0x10]=flag、[x0+0x18]=extra`，先 `blr [x0+8]` 调用描述符回调 `0x102bac1d8(0)` 取得来源对象，再尾调 `0x102a66ca8(name, 来源对象, flag, extra, 调用方参数)`。`0x102a66ca8` 的静态路径包含元数据字段解码（`isPublic`、`destIndex`、`index`、`metainfo`、`stacksize`）、**cJSON** 解析以及经 `0x102a67314` 到动态注册入口 `0x102abf804` 的调用；容器声明了 22 个绑定，当前探针尚未证明这些绑定已逐项登记。
+
+`0x102ab43a0–0x102ab43ac` 明确将 `(1,34,13,flag=0)` 绑定至 `0x102ab4068`。`probe_core_registry.py` 用原生核心表安装器 `0x102aa9a30` 和注册函数 `0x102aa9658` 核对两套 flag 注册根：未登记时查询返回缺项码，手动登记该已定位处理函数后可从 flag 0 根查回同一地址；这只验证注册表机制，不表示应用初始化已执行该登记步骤。证据见 `core-registry-evidence.json`。
+
+### cJSON 分配器钩子的来源与建模
+
+登记器解析元数据前必须已有 cJSON 钩子。`[0x106686fc8]`（分配槽）与 `[0x106686fd0]`（释放槽）的已定位写入点在 `cJSON_InitHooks`（宿主绑定表第 73 项，入口 `0x102ac6f94`，名字经真实解码器读出为 `cJSON_InitHooks`，其后 74–118 项为整套 cJSON API）。其 NULL 分支把静态默认槽 `0x1053bc078` / `0x1053bb838` 复制进运行槽。解析真实 Mach-O bind 流（`parse_bind_targets.py`）证实两个默认槽由 dyld 分别绑定到 **`_malloc`** 与 **`_free`**。
+
+探针建模：把默认槽写入 `import_addresses['_malloc']`/`['_free']`（探针既有 dyld 模型；otool 同时列出桩与 la 槽，两者均被导入拦截），随后**原生执行真实安装器** `cJSON_InitHooks(NULL)` 并核对运行槽与默认槽一致。应用内部调用 `cJSON_InitHooks` 的实际调用点仍未定位。
+
+### 码→名桥接类
+
+登记器经 `0x102a98e30` 的名字注册流程调用三组 ObjC 桥接（`_objc_getClass` + `_sel_registerName` + `_class_getClassMethod` + 尾调 `_objc_msgSend`），选择子均为 `ksdjk23dskm:`，实现为「入参码匹配则返回惰性解码的 153 字节不透明值，否则 NULL」：
+
+| 类名（真实解码） | 类地址 | 实现 | objc_getClass 返回地址 |
+| --- | --- | --- | --- |
+| `_dklasdm23jsdafImpl1` | `0x10643e488` | `0x102aefeb8` | `0x102a98b3c` |
+| `_dklasdm23jsdafImpl2` | `0x10643f158` | `0x102b9a718` | `0x102a98c8c` |
+| `_dklasdm23jsdafImpl7` | `0x10643e618` | `0x102b4340c` | `0x102a98dd0` |
+
+探针在 `__init__` 核对三个类的元类方法表（各仅一条 `ksdjk23dskm:`），只在上述已核对调用点拦截并跳转真实实现；其余 ObjC 查询仍由父类边界拒绝。桥接返回的 153 字节不透明值不导出。
+
+### 路径对象与 stdlib 补充
+
+`(1,1,8,0)` 的注册点在 `0x102aec188`，处理函数 `0x102aed450` 从对象表 `0x1068f9e78` 取预置对象。此前探针把它误判成纯日志副作用并返回 NULL，导致 `0x102aaf91c` 的路径对象查询失败，进而人为造成 `_stat(NULL)`。现已移除该合成返回，改为进入真实处理函数；对象表的写入点位于 `0x102ae9d10`，但该初始化链尚未在受限探针中完成。`ModuleProbe` 补充已观察到的通用导入：`_strncmp`、`___tolower`/`___toupper`、`_strtok_r`、`_atoi`、`_strcat` 与 `%05d` 格式。`strtok_r` 的保存指针已按下一未读字节修正。
+
+### 当前边界
+
+现有探针依次完成 22 项前置注册并进入 `(1,34,13,0)` 处理函数；当前在真实 `(1,1,8,0)` 处理函数的 `0x102aed4bc` 处读取空对象表偏移 `0x70` 时停止，尚未返回 LLC 处理函数。原始路由初始化期间新增的已完成 VM 导出调用数为 **0**；证据中的 `completed_module_calls=73` 全部来自前置 SDS 准备。门控标志 `0x1069c15b8` 仍为 0，未生成安全因子，未联网验签，未修改小组件。
+
+新增回归 `test_llc_registration.py`，并用 `test_vm_libc.py` 核对 `strtok_r` 保存指针和 `atoi` 解析行为。该测试只验证隔离模型的局部 ABI；真实 LLC 登记仍需按完整 IPA 探针复现。
+
+复现：
+
+```sh
+work/cniao-re-env/bin/python -B reverse-engineering/cainiao-noad-8.10.703/signature/probe_llc_registration.py \
+  reverse-engineering/cainiao-noad-8.10.703/Cainiao_8.10.703_NoAd.ipa
+```
+
+证据：`llc-registration-evidence.json`。辅助只读工具：`disasm_range.py`、`parse_bind_targets.py`。
