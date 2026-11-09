@@ -1,0 +1,132 @@
+{
+  "binary_sha256": "d305a955a56094e30bc693249e455fdae9fd8ba04cc2ec66e573ca02bb0e5b61",
+  "scope": "bounded native router installation prefix with synthetic registration callbacks",
+  "entry": "0x102b9803c",
+  "router_slot": "0x1068fe200",
+  "router_installed_from_input": true,
+  "registrations": [
+    {
+      "ids": [
+        2,
+        19,
+        2,
+        1
+      ],
+      "handler": "0x102b905ac"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        7,
+        1
+      ],
+      "handler": "0x102b97bf0"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        8,
+        1
+      ],
+      "handler": "0x102b97d08"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        1,
+        1
+      ],
+      "handler": "0x102b90730"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        3,
+        1
+      ],
+      "handler": "0x102b90738"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        4,
+        1
+      ],
+      "handler": "0x102b90740"
+    },
+    {
+      "ids": [
+        2,
+        19,
+        5,
+        1
+      ],
+      "handler": "0x102b90748"
+    },
+    {
+      "ids": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "handler": "0x102b90750"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        1,
+        1
+      ],
+      "handler": "0x102ba9304"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        2,
+        1
+      ],
+      "handler": "0x102ba940c"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        3,
+        1
+      ],
+      "handler": "0x102ba94f4"
+    },
+    {
+      "ids": [
+        2,
+        29,
+        4,
+        1
+      ],
+      "handler": "0x102ba9584"
+    }
+  ],
+  "next_unmodeled_registration": {
+    "ids": [
+      2,
+      1,
+      1,
+      0
+    ],
+    "handler": "0x102b90660",
+    "return_address": "0x102b9207c"
+  },
+  "gate_flag_at_stop": 0,
+  "signature_generated": false,
+  "sdk_initialization_complete": false,
+  "network_requests_sent": 0,
+  "private_values_exported": false
+}
