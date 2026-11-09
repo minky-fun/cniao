@@ -9,8 +9,9 @@ from zipfile import ZipFile
 from unicorn.arm64_const import UC_ARM64_REG_PC, UC_ARM64_REG_X30
 
 import probe_sds_slice as slice_probe
+from module_container import parse_container
 from probe_native import ARGUMENT_REGISTERS, EXPECTED_SHA256, read_binary
-from probe_unified_boundary import UnifiedBoundaryProbe
+from probe_unified_boundary import MissingLinkedFunction, UnifiedBoundaryProbe, load_module
 from probe_vm import MissingCommand
 
 
@@ -20,6 +21,14 @@ class RouterInitProbe(UnifiedBoundaryProbe):
     def on_instruction(self, cpu, address, size, context):
         """只为前置注册回调返回既有探针的合成状态，不伪造业务命令。"""
         return_address = cpu.reg_read(UC_ARM64_REG_X30)
+        if address == 0x102a598ec and self.cstring(cpu.reg_read(ARGUMENT_REGISTERS[1])) == b'mach_task_self':
+            if getattr(self.host_libc, 'mach_task_self', None) is None:
+                raise RuntimeError('宿主没有 mach_task_self 链接符号')
+            pointer = self.linked.setdefault('mach_task_self', self.callback + 0x500 + len(self.linked) * 4)
+            self.resolved_system_names.append('mach_task_self')
+            cpu.reg_write(ARGUMENT_REGISTERS[0], pointer)
+            cpu.reg_write(UC_ARM64_REG_PC, return_address)
+            return
         first_registration = 0x102b97dd8 <= return_address < 0x102b9801c
         second_registration = 0x102b9207c <= return_address <= 0x102b9219c
         if address == self.callback and (first_registration or second_registration):
@@ -85,6 +94,29 @@ def inspect(sample):
                 or any(value not in b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_' for value in descriptor_name)
                 or gate != 0):
             raise RuntimeError('前置初始化结果与已核对边界不符')
+        source_object = probe.run(descriptor[1])
+        source, length = struct.unpack('<QQ', probe.cpu.mem_read(source_object, 16))
+        if (source, length) != (0x1066cb560, 77635):
+            raise RuntimeError('核心模块来源回调与固定样本不符')
+        code, metadata, bindings = parse_container(bytes(probe.cpu.mem_read(source, length)))
+        if (metadata['basic']['bizid'] != descriptor_name.decode('ascii') or len(code) != 143128
+                or len(bindings) != 22
+                or [entry['destIndex'] for entry in bindings] != list(range(66020601, 66020623))):
+            raise RuntimeError('核心模块容器与描述符不符')
+        _, library = load_module(probe, 0x106672500, 65119, 'lvm_minilibc')
+        if library['load_status'] != 0 or probe.import_addresses.get('_mach_task_self_') != 0x1053bc070:
+            raise RuntimeError('前置库模块未能加载')
+        try:
+            _, core = load_module(probe, source, length, descriptor_name.decode('ascii'))
+            core_boundary = None
+        except MissingLinkedFunction:
+            core = None
+            core_boundary = 'linked function executed: ' + str(probe.linked_execution)
+        except RuntimeError as stopped:
+            if str(stopped) != '未解析 VM 系统导入：proc_regionfilename':
+                raise
+            core = None
+            core_boundary = 'unresolved VM system import: proc_regionfilename'
         return {
             'binary_sha256': EXPECTED_SHA256,
             'scope': 'bounded native router installation prefix with synthetic registration callbacks',
@@ -98,6 +130,19 @@ def inspect(sample):
                 'module_name': descriptor_name.decode('ascii'),
                 'descriptor_callback': hex(descriptor[1]),
                 'return_address': hex(next_return),
+            },
+            'core_module_source': {
+                'callback_executed': True,
+                'container_address': hex(source),
+                'container_bytes': length,
+                'bytecode_bytes': len(code),
+                'business_bindings': len(bindings),
+                'library_load_status': library['load_status'],
+                'core_load_status': core['load_status'] if core else None,
+                'core_load_boundary': core_boundary,
+                'different_image_symbol': '_mach_task_self_ at 0x1053bc070',
+                'mach_task_self_linked_without_execution': 'mach_task_self' in probe.linked and probe.linked_execution is None,
+                'mach_task_self_link_only_executed': probe.linked_execution == 'mach_task_self',
             },
             'gate_flag_at_stop': gate,
             'signature_generated': False,

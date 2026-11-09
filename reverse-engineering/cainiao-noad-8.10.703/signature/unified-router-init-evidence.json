@@ -216,6 +216,19 @@
     "descriptor_callback": "0x102bac1d8",
     "return_address": "0x102b92340"
   },
+  "core_module_source": {
+    "callback_executed": true,
+    "container_address": "0x1066cb560",
+    "container_bytes": 77635,
+    "bytecode_bytes": 143128,
+    "business_bindings": 22,
+    "library_load_status": 0,
+    "core_load_status": null,
+    "core_load_boundary": "unresolved VM system import: proc_regionfilename",
+    "different_image_symbol": "_mach_task_self_ at 0x1053bc070",
+    "mach_task_self_linked_without_execution": true,
+    "mach_task_self_link_only_executed": false
+  },
   "gate_flag_at_stop": 0,
   "signature_generated": false,
   "sdk_initialization_complete": false,
