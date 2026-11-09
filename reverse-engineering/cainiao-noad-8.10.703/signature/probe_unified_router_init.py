@@ -21,14 +21,16 @@ class RouterInitProbe(UnifiedBoundaryProbe):
     def on_instruction(self, cpu, address, size, context):
         """只为前置注册回调返回既有探针的合成状态，不伪造业务命令。"""
         return_address = cpu.reg_read(UC_ARM64_REG_X30)
-        if address == 0x102a598ec and self.cstring(cpu.reg_read(ARGUMENT_REGISTERS[1])) == b'mach_task_self':
-            if getattr(self.host_libc, 'mach_task_self', None) is None:
-                raise RuntimeError('宿主没有 mach_task_self 链接符号')
-            pointer = self.linked.setdefault('mach_task_self', self.callback + 0x500 + len(self.linked) * 4)
-            self.resolved_system_names.append('mach_task_self')
-            cpu.reg_write(ARGUMENT_REGISTERS[0], pointer)
-            cpu.reg_write(UC_ARM64_REG_PC, return_address)
-            return
+        if address == 0x102a598ec:
+            symbol = self.cstring(cpu.reg_read(ARGUMENT_REGISTERS[1])).decode('ascii')
+            if symbol in ('mach_task_self', 'proc_regionfilename'):
+                if getattr(self.host_libc, symbol, None) is None:
+                    raise RuntimeError('宿主没有已确认的链接符号：' + symbol)
+                pointer = self.linked.setdefault(symbol, self.callback + 0x500 + len(self.linked) * 4)
+                self.resolved_system_names.append(symbol)
+                cpu.reg_write(ARGUMENT_REGISTERS[0], pointer)
+                cpu.reg_write(UC_ARM64_REG_PC, return_address)
+                return
         first_registration = 0x102b97dd8 <= return_address < 0x102b9801c
         second_registration = 0x102b9207c <= return_address <= 0x102b9219c
         if address == self.callback and (first_registration or second_registration):
@@ -113,10 +115,10 @@ def inspect(sample):
             core = None
             core_boundary = 'linked function executed: ' + str(probe.linked_execution)
         except RuntimeError as stopped:
-            if str(stopped) != '未解析 VM 系统导入：proc_regionfilename':
+            if not str(stopped).startswith('未解析 VM 系统导入：'):
                 raise
             core = None
-            core_boundary = 'unresolved VM system import: proc_regionfilename'
+            core_boundary = 'unresolved VM system import: ' + str(stopped).split('：', 1)[1]
         return {
             'binary_sha256': EXPECTED_SHA256,
             'scope': 'bounded native router installation prefix with synthetic registration callbacks',
@@ -141,8 +143,8 @@ def inspect(sample):
                 'core_load_status': core['load_status'] if core else None,
                 'core_load_boundary': core_boundary,
                 'different_image_symbol': '_mach_task_self_ at 0x1053bc070',
-                'mach_task_self_linked_without_execution': 'mach_task_self' in probe.linked and probe.linked_execution is None,
-                'mach_task_self_link_only_executed': probe.linked_execution == 'mach_task_self',
+                'link_only_symbols': sorted(probe.linked),
+                'link_only_execution': probe.linked_execution,
             },
             'gate_flag_at_stop': gate,
             'signature_generated': False,

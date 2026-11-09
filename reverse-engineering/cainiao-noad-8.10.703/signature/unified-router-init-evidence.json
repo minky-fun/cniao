@@ -224,10 +224,15 @@
     "business_bindings": 22,
     "library_load_status": 0,
     "core_load_status": null,
-    "core_load_boundary": "unresolved VM system import: proc_regionfilename",
+    "core_load_boundary": "unresolved VM system import: CFSetGetCount",
     "different_image_symbol": "_mach_task_self_ at 0x1053bc070",
-    "mach_task_self_linked_without_execution": true,
-    "mach_task_self_link_only_executed": false
+    "link_only_symbols": [
+      "fchmod",
+      "mach_task_self",
+      "proc_regionfilename",
+      "socketpair"
+    ],
+    "link_only_execution": null
   },
   "gate_flag_at_stop": 0,
   "signature_generated": false,
