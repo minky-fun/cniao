@@ -112,17 +112,109 @@
         1
       ],
       "handler": "0x102ba9584"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        1,
+        0
+      ],
+      "handler": "0x102b90660"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        8,
+        0
+      ],
+      "handler": "0x102b9288c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        9,
+        0
+      ],
+      "handler": "0x102b9113c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        10,
+        0
+      ],
+      "handler": "0x102bac31c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        13,
+        0
+      ],
+      "handler": "0x102b9298c"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        17,
+        0
+      ],
+      "handler": "0x102b915bc"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        18,
+        0
+      ],
+      "handler": "0x102b92a80"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        19,
+        0
+      ],
+      "handler": "0x102b91de4"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        20,
+        0
+      ],
+      "handler": "0x102ba9190"
+    },
+    {
+      "ids": [
+        2,
+        1,
+        25,
+        0
+      ],
+      "handler": "0x102b92ddc"
     }
   ],
-  "next_unmodeled_registration": {
+  "next_unmodeled_module_registration": {
     "ids": [
-      2,
       1,
-      1,
+      34,
+      13,
       0
     ],
-    "handler": "0x102b90660",
-    "return_address": "0x102b9207c"
+    "descriptor_source": "0x105535618",
+    "module_name": "lvm_llc_core",
+    "descriptor_callback": "0x102bac1d8",
+    "return_address": "0x102b92340"
   },
   "gate_flag_at_stop": 0,
   "signature_generated": false,

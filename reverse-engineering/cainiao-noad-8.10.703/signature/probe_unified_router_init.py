@@ -1,4 +1,4 @@
-"""离线执行 Unified 路由表安装前缀，只报告真实注册与下一段注册边界。"""
+"""离线执行 Unified 路由表安装与处理器注册，只报告下一个模块依赖。"""
 import argparse
 import json
 import plistlib
@@ -15,15 +15,18 @@ from probe_vm import MissingCommand
 
 
 class RouterInitProbe(UnifiedBoundaryProbe):
-    """在首段固定注册函数内记录公开命令编号，其余调用继续走现有边界模型。"""
+    """在两段固定注册函数内记录处理器编号，其余调用继续走现有边界模型。"""
 
     def on_instruction(self, cpu, address, size, context):
         """只为前置注册回调返回既有探针的合成状态，不伪造业务命令。"""
         return_address = cpu.reg_read(UC_ARM64_REG_X30)
-        if address == self.callback and 0x102b97dd8 <= return_address < 0x102b9801c:
+        first_registration = 0x102b97dd8 <= return_address < 0x102b9801c
+        second_registration = 0x102b9207c <= return_address <= 0x102b9219c
+        if address == self.callback and (first_registration or second_registration):
             command = tuple(cpu.reg_read(register) for register in ARGUMENT_REGISTERS[:4])
             target = cpu.reg_read(ARGUMENT_REGISTERS[4])
-            if command[0] != 2 or command[3] != 1 or not 0x102000000 <= target < 0x104000000:
+            expected_flag = 1 if first_registration else 0
+            if command[0] != 2 or command[3] != expected_flag or not 0x102000000 <= target < 0x104000000:
                 raise RuntimeError('前置注册回调超出固定样本')
             self.registration_records.append((command, target))
             cpu.reg_write(ARGUMENT_REGISTERS[0], 0)
@@ -33,7 +36,7 @@ class RouterInitProbe(UnifiedBoundaryProbe):
 
 
 def inspect(sample):
-    """先准备原生签名与 SDS 资源，再执行真实路由安装直到下一段注册。"""
+    """先准备原生签名与 SDS 资源，再执行路由安装直到模块注册请求。"""
     data = read_binary(sample)
     with ZipFile(sample) as archive:
         resource = archive.read('Payload/Cainiao4iPhone.app/yw_1222.jpg')
@@ -63,15 +66,24 @@ def inspect(sample):
             (2, 19, 1, 1), (2, 19, 3, 1), (2, 19, 4, 1),
             (2, 19, 5, 1), (2, 4, 1, 1), (2, 29, 1, 1),
             (2, 29, 2, 1), (2, 29, 3, 1), (2, 29, 4, 1),
+            (2, 1, 1, 0), (2, 1, 8, 0), (2, 1, 9, 0),
+            (2, 1, 10, 0), (2, 1, 13, 0), (2, 1, 17, 0),
+            (2, 1, 18, 0), (2, 1, 19, 0), (2, 1, 20, 0),
+            (2, 1, 25, 0),
         ]
         records = probe.registration_records
         router = struct.unpack('<Q', probe.cpu.mem_read(0x1068fe200, 8))[0]
         gate = bytes(probe.cpu.mem_read(0x1069c15b8, 1))[0]
         next_return = probe.cpu.reg_read(UC_ARM64_REG_X30)
-        next_handler = probe.cpu.reg_read(ARGUMENT_REGISTERS[4])
+        next_descriptor = probe.cpu.reg_read(ARGUMENT_REGISTERS[4])
+        descriptor = struct.unpack('<4Q', probe.cpu.mem_read(next_descriptor, 32))
+        descriptor_name = probe.cstring(descriptor[0])
         if ([command for command, _ in records] != expected or router != probe.heap
-                or probe.missing_command != [2, 1, 1, 0] or next_return != 0x102b9207c
-                or next_handler != 0x102b90660 or gate != 0):
+                or probe.missing_command != [1, 34, 13, 0] or next_return != 0x102b92340
+                or descriptor != (0x1068fe2ed, 0x102bac1d8, 1, 0)
+                or not 1 <= len(descriptor_name) <= 64
+                or any(value not in b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_' for value in descriptor_name)
+                or gate != 0):
             raise RuntimeError('前置初始化结果与已核对边界不符')
         return {
             'binary_sha256': EXPECTED_SHA256,
@@ -80,9 +92,11 @@ def inspect(sample):
             'router_slot': '0x1068fe200',
             'router_installed_from_input': True,
             'registrations': [{'ids': list(command), 'handler': hex(target)} for command, target in records],
-            'next_unmodeled_registration': {
+            'next_unmodeled_module_registration': {
                 'ids': probe.missing_command,
-                'handler': hex(next_handler),
+                'descriptor_source': '0x105535618',
+                'module_name': descriptor_name.decode('ascii'),
+                'descriptor_callback': hex(descriptor[1]),
                 'return_address': hex(next_return),
             },
             'gate_flag_at_stop': gate,
